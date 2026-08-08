@@ -54,10 +54,12 @@ Tradinghub/
 │   │   ├── config.py           # pydantic-settings, fails loudly on missing vars
 │   │   ├── db.py               # async engine, session dependency
 │   │   ├── errors.py           # exception handlers, uniform error shape
+│   │   ├── logging.py          # structured JSON logs, request IDs
 │   │   └── auth/
 │   │       ├── models.py       # User, Session, LoginAttempt
 │   │       ├── schemas.py      # request/response shapes
 │   │       ├── passwords.py    # argon2id hash + verify
+│   │       ├── tokens.py       # generate + hash session tokens
 │   │       ├── sessions.py     # create / look up / revoke
 │   │       ├── rate_limit.py   # failed-attempt counting
 │   │       ├── dependencies.py # get_current_user
@@ -65,9 +67,12 @@ Tradinghub/
 │   └── tests/
 └── frontend/
     ├── middleware.ts           # cheap presence gate on protected paths
-    └── src/app/
-        ├── (auth)/login, register
-        └── (app)/dashboard
+    ├── e2e/                    # Playwright
+    └── src/
+        ├── lib/api.ts          # fetch wrapper, always credentials: "include"
+        └── app/
+            ├── (auth)/login, register
+            └── (app)/dashboard
 ```
 
 ### Backend stack
@@ -84,8 +89,9 @@ Dependencies are managed with `uv`.
 
 ### Frontend stack
 
-Next.js App Router with TypeScript and Tailwind. Server Components are the default; client
-components appear only where forms need interactivity.
+Next.js 16 App Router with TypeScript and Tailwind 4. Server Components are the default; client
+components appear only where forms need interactivity. Next.js 16 differs from the 13/14-era
+conventions most tutorials assume — notably `cookies()` is async.
 
 `middleware.ts` performs a cheap presence-check on the session cookie to redirect obviously
 anonymous users away from protected routes. It deliberately does **not** validate the session —

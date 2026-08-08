@@ -853,9 +853,11 @@ You have Next.js 16.3 with Turbopack as the default bundler and Tailwind 4. `npm
 succeeds. The route-group directories from the file structure above exist with `.gitkeep`
 placeholders, which you can delete as each one gains a real file.
 
-Note that `create-next-app` also generated `frontend/CLAUDE.md` and `frontend/AGENTS.md` containing
-Next.js's own up-to-date framework guidance. Worth skimming — it reflects Next.js 16 conventions,
-which differ from most tutorials still written against 13 and 14.
+`create-next-app` also generated `frontend/AGENTS.md` (and a one-line `frontend/CLAUDE.md` that
+imports it). It is not documentation itself — it is a warning that Next.js 16 broke conventions
+from earlier versions, pointing at the real docs bundled in `node_modules/next/dist/docs/`. Consult
+those when a tutorial's approach doesn't work; most of what you'll find online targets 13 or 14.
+`next dev` rewrites this file if removed, so leave it committed.
 
 - [ ] **9.2** Create `frontend/.env.local.example`:
 ```

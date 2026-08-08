@@ -15,7 +15,8 @@ plans/
         └── plan.md    # the implementation plan: ordered steps
 ```
 
-This overrides the superpowers default of `docs/superpowers/specs/`. Do not create that directory.
+This overrides the superpowers defaults of `docs/superpowers/specs/` and `docs/superpowers/plans/`.
+Do not create a `docs/` directory for planning material.
 
 ## Who writes the code
 
@@ -27,6 +28,10 @@ implementation code only when explicitly handed a specific piece, and only that 
 Use the `safe-commit` skill. No Claude attribution in commit messages — no `Co-Authored-By`, no
 "Generated with Claude Code".
 
+`safe-commit` treats `main` as a protected branch. This is a solo project with nothing deployed, so
+committing directly to `main` is the accepted convention here — proceed rather than asking each
+time. Revisit if collaborators or a deployed environment appear.
+
 ## Slice order
 
 1. Auth + skeleton — hand-rolled sessions, no email or OAuth
@@ -35,4 +40,5 @@ Use the `safe-commit` skill. No Claude attribution in commit messages — no `Co
 4. Charting + dashboard
 5. Terraform on AWS
 
-Each slice gets its own `plans/` folder with a design and a plan before any code is written.
+Each slice gets its own `plans/` folder containing a `spec.md` and a `plan.md`, both written and
+approved before any code.
