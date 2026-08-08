@@ -8,8 +8,8 @@ an HTTP API and a session cookie. Next.js is one consumer of that API, calling i
 browser with `credentials: "include"`. Code is grouped by feature (`auth/`), not by technical layer.
 
 **Tech Stack:** Python 3.13, FastAPI, SQLAlchemy 2.0 async, asyncpg, Alembic, argon2-cffi,
-pydantic-settings, uv, pytest + pytest-asyncio, Postgres 16 via Docker Compose, Next.js 15 App
-Router, TypeScript, Tailwind, Playwright.
+pydantic-settings, uv, pytest + pytest-asyncio, Postgres 16 via Docker Compose, Next.js 16 App
+Router (Turbopack), TypeScript, Tailwind 4, Playwright.
 
 **Spec:** `plans/2026-08-08/auth-skeleton/spec.md` — read it before starting. This plan implements
 it and does not restate its rationale.
@@ -842,18 +842,20 @@ async def test_other_origins_are_not_allowed(client):
 
 **Steps:**
 
-- [ ] **9.1** Scaffold, from the repo root.
-
-`create-next-app` refuses to write into a non-empty directory, and `frontend/` currently holds
-`.gitkeep` placeholders. Clear them first — the directories it needs are recreated by the scaffold
-or by later tasks:
+- [ ] **9.1** Already done — the scaffold exists. It was created with:
 
 ```bash
-find frontend -name .gitkeep -delete && rmdir -p frontend/src/lib frontend/e2e 2>/dev/null; true
-rm -rf frontend
-npx create-next-app@latest frontend --typescript --tailwind --app --src-dir --eslint --no-turbopack
-mkdir -p frontend/e2e frontend/src/lib "frontend/src/app/(auth)/login" "frontend/src/app/(auth)/register" "frontend/src/app/(app)/dashboard"
+npx create-next-app@latest frontend --typescript --tailwind --app --src-dir --eslint \
+  --import-alias "@/*" --use-npm --disable-git --yes
 ```
+
+You have Next.js 16.3 with Turbopack as the default bundler and Tailwind 4. `npm run build`
+succeeds. The route-group directories from the file structure above exist with `.gitkeep`
+placeholders, which you can delete as each one gains a real file.
+
+Note that `create-next-app` also generated `frontend/CLAUDE.md` and `frontend/AGENTS.md` containing
+Next.js's own up-to-date framework guidance. Worth skimming — it reflects Next.js 16 conventions,
+which differ from most tutorials still written against 13 and 14.
 
 - [ ] **9.2** Create `frontend/.env.local.example`:
 ```
