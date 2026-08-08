@@ -62,8 +62,11 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]  # asserts are the point of a test
-"alembic/**" = ["ANN", "INP001"]  # generated migrations
+"tests/**" = [
+    "S101",           # asserts are the point of a test
+    "S105", "S106",   # fixture passwords are dummy values, not credentials
+]
+"alembic/**" = ["ANN", "INP001", "F401"]  # generated; model imports are side-effecting
 
 [tool.ruff.lint.isort]
 known-first-party = ["tradinghub"]

@@ -99,6 +99,32 @@ not add a repository layer wrapping the session. That is a project decision, not
 Pydantic schemas in `schemas.py` are the boundary types. Models are the persistence types. Both
 exist on purpose; they are not duplication.
 
+## Database schema
+
+Constraint and index names come from the `naming_convention` on `Base.metadata` in
+`core/database.py`. Never name a constraint by hand, and never let one be created without it —
+Alembic cannot reliably drop or alter a constraint whose name the database invented.
+
+| Kind | Pattern | Example |
+|---|---|---|
+| Primary key | `pk_<table>` | `pk_users` |
+| Unique | `uq_<table>_<column>` | `uq_users_email` |
+| Index | `ix_<table>_<column>` | `ix_sessions_token_hash` |
+| Foreign key | `fk_<table>_<column>_<referred table>` | `fk_sessions_user_id_users` |
+| Check | `ck_<table>_<name>` | `ck_users_email_not_blank` |
+
+Table names are plural snake_case (`users`, `login_attempts`); column names are singular
+snake_case. Timestamps are always `TIMESTAMP WITH TIME ZONE` — a naive column silently drops the
+offset and the bug only appears outside UTC. Primary keys are UUIDs, not serial integers, since
+sequential ids leak row counts and invite enumeration once they appear in URLs.
+
+Foreign keys state their delete behavior explicitly (`ondelete="CASCADE"` for rows that cannot
+outlive their parent). Relying on the application to clean up is how orphans accumulate.
+
+Every schema change is an Alembic migration, generated with `--autogenerate` and then **read
+before running**. Autogenerate does not know about extensions, data backfills, or concurrent index
+creation, so those are added by hand.
+
 ## Naming
 
 Full words. Code is read far more than written.

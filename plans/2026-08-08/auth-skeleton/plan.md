@@ -263,7 +263,7 @@ curl localhost:8000/health # {"status":"ok"}
 
 ---
 
-## Task 2: Alembic and the users table
+## Task 2: Alembic and the users table  ✅ DONE
 
 **Files:**
 - Create: `backend/alembic.ini`, `backend/alembic/env.py`, one migration in `alembic/versions/`,
@@ -315,7 +315,7 @@ Requirements:
 4. `created_at` and `updated_at` are timezone-aware and default to the database's `now()`.
 5. `updated_at` also updates on modification.
 
-Hints: `from sqlalchemy.dialects.postgresql import CITEXT, UUID`; use
+Hints: `from sqlalchemy.dialects.postgresql import CITEXT`; use
 `mapped_column(server_default=func.now())` and `onupdate=func.now()`; `DateTime(timezone=True)` —
 a naive timestamp column will silently drop offsets and cause hard-to-see bugs later.
 
