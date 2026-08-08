@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: tradinghub
+      POSTGRES_PASSWORD: localdev
+      POSTGRES_DB: tradinghub
+    # Bound to loopback: the credentials below are committed to the repo, so the database must
+    # not be reachable from the network.
+    ports:
+      - "127.0.0.1:5432:5432"
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradinghub"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

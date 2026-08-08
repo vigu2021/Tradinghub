@@ -15,8 +15,11 @@ plans/
         └── plan.md    # the implementation plan: ordered steps
 ```
 
-This overrides the superpowers defaults of `docs/superpowers/specs/` and `docs/superpowers/plans/`.
-Do not create a `docs/` directory for planning material.
+Planning material goes here and nowhere else. Do not create a `docs/` directory for it.
+
+## Code conventions
+
+See `CONVENTIONS.md`.
 
 ## Who writes the code
 
@@ -25,12 +28,11 @@ implementation code only when explicitly handed a specific piece, and only that 
 
 ## Commits
 
-Use the `safe-commit` skill. No Claude attribution in commit messages — no `Co-Authored-By`, no
-"Generated with Claude Code".
+Scan the staged diff for secrets before every commit. Commit messages are one line, plain, with no
+tooling attribution of any kind.
 
-`safe-commit` treats `main` as a protected branch. This is a solo project with nothing deployed, so
-committing directly to `main` is the accepted convention here — proceed rather than asking each
-time. Revisit if collaborators or a deployed environment appear.
+Committing directly to `main` is fine here — solo project, nothing deployed. Revisit if
+collaborators or a deployed environment appear.
 
 ## Slice order
 

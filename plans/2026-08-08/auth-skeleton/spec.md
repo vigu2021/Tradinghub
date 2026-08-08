@@ -51,11 +51,12 @@ Tradinghub/
 │   ├── alembic/                # migrations, from the first commit
 │   ├── src/tradinghub/
 │   │   ├── main.py             # app factory, CORS, router mounting
-│   │   ├── config.py           # pydantic-settings, fails loudly on missing vars
-│   │   ├── db.py               # async engine, session dependency
-│   │   ├── errors.py           # exception handlers, uniform error shape
-│   │   ├── logging.py          # structured JSON logs, request IDs
-│   │   └── auth/
+│   │   ├── core/               # shared infrastructure; knows nothing about features
+│   │   │   ├── config.py       # pydantic-settings, fails loudly on missing vars
+│   │   │   ├── database.py     # async engine, session factory, get_db
+│   │   │   ├── errors.py       # exception handlers, uniform error shape
+│   │   │   └── logging.py      # structured JSON logs, request IDs
+│   │   └── auth/               # one feature, one directory
 │   │       ├── models.py       # User, Session, LoginAttempt
 │   │       ├── schemas.py      # request/response shapes
 │   │       ├── passwords.py    # argon2id hash + verify

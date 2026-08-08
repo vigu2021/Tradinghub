@@ -51,7 +51,7 @@ Hand any task to Claude by saying so. Default is you write it and Claude reviews
 - No secret has a default value in code; every one comes from the environment
 - Errors always use the shape `{"error": {"code": ..., "message": ...}}`
 - Passwords and session tokens never appear in logs, including inside request bodies
-- Commits go through the `safe-commit` skill, one line, no Claude attribution
+- Every commit is scanned for secrets first; messages are one line with no tooling attribution
 
 ---
 
@@ -68,23 +68,25 @@ Tradinghub/
 │   │   ├── env.py
 │   │   └── versions/
 │   ├── src/tradinghub/
-│   │   ├── __init__.py
-│   │   ├── main.py            # app factory, CORS, router mounting
-│   │   ├── config.py          # Settings, loaded once
-│   │   ├── db.py              # engine, Base, get_db dependency
-│   │   ├── errors.py          # AppError + exception handlers
-│   │   └── auth/
-│   │       ├── __init__.py
-│   │       ├── models.py      # User, Session, LoginAttempt
-│   │       ├── schemas.py     # Pydantic request/response models
-│   │       ├── passwords.py   # hash_password, verify_password
-│   │       ├── tokens.py      # generate_token, hash_token
-│   │       ├── sessions.py    # create_session, get_user_for_token, revoke_session
-│   │       ├── rate_limit.py  # check_login_allowed, record_attempt
-│   │       ├── dependencies.py# get_current_user
-│   │       └── routes.py      # the four endpoints
-│   └── tests/
+│   │   ├── main.py             # app factory, CORS, router mounting
+│   │   ├── core/               # shared infrastructure; knows nothing about features
+│   │   │   ├── config.py       # Settings, loaded once
+│   │   │   ├── database.py     # engine, SessionFactory, Base, get_db
+│   │   │   ├── errors.py       # AppError + exception handlers
+│   │   │   └── logging.py      # structured JSON logs, request IDs
+│   │   └── auth/               # one feature, one directory
+│   │       ├── models.py       # User, Session, LoginAttempt
+│   │       ├── schemas.py      # Pydantic request/response models
+│   │       ├── passwords.py    # hash_password, verify_password
+│   │       ├── tokens.py       # generate_token, hash_token
+│   │       ├── sessions.py     # create_session, get_user_for_token, revoke_session
+│   │       ├── rate_limit.py   # check_login_allowed, record_attempt
+│   │       ├── dependencies.py # get_current_user
+│   │       └── routes.py       # the four endpoints
+│   └── tests/                  # mirrors src/ exactly: same paths, same filenames
 │       ├── conftest.py
+│       ├── test_main.py
+│       ├── core/
 │       └── auth/
 └── frontend/
     ├── middleware.ts
@@ -101,27 +103,33 @@ Tradinghub/
 
 # Phase 1 — Backend foundation
 
-## Task 1: Postgres and a booting FastAPI app
+## Task 1: Postgres and a booting FastAPI app  ✅ DONE
 
 **Files:**
 - Create: `docker-compose.yml`, `backend/pyproject.toml`, `backend/.env.example`,
-  `backend/src/tradinghub/{__init__,config,db,main}.py`, `backend/tests/conftest.py`,
-  `backend/tests/test_health.py`
+  `backend/src/tradinghub/core/{config,database}.py`, `backend/src/tradinghub/main.py`, `backend/tests/conftest.py`,
+  `backend/tests/test_main.py`
 
 **Interfaces produced:**
 ```python
-# config.py
+# core/config.py
+class Environment(StrEnum):
+    DEVELOPMENT = "development"
+    PRODUCTION = "production"
+
 class Settings(BaseSettings):
     database_url: str
     frontend_origin: str
     cookie_domain: str | None = None
     cookie_secure: bool = False
-    environment: str = "development"
+    environment: Environment = Environment.DEVELOPMENT
 
 def get_settings() -> Settings: ...   # cached, call this rather than instantiating
 
-# db.py
+# core/database.py
 Base: type[DeclarativeBase]
+engine: AsyncEngine
+SessionFactory: async_sessionmaker[AsyncSession]
 async def get_db() -> AsyncIterator[AsyncSession]: ...   # FastAPI dependency
 
 # main.py
@@ -137,8 +145,10 @@ services:
       POSTGRES_USER: tradinghub
       POSTGRES_PASSWORD: localdev
       POSTGRES_DB: tradinghub
+    # Loopback only: the credentials below are committed, so this must not be network-reachable.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
+    restart: unless-stopped
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -158,7 +168,6 @@ credentials come from Secrets Manager in slice 5 and never appear in this file.
 ```
 DATABASE_URL=postgresql+asyncpg://tradinghub:localdev@localhost:5432/tradinghub
 FRONTEND_ORIGIN=http://localhost:3000
-COOKIE_DOMAIN=
 COOKIE_SECURE=false
 ENVIRONMENT=development
 ```
@@ -174,7 +183,7 @@ uv add fastapi "uvicorn[standard]" sqlalchemy asyncpg alembic pydantic-settings 
 uv add --dev pytest pytest-asyncio httpx
 ```
 
-- [ ] **1.2** Write `config.py`.
+- [ ] **1.2** Write `core/config.py`.
 
 Requirements:
 1. `Settings` subclasses `BaseSettings` with the fields in the Interfaces block above.
@@ -186,7 +195,7 @@ Requirements:
 Hints: `from pydantic_settings import BaseSettings, SettingsConfigDict`;
 `model_config = SettingsConfigDict(env_file=".env")`; wrap `get_settings` in `functools.lru_cache`.
 
-- [ ] **1.3** Write `db.py`.
+- [ ] **1.3** Write `core/database.py`.
 
 Requirements:
 1. Create one module-level async engine from `settings.database_url`.
@@ -204,7 +213,7 @@ after commit triggers a lazy refresh that fails outside async context.
 A factory rather than a module-level `app` because tests need to build an app with overridden
 dependencies.
 
-- [ ] **1.5** Write `tests/conftest.py` and `tests/test_health.py`.
+- [ ] **1.5** Write `tests/conftest.py` and `tests/test_main.py`.
 
 ```python
 # tests/conftest.py
@@ -221,7 +230,7 @@ async def client():
 ```
 
 ```python
-# tests/test_health.py
+# tests/test_main.py
 import pytest
 
 @pytest.mark.asyncio
@@ -249,7 +258,7 @@ uv run uvicorn tradinghub.main:create_app --factory --reload
 curl localhost:8000/health # {"status":"ok"}
 ```
 
-- [ ] **1.7** Add `.env` and `backend/.venv` to `.gitignore`, then commit via `safe-commit`.
+- [ ] **1.7** Add `.env` and `backend/.venv` to `.gitignore`, then commit.
       Suggested message: `Add backend scaffolding and Postgres compose file`
 
 ---
@@ -258,7 +267,7 @@ curl localhost:8000/health # {"status":"ok"}
 
 **Files:**
 - Create: `backend/alembic.ini`, `backend/alembic/env.py`, one migration in `alembic/versions/`,
-  `backend/src/tradinghub/auth/{__init__,models}.py`
+  `backend/src/tradinghub/auth/models.py`
 - Modify: `backend/tests/conftest.py`
 
 **Interfaces produced:**
@@ -435,7 +444,7 @@ def test_verify_rejects_malformed_hash():
 ## Task 4: Error shape and the register endpoint
 
 **Files:**
-- Create: `backend/src/tradinghub/errors.py`, `backend/src/tradinghub/auth/{schemas,routes}.py`,
+- Create: `backend/src/tradinghub/core/errors.py`, `backend/src/tradinghub/auth/{schemas,routes}.py`,
   `backend/tests/auth/test_register.py`
 - Modify: `backend/src/tradinghub/main.py`
 
@@ -617,7 +626,7 @@ async def second_user(db_session) -> User:
 
 **Files:**
 - Create: `backend/src/tradinghub/auth/dependencies.py`, `backend/tests/auth/test_login.py`
-- Modify: `backend/src/tradinghub/auth/{routes,schemas}.py`, `backend/src/tradinghub/config.py`
+- Modify: `backend/src/tradinghub/auth/{routes,schemas}.py`, `backend/src/tradinghub/core/config.py`
 
 **Interfaces produced:**
 ```python
@@ -784,8 +793,8 @@ firing early. Rewinding timestamps rather than sleeping keeps the suite fast.
 ## Task 8: CORS and structured logging
 
 **Files:**
-- Modify: `backend/src/tradinghub/{main,errors}.py`
-- Create: `backend/src/tradinghub/logging.py`, `backend/tests/test_cors.py`
+- Modify: `backend/src/tradinghub/main.py`, `backend/src/tradinghub/core/errors.py`
+- Create: `backend/src/tradinghub/core/logging.py`, `backend/tests/test_main.py`
 
 **Verbatim — CORS block in `create_app()`:**
 ```python
@@ -1022,9 +1031,14 @@ cd ../frontend && npx playwright test                            # 1 passed
 - [ ] `/dashboard` is unreachable without a valid session, verified with a forged cookie
 - [ ] 26 backend tests and 1 Playwright test pass from a clean database
 - [ ] `.env.example` is complete and the README documents the startup sequence
-- [ ] No secrets committed; every commit went through `safe-commit`
+- [ ] No secrets committed; every diff was scanned before landing
 
 ## Deliberately not in this slice
 
 Email verification, password reset, OAuth, refresh tokens, an active-sessions screen, any trading
 feature, and any deployment. Slice 2 begins with the `journal/` package.
+
+**Carried to slice 5:** `Settings` has no guard forcing `cookie_secure` on when
+`environment` is `PRODUCTION`. Nothing runs in production yet, so it would be dead code — but the
+default is `False`, which fails open. Add the validator as part of the deployment slice, before
+anything serves real traffic.

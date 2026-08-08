@@ -1,0 +1,77 @@
+[project]
+name = "tradinghub"
+version = "0.1.0"
+description = "Tradinghub API"
+readme = "README.md"
+authors = [
+    { name = "Vignesh Roachthavilit", email = "Vignesh.Roachthavilit@xolv.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.19.0",
+    "argon2-cffi>=25.1.0",
+    "asyncpg>=0.31.0",
+    "fastapi>=0.141.1",
+    "pydantic-settings>=2.15.0",
+    "pydantic[email]>=2.13.4",
+    "sqlalchemy>=2.0.51",
+    "uvicorn[standard]>=0.52.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.26,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.32.0",
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.15.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes: undefined names, unused imports
+    "I",        # import sorting
+    "B",        # bugbear: mutable defaults, and other real bug shapes
+    "N",        # pep8 naming
+    "UP",       # pyupgrade: modernize to current syntax
+    "S",        # bandit: security
+    "ANN",      # missing annotations
+    "ASYNC",    # blocking calls inside async functions
+    "DTZ",      # naive datetimes — session expiry depends on this being right
+    "G",        # logging format: no f-strings in log calls
+    "T20",      # no print
+    "PTH",      # pathlib over os.path
+    "C4",       # comprehension shortcuts
+    "SIM",      # simplifiable constructs
+    "RET",      # return-statement cleanups
+    "RUF",      # ruff's own rules
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # asserts are the point of a test
+"alembic/**" = ["ANN", "INP001"]  # generated migrations
+
+[tool.ruff.lint.isort]
+known-first-party = ["tradinghub"]
+
+[tool.basedpyright]
+venvPath = "."
+venv = ".venv"
+extraPaths = ["src"]
+# "all" additionally enables reportAny, which fires on every Starlette State access and other
+# third-party Any. "standard" is what CI enforces; the editor may show more.
+typeCheckingMode = "standard"
