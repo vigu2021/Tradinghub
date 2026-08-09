@@ -1,4 +1,5 @@
-"""Authentication logic: passwords, tokens, sessions, rate limiting.
+"""Authentication logic that touches the database: registration, sessions, rate limiting.
 
-Import from the module that defines a function, not from here.
+Pure helpers live in auth/security.py instead. Import from the module that defines a function,
+not from here.
 """

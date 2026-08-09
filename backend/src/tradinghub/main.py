@@ -3,6 +3,7 @@
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from tradinghub.auth.routes import router as auth_router
 from tradinghub.core.config import get_settings
 from tradinghub.core.errors import register_error_handlers
 from tradinghub.core.logging import configure_logging
@@ -40,4 +41,5 @@ def create_app() -> FastAPI:
         allow_headers=["Content-Type"],
     )
     app.include_router(router)
+    app.include_router(auth_router)
     return app

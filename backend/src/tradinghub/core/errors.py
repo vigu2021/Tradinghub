@@ -5,6 +5,7 @@ lets the message change without breaking it.
 """
 
 import logging
+from http import HTTPStatus
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -42,7 +43,9 @@ def register_error_handlers(app: FastAPI) -> None:
     ) -> JSONResponse:
         """Report only that validation failed. Pydantic's errors() echoes the offending input,
         which on a registration is the password."""
-        return _error_response(422, "validation_error", "The request is invalid.")
+        return _error_response(
+            HTTPStatus.UNPROCESSABLE_ENTITY, "validation_error", "The request is invalid."
+        )
 
     @app.exception_handler(Exception)
     async def handle_unexpected_error(request: Request, error: Exception) -> JSONResponse:
@@ -53,4 +56,8 @@ def register_error_handlers(app: FastAPI) -> None:
         """
         reference = request.state.request_id
         logger.exception("unhandled error", extra={"path": request.url.path})
-        return _error_response(500, "internal_error", f"Internal error. Reference: {reference}")
+        return _error_response(
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            "internal_error",
+            f"Internal error. Reference: {reference}",
+        )

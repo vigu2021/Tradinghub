@@ -82,11 +82,13 @@ Tradinghub/
 │   │       ├── schemas/        # Pydantic request/response models, mirroring models/
 │   │       │   ├── user.py
 │   │       │   └── session.py
-│   │       ├── services/       # logic; import from the module, not from __init__
-│   │       │   ├── passwords.py    # hash_password, verify_password
-│   │       │   ├── tokens.py       # generate_token, hash_token
+│   │       ├── crud/          # queries only; never commits
+│   │       │   └── user.py         # get_user_by_email, create_user
+│   │       ├── services/      # logic that touches the db; routes call these
+│   │       │   ├── users.py        # register_user
 │   │       │   ├── sessions.py     # create_session, get_user_for_token, revoke_session
 │   │       │   └── rate_limit.py   # check_login_allowed, record_attempt
+│   │       ├── security.py    # pure: hash_password, verify_password, generate_token, hash_token
 │   │       ├── dependencies.py # get_current_user
 │   │       └── routes.py       # the four endpoints
 │   └── tests/                  # mirrors src/ exactly: same paths, same filenames
