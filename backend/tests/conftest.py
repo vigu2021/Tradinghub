@@ -42,8 +42,14 @@ async def db_session() -> AsyncIterator[AsyncSession]:
 @pytest_asyncio.fixture
 async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
     """An HTTP client wired straight to the ASGI app, sharing the test's transaction."""
+
+    async def override_get_db() -> AsyncIterator[AsyncSession]:
+        """Mirror get_db, so a route that relies on the request-scoped commit is really tested."""
+        yield db_session
+        await db_session.commit()
+
     app = create_app()
-    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[get_db] = override_get_db
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as http_client:
         yield http_client

@@ -4,6 +4,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from tradinghub.core.config import get_settings
+from tradinghub.core.errors import register_error_handlers
 from tradinghub.core.logging import configure_logging
 from tradinghub.core.middleware import RequestContextMiddleware
 
@@ -29,6 +30,7 @@ def create_app() -> FastAPI:
     configure_logging(settings)
 
     app = FastAPI(title="Tradinghub API")
+    register_error_handlers(app)
     app.add_middleware(RequestContextMiddleware)
     app.add_middleware(
         CORSMiddleware,

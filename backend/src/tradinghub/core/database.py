@@ -32,10 +32,15 @@ SessionFactory = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def get_db() -> AsyncIterator[AsyncSession]:
-    """Yield a database session, closing it even when the request raises.
+    """Yield a session and commit it once the request succeeds.
 
-    Routes own their transactions; this only guarantees the session is closed and any open
-    transaction rolled back.
+    One transaction per request: a request that raises rolls back in full, and no route or
+    service has to remember to commit. Nothing below this may commit, or that guarantee is gone.
     """
     async with SessionFactory() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise

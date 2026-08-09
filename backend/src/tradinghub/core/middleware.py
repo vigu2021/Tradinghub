@@ -35,7 +35,9 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         incoming = request.headers.get(REQUEST_ID_HEADER)
-        token = request_id.set(incoming or uuid.uuid4().hex)
+        current_id = incoming or uuid.uuid4().hex
+        token = request_id.set(current_id)
+        request.state.request_id = current_id
         started = time.perf_counter()
         context = {
             "method": request.method,
