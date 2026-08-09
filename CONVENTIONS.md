@@ -169,10 +169,22 @@ alone would be ambiguous.
 
 ## Logging
 
+Configured in `core/logging.py`: readable lines locally, one JSON object per line in production,
+selected by `LOG_FORMAT` (unset means "match the environment"). See
+`plans/2026-08-08/logging/spec.md` for the reasoning.
+
 - `logging`, never `print`.
 - Module-level `logger = logging.getLogger(__name__)`.
 - Lazy interpolation: `logger.info("Fetching %s", url)`, not an f-string.
-- **Never log a password, a session token, or a raw request body.** This is not a style rule.
+- Structured context goes in `extra={...}`, which becomes top-level JSON fields. Prefer
+  `logger.info("login failed", extra={"user_id": user.id})` over formatting values into the message.
+- `logger.exception(...)` inside an `except` block, never `logger.error(str(error))` — the former
+  keeps the traceback.
+- A new noisy third-party logger goes in `THIRD_PARTY_LEVELS`, not into a filter at the call site.
+
+**Never logged**, and this is correctness rather than style: passwords, password hashes, session
+tokens, raw request bodies, `Authorization` and `Cookie` headers, and query strings. Do not add a
+"log the body on error" convenience — that is precisely how credentials reach disk.
 
 ## Async
 

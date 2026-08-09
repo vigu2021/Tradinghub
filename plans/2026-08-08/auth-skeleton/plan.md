@@ -790,11 +790,14 @@ firing early. Rewinding timestamps rather than sleeping keeps the suite fast.
 
 ---
 
-## Task 8: CORS and structured logging
+## Task 8: CORS
 
 **Files:**
-- Modify: `backend/src/tradinghub/main.py`, `backend/src/tradinghub/core/errors.py`
-- Create: `backend/src/tradinghub/core/logging.py`, `backend/tests/test_main.py`
+- Modify: `backend/src/tradinghub/main.py`
+- Create: `backend/tests/test_cors.py`
+
+Logging is no longer part of this task: it was pulled forward and implemented separately. See
+`plans/2026-08-08/logging/`.
 
 **Verbatim — CORS block in `create_app()`:**
 ```python

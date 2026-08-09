@@ -3,6 +3,8 @@
 from fastapi import APIRouter, FastAPI
 
 from tradinghub.core.config import get_settings
+from tradinghub.core.logging import configure_logging
+from tradinghub.core.middleware import RequestContextMiddleware
 
 router = APIRouter()
 
@@ -22,8 +24,10 @@ def create_app() -> FastAPI:
     Raises:
         ValidationError: when a required setting is missing.
     """
-    get_settings()
+    settings = get_settings()
+    configure_logging(settings)
 
     app = FastAPI(title="Tradinghub API")
+    app.add_middleware(RequestContextMiddleware)
     app.include_router(router)
     return app

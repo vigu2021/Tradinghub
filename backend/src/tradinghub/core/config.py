@@ -14,6 +14,22 @@ class Environment(StrEnum):
     PRODUCTION = "production"
 
 
+class LogFormat(StrEnum):
+    """How log lines are rendered."""
+
+    CONSOLE = "console"
+    JSON = "json"
+
+
+class LogLevel(StrEnum):
+    """Standard library log levels."""
+
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+
+
 class Settings(BaseSettings):
     """Settings for the whole application.
 
@@ -28,6 +44,9 @@ class Settings(BaseSettings):
     cookie_domain: str | None = None
     cookie_secure: bool = False
     environment: Environment = Environment.DEVELOPMENT
+    log_level: LogLevel = LogLevel.INFO
+    # Unset means "match the environment": readable lines locally, JSON in production.
+    log_format: LogFormat | None = None
 
 
 @lru_cache
