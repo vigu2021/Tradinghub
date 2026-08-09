@@ -4,6 +4,7 @@ Every model module must be imported here. Alembic autogenerate only sees classes
 imported, and a model it cannot see is one it will write a migration to drop.
 """
 
+from tradinghub.auth.models.session import Session
 from tradinghub.auth.models.user import User
 
-__all__ = ["User"]
+__all__ = ["Session", "User"]
