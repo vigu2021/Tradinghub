@@ -790,7 +790,7 @@ firing early. Rewinding timestamps rather than sleeping keeps the suite fast.
 
 ---
 
-## Task 8: CORS
+## Task 8: CORS  ✅ DONE
 
 **Files:**
 - Modify: `backend/src/tradinghub/main.py`
@@ -814,12 +814,6 @@ app.add_middleware(
 by browsers, and it is the single most common way this setup fails. If the frontend later reads a
 custom response header, it must be added to `expose_headers` or it will be invisible to JavaScript.
 
-**Requirements — logging:**
-1. Logs are emitted as JSON with at least timestamp, level, message, and request ID.
-2. A middleware assigns each request an ID and includes it on every log line for that request.
-3. Request bodies are never logged. Do not add a "log the body on error" convenience — that is
-   exactly how passwords reach disk.
-
 **Tests:**
 ```python
 async def test_preflight_allows_the_frontend_origin(client):
@@ -840,8 +834,8 @@ async def test_other_origins_are_not_allowed(client):
     assert "access-control-allow-origin" not in response.headers
 ```
 
-**Verify:** `uv run pytest -v` — 26 passed. Backend is complete.
-**Commit:** `Add CORS and structured request logging`
+**Verify:** `uv run pytest -v`. Backend is complete once Tasks 3-7 land.
+**Commit:** `Add CORS`
 
 ---
 

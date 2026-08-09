@@ -1,6 +1,7 @@
 """Application factory."""
 
 from fastapi import APIRouter, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from tradinghub.core.config import get_settings
 from tradinghub.core.logging import configure_logging
@@ -29,5 +30,12 @@ def create_app() -> FastAPI:
 
     app = FastAPI(title="Tradinghub API")
     app.add_middleware(RequestContextMiddleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[settings.frontend_origin],  # "*" with credentials is refused by browsers
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type"],
+    )
     app.include_router(router)
     return app
