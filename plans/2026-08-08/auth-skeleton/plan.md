@@ -75,12 +75,18 @@ Tradinghub/
 │   │   │   ├── errors.py       # AppError + exception handlers
 │   │   │   └── logging.py      # structured JSON logs, request IDs
 │   │   └── auth/               # one feature, one directory
-│   │       ├── models.py       # User, Session, LoginAttempt
-│   │       ├── schemas.py      # Pydantic request/response models
-│   │       ├── passwords.py    # hash_password, verify_password
-│   │       ├── tokens.py       # generate_token, hash_token
-│   │       ├── sessions.py     # create_session, get_user_for_token, revoke_session
-│   │       ├── rate_limit.py   # check_login_allowed, record_attempt
+│   │       ├── models/         # one table per file; __init__ re-exports all of them
+│   │       │   ├── user.py
+│   │       │   ├── session.py
+│   │       │   └── login_attempt.py
+│   │       ├── schemas/        # Pydantic request/response models, mirroring models/
+│   │       │   ├── user.py
+│   │       │   └── session.py
+│   │       ├── services/       # logic; import from the module, not from __init__
+│   │       │   ├── passwords.py    # hash_password, verify_password
+│   │       │   ├── tokens.py       # generate_token, hash_token
+│   │       │   ├── sessions.py     # create_session, get_user_for_token, revoke_session
+│   │       │   └── rate_limit.py   # check_login_allowed, record_attempt
 │   │       ├── dependencies.py # get_current_user
 │   │       └── routes.py       # the four endpoints
 │   └── tests/                  # mirrors src/ exactly: same paths, same filenames

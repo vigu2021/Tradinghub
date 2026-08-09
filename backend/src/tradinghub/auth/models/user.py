@@ -1,4 +1,4 @@
-"""Database models for authentication."""
+"""The users table."""
 
 import uuid
 from datetime import datetime
