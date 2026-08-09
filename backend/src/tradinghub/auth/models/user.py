@@ -1,6 +1,5 @@
 """The users table."""
 
-import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, func
@@ -15,7 +14,7 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(CITEXT, unique=True)
     password_hash: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

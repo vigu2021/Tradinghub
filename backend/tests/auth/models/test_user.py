@@ -1,5 +1,3 @@
-import uuid
-
 import pytest
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -33,6 +31,6 @@ async def test_new_user_gets_an_id_and_timestamps(db_session: AsyncSession) -> N
     await db_session.flush()
     await db_session.refresh(user)
 
-    assert isinstance(user.id, uuid.UUID)
+    assert isinstance(user.id, int)
     assert user.created_at is not None
     assert user.created_at.tzinfo is not None

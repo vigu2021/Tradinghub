@@ -529,7 +529,11 @@ async def test_register_does_not_set_a_cookie(client):
 
 ---
 
-## Task 5: Sessions table and session logic
+## Task 5: Sessions table and session logic  ⚠️ SUPERSEDED
+
+Tasks 5 and 6 below are replaced by `plans/2026-08-09/jwt-auth/`, which swaps opaque server-side
+sessions for JWT access tokens plus rotating refresh tokens. Kept here as the historical record of
+what was originally specified; do not implement from this section.
 
 **Files:**
 - Create: `backend/src/tradinghub/auth/{tokens,sessions}.py`, one migration,
@@ -630,7 +634,7 @@ async def second_user(db_session) -> User:
 
 ---
 
-## Task 6: Login, logout, and the current-user dependency
+## Task 6: Login, logout, and the current-user dependency  ⚠️ SUPERSEDED
 
 **Files:**
 - Create: `backend/src/tradinghub/auth/dependencies.py`, `backend/tests/auth/test_login.py`

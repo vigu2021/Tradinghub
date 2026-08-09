@@ -26,7 +26,7 @@ def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS citext")
     op.create_table(
         "users",
-        sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("email", postgresql.CITEXT(), nullable=False),
         sa.Column("password_hash", sa.String(), nullable=False),
         sa.Column(
