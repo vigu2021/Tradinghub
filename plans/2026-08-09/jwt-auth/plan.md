@@ -27,41 +27,43 @@ auth/
 
 ---
 
-## Task 5: Sessions table
+## Task 5: Sessions table  ✅ DONE (migration `0742d8e39597`)
 
 **Files:**
 - Create: `backend/src/tradinghub/auth/models/session.py`, one migration,
-  `backend/tests/auth/models/test_session.py`
+  `backend/tests/auth/models/test_session.py` ← still outstanding
 - Modify: `backend/src/tradinghub/auth/models/__init__.py`
 
 **Interface produced:**
 ```python
 class Session(Base):
     __tablename__ = "sessions"
-    id: Mapped[uuid.UUID]
+    id: Mapped[int]
+    user_id: Mapped[int]                   # FK users.id, ondelete="CASCADE"
     family_id: Mapped[uuid.UUID]           # indexed; shared by every token in one login chain
-    token_hash: Mapped[str]                # indexed, unique
-    user_id: Mapped[uuid.UUID]             # FK users.id, ondelete="CASCADE"
+    hashed_refresh_token: Mapped[str]      # indexed, unique
     used_at: Mapped[datetime | None]       # set when this token is exchanged; non-null means spent
-    created_at: Mapped[datetime]
     expires_at: Mapped[datetime]
-    user_agent: Mapped[str | None]
-    ip: Mapped[str | None]                 # postgresql.INET
+    created_at: Mapped[datetime]
 ```
 
 **Requirements:**
-1. `token_hash` is unique and indexed — every refresh looks up by it.
+1. `hashed_refresh_token` is unique and indexed — every refresh looks up by it.
 2. `family_id` is indexed — reuse detection revokes a whole family at once.
 3. Deleting a user deletes their sessions, enforced by the database via `ondelete="CASCADE"`.
 4. `used_at` defaults to NULL. A non-null value means the token has already been exchanged, which
    is what makes replay detectable.
 5. All timestamps are timezone-aware (`DateTime(timezone=True)`).
 
-Do **not** add `last_seen_at`. The auth-skeleton design touched it on every authenticated request;
-here the row is only read on refresh, so there is nothing to track.
+Primary keys are integers, matching `users`. `family_id` stays a UUID: it is generated in Python at
+login before any row exists, so a sequence would buy nothing, and it is never exposed.
 
-**Tests:** a session row cascades away with its user; `token_hash` rejects duplicates; `used_at`
-starts NULL.
+Do **not** add `last_seen_at`. The auth-skeleton design touched it on every authenticated request;
+here the row is only read on refresh, so there is nothing to track. `user_agent` and `ip` are
+likewise omitted until there is a session-management screen that displays them.
+
+**Tests (outstanding):** a session row cascades away with its user; `hashed_refresh_token` rejects
+duplicates; `used_at` starts NULL.
 
 **Verify:** `uv run alembic upgrade head` then `uv run pytest -v`.
 **Commit:** `Add sessions table`
@@ -82,7 +84,7 @@ REFRESH_TOKEN_LIFETIME = timedelta(days=30)
 
 def generate_refresh_token() -> str: ...        # secrets.token_urlsafe(32)
 def hash_refresh_token(token: str) -> str: ...  # sha256 hex digest
-def encode_access_token(user_id: uuid.UUID, session_id: uuid.UUID) -> str: ...
+def encode_access_token(user_id: int, session_id: int) -> str: ...
 def decode_access_token(token: str) -> AccessTokenClaims | None: ...   # None when invalid
 ```
 
@@ -102,7 +104,8 @@ Hints: `uv add pyjwt`. `jwt.encode(claims, secret, algorithm="HS256")`;
 `jwt.decode(token, secret, algorithms=["HS256"])` raises `jwt.InvalidTokenError` (the base class
 covering expiry, signature, and malformed input) — catch that one and return `None`.
 Use `datetime.now(timezone.utc)`, never `utcnow()`. Return claims as a small frozen dataclass or
-Pydantic model rather than a raw dict, so `sub` being a string is converted to `UUID` in one place.
+Pydantic model rather than a raw dict, so `sub` — a string per the JWT spec, even though ids are
+integers — is converted back to `int` in exactly one place.
 
 **Tests:** a round trip returns the same user id; a token signed with a different secret returns
 None; an expired token returns None; a tampered payload returns None; garbage returns None; two
@@ -124,9 +127,9 @@ refresh tokens differ; the hash is not the token.
 **Interfaces produced:**
 ```python
 # crud/session.py — queries only, never commits
-async def get_session_by_token_hash(db, token_hash: str) -> Session | None: ...
-async def create_session(db, *, user_id, family_id, token_hash, expires_at,
-                         user_agent=None, ip=None) -> Session: ...
+async def get_session_by_token_hash(db, hashed_refresh_token: str) -> Session | None: ...
+async def create_session(db, *, user_id: int, family_id: uuid.UUID,
+                         hashed_refresh_token: str, expires_at: datetime) -> Session: ...
 async def mark_session_used(db, session: Session) -> None: ...
 async def revoke_family(db, family_id: uuid.UUID) -> None: ...
 async def revoke_session(db, session: Session) -> None: ...
@@ -137,8 +140,8 @@ class TokenPair:
     access_token: str
     refresh_token: str
 
-async def login(db, email: str, raw_password: str, *, user_agent=None, ip=None) -> TokenPair | None
-async def refresh(db, refresh_token: str, *, user_agent=None, ip=None) -> TokenPair | None
+async def login(db, email: str, raw_password: str) -> TokenPair | None
+async def refresh(db, refresh_token: str) -> TokenPair | None
 async def logout(db, refresh_token: str) -> None
 ```
 

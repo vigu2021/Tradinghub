@@ -47,11 +47,14 @@ The `sessions` table survives unchanged in spirit: it is now the refresh-token s
 The access token JWT carries only what is needed to identify the caller and bound its validity:
 
 ```json
-{"sub": "<user uuid>", "sid": "<session uuid>", "iat": ..., "exp": ..., "jti": "..."}
+{"sub": "<user id>", "sid": <session id>, "iat": ..., "exp": ...}
 ```
 
-- `sub` — the user id. `get_current_user` returns a `User` built from this without a query.
-- `sid` — the session that minted it, so a future audit can tie an access token to a login.
+- `sub` — the user id. `get_current_user` builds the caller's identity from this without a query.
+  Ids are integers, but `sub` is a string: the JWT spec requires it, and libraries reject a numeric
+  one. Convert back to `int` in exactly one place, when decoding.
+- `sid` — the session row that minted this token, so a future audit can tie an access token to a
+  login.
 - No email, no roles, no anything that can go stale. A JWT is a snapshot; anything mutable in it is
   a bug waiting for someone to change it in the database and wonder why the token disagrees.
 
@@ -164,5 +167,7 @@ outstanding access token — which is the emergency lever if one is ever leaked.
   Carried from the auth-skeleton spec.
 - `jwt_secret` rotation logs everyone out. Supporting overlapping keys means a key id in the JWT
   header and a map of secrets; not worth it at one backend with no users.
-- No "list my active sessions" or per-device revocation UI, though the `sessions` table has what
-  it would need.
+- No "list my active sessions" or per-device revocation UI. The `sessions` table deliberately does
+  **not** carry `user_agent` or `ip`: nothing reads them today, and the two are only meaningful
+  together, on a screen that displays them. Add both when that screen exists — `ip` is personal
+  data, so collecting it wants a reason and a retention policy rather than being kept by default.

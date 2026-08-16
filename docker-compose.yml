@@ -8,7 +8,7 @@ services:
     # Bound to loopback: the credentials below are committed to the repo, so the database must
     # not be reachable from the network.
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5433:5432"
     restart: unless-stopped
     volumes:
       - pgdata:/var/lib/postgresql/data
