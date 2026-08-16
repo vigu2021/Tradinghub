@@ -45,8 +45,8 @@ class Settings(BaseSettings):
     cookie_secure: bool = False
     environment: Environment = Environment.DEVELOPMENT
     log_level: LogLevel = LogLevel.INFO
-    # Unset means "match the environment": readable lines locally, JSON in production.
     log_format: LogFormat | None = None
+    jwt_secret: str
 
 
 @lru_cache
