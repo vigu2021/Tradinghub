@@ -10,12 +10,7 @@ from tradinghub.core.database import Base
 
 
 class Session(Base):
-    """One refresh token in a login's chain.
-
-    Rotation means a single login produces a chain of these, each superseding the last and all
-    sharing a family_id. Only the hash of the token is stored: the raw value lives in the user's
-    cookie and nowhere else, so a dump of this table impersonates nobody.
-    """
+    """One refresh token. Rotation gives each login a chain of these, sharing a family_id."""
 
     __tablename__ = "sessions"
 

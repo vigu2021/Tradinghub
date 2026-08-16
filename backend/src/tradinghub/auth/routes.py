@@ -17,12 +17,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def register(
     payload: RegisterRequest, db: Annotated[AsyncSession, Depends(get_db)]
 ) -> Response:
-    """Register an account and return 201 with an empty body.
+    """Register an account. 201 and an empty body whether or not the email was taken.
 
-    The service's return value is deliberately discarded. A taken email and a new one must produce
-    identical responses, or the endpoint becomes a way to test which addresses have accounts.
-
-    No session is created and no cookie is set: registering is not signing in.
+    The return value is discarded on purpose, and no cookie is set: registering is not signing in.
     """
     await register_user(db, payload.email, payload.password)
     return Response(status_code=HTTPStatus.CREATED)

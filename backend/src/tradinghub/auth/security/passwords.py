@@ -12,11 +12,7 @@ def hash_password(raw_password: str) -> str:
 
 
 def verify_password(raw_password: str, password_hash: str) -> bool:
-    """Return whether the password matches the hash.
-
-    Never raises: a wrong password and an unparseable stored hash both return False, so a corrupt
-    row fails the login rather than the request.
-    """
+    """Return whether the password matches. A wrong password and a corrupt hash both give False."""
     try:
         return PW_HASHER.verify(password_hash, raw_password)
     except (VerificationError, InvalidHashError):

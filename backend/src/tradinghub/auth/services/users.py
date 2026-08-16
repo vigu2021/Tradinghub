@@ -8,13 +8,9 @@ from tradinghub.auth.security.passwords import hash_password
 
 
 async def register_user(db: AsyncSession, email: str, raw_password: str) -> User | None:
-    """Create an account, or return None when the email is already taken.
+    """Create an account, or return None when the email is taken. Callers must not tell them apart.
 
-    Callers facing the public must treat both outcomes identically: a response that differs by
-    even a status code turns this into a lookup for which addresses have accounts.
-
-    Hashing happens before the lookup rather than after it, so the taken path costs the same
-    ~37ms as the new one and the reply time leaks nothing either.
+    Hashing precedes the lookup so both paths take the same time.
     """
     password_hash = hash_password(raw_password)
     if await get_user_by_email(db, email) is not None:

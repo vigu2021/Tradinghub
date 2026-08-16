@@ -1,5 +1,4 @@
-"""Cryptographic primitives for authentication: pure functions, no database, no request context.
+"""Cryptographic primitives: pure functions, no database.
 
-Anything that reads or writes a row belongs in services/ instead, even when it is security-shaped.
-Import from the module that defines a function, not from here.
+Anything that reads a row goes in services/ instead.
 """

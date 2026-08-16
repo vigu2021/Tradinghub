@@ -1,7 +1,6 @@
 """Database models for authentication.
 
-Every model module must be imported here. Alembic autogenerate only sees classes that have been
-imported, and a model it cannot see is one it will write a migration to drop.
+Import every model here: one Alembic cannot see is one it writes a migration to drop.
 """
 
 from tradinghub.auth.models.session import Session
