@@ -20,7 +20,9 @@ auth/
 ├── services/
 │   ├── users.py
 │   └── sessions.py         # new: login, refresh, logout
-├── security.py             # grows: JWT encode/decode, token generation
+├── security/               # pure: no database, no request context
+│   ├── passwords.py
+│   └── tokens.py           # refresh token generate/hash, JWT encode/decode
 ├── dependencies.py         # new: get_current_user
 └── routes.py               # grows: login, refresh, logout, me
 ```
@@ -70,23 +72,38 @@ duplicates; `used_at` starts NULL.
 
 ---
 
-## Task 6: Token helpers
+## Task 6: Token helpers  ✅ DONE
 
 **Files:**
-- Modify: `backend/src/tradinghub/auth/security.py`, `backend/src/tradinghub/core/config.py`,
-  `backend/tests/auth/test_security.py`, `backend/.env.example`
+- Create: `backend/src/tradinghub/auth/security/tokens.py`,
+  `backend/tests/auth/security/test_tokens.py`
+- Modify: `backend/src/tradinghub/core/config.py`, `backend/.env.example`
+
+`auth/security` is a package: `passwords.py` and `tokens.py`. Both are pure — no database, no
+request context.
 
 **Interfaces produced:**
 ```python
-# security.py — still pure: no database, no request context
+# security/tokens.py
+JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_LIFETIME = timedelta(minutes=15)
-REFRESH_TOKEN_LIFETIME = timedelta(days=30)
 
-def generate_refresh_token() -> str: ...        # secrets.token_urlsafe(32)
-def hash_refresh_token(token: str) -> str: ...  # sha256 hex digest
-def encode_access_token(user_id: int, session_id: int) -> str: ...
-def decode_access_token(token: str) -> AccessTokenClaims | None: ...   # None when invalid
+@dataclass(frozen=True, slots=True)
+class AccessTokenClaims:
+    user_id: int
+
+def generate_refresh_token() -> str: ...              # secrets.token_urlsafe(32)
+def hash_refresh_token(raw_refresh_token: str) -> str: ...   # sha256 hex digest
+def encode_access_token(user_id: int) -> str: ...
+def decode_access_token(access_token: str) -> AccessTokenClaims | None: ...   # None when invalid
 ```
+
+`REFRESH_TOKEN_LIFETIME` belongs with the code that writes `expires_at`, so it lands in Task 7
+rather than here — nothing in this module reads it.
+
+The access token carries `sub` and `exp`, plus `iat` for logs. **No `sid`**: nothing reads a session
+id, and because access tokens live 15 minutes, adding the claim later costs one quarter-hour of
+tolerating its absence. Add it when something consumes it.
 
 **Requirements:**
 1. `generate_refresh_token` returns ~43 URL-safe characters from 32 random bytes.
@@ -100,19 +117,27 @@ def decode_access_token(token: str) -> AccessTokenClaims | None: ...   # None wh
 5. `jwt_secret` is a required setting with no default, so a missing value fails at startup.
 6. Neither function logs a token.
 
-Hints: `uv add pyjwt`. `jwt.encode(claims, secret, algorithm="HS256")`;
-`jwt.decode(token, secret, algorithms=["HS256"])` raises `jwt.InvalidTokenError` (the base class
-covering expiry, signature, and malformed input) — catch that one and return `None`.
-Use `datetime.now(timezone.utc)`, never `utcnow()`. Return claims as a small frozen dataclass or
-Pydantic model rather than a raw dict, so `sub` — a string per the JWT spec, even though ids are
-integers — is converted back to `int` in exactly one place.
+Notes from writing it, all things that bite:
 
-**Tests:** a round trip returns the same user id; a token signed with a different secret returns
-None; an expired token returns None; a tampered payload returns None; garbage returns None; two
-refresh tokens differ; the hash is not the token.
+- `uv add pyjwt`, but the import is `import jwt`. Never name a variable or module `jwt`.
+- **`encode` takes `algorithm="HS256"`, `decode` takes `algorithms=["HS256"]`** — singular string
+  versus plural list. Passing `algorithm=` to `decode` is not an error: PyJWT swallows it as an
+  unknown kwarg and then raises `DecodeError` for the missing `algorithms`, which your `except`
+  turns into `None`. Every token then fails, silently, forever. A round-trip test catches it.
+- PyJWT enforces `exp` only when the claim is present. A token without one never expires and
+  decodes happily, so omitting it is a silent, total failure of the design.
+- Catch `jwt.InvalidTokenError`, not `PyJWTError`. The latter also covers `InvalidKeyError`, which
+  means the *server* is misconfigured — that should crash loudly, not log every user out.
+- `int(claims["sub"])` goes outside the `try`. A bad `sub` on a token you signed is your bug, not
+  an invalid credential.
+- `datetime.now(UTC)`, never `utcnow()`. PyJWT converts datetimes to Unix ints itself.
+
+**Tests:** round trip; wrong secret; expired; **tampered payload with the original signature**;
+garbage; empty string; `exp - iat` equals the configured lifetime; two refresh tokens differ; the
+hash is not the token and is repeatable.
 
 **Verify:** `uv run pytest -v`.
-**Commit:** `Add JWT and refresh token helpers`
+**Commit:** `Add JWT access token helpers`
 
 ---
 
@@ -185,7 +210,7 @@ ACCESS_COOKIE = "access_token"
 REFRESH_COOKIE = "refresh_token"
 REFRESH_PATH = "/auth/refresh"
 
-async def get_current_user(request: Request) -> CurrentUser: ...
+async def get_current_user(request: Request) -> AccessTokenClaims: ...
 # raises AppError("invalid_credentials", 401) when the access token is absent or invalid
 ```
 
@@ -205,8 +230,8 @@ async def get_current_user(request: Request) -> CurrentUser: ...
 
 Requirement 7 is the whole point of the design and the easiest thing to undo by accident. Returning
 a `User` from `get_current_user` invites `Depends(get_current_user)` everywhere and a query per
-request, at which case sessions would have been simpler. Return a small `CurrentUser` value object
-holding `user_id` and `session_id` so the distinction is visible at the call site.
+request, at which case sessions would have been simpler. `decode_access_token` already returns an
+`AccessTokenClaims` holding `user_id`, so hand that back rather than inventing a second type.
 
 `GET /auth/me` therefore does query — it returns an email, which is not in the token. That is fine
 and deliberate: it is one endpoint, not every endpoint.

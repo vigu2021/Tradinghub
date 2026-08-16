@@ -47,14 +47,17 @@ The `sessions` table survives unchanged in spirit: it is now the refresh-token s
 The access token JWT carries only what is needed to identify the caller and bound its validity:
 
 ```json
-{"sub": "<user id>", "sid": <session id>, "iat": ..., "exp": ...}
+{"sub": "<user id>", "iat": ..., "exp": ...}
 ```
 
 - `sub` — the user id. `get_current_user` builds the caller's identity from this without a query.
   Ids are integers, but `sub` is a string: the JWT spec requires it, and libraries reject a numeric
   one. Convert back to `int` in exactly one place, when decoding.
-- `sid` — the session row that minted this token, so a future audit can tie an access token to a
-  login.
+- `iat` — issued at. Nothing enforces it; it is there for logs, and for the age-based invalidation
+  trick if that is ever wanted.
+- No `sid`. Tying an access token to the session that minted it would be useful for auditing, but
+  nothing reads it today, and a 15-minute lifetime means the claim can be added at any point with
+  only a quarter-hour of tolerating its absence.
 - No email, no roles, no anything that can go stale. A JWT is a snapshot; anything mutable in it is
   a bug waiting for someone to change it in the database and wonder why the token disagrees.
 
