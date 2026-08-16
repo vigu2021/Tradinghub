@@ -1,4 +1,4 @@
-from tradinghub.auth.security import hash_password, verify_password
+from tradinghub.auth.security.passwords import hash_password, verify_password
 
 PASSWORD = "correct horse battery"
 

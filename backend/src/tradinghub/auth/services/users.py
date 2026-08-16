@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.auth.crud.user import create_user, get_user_by_email
 from tradinghub.auth.models.user import User
-from tradinghub.auth.security import hash_password
+from tradinghub.auth.security.passwords import hash_password
 
 
 async def register_user(db: AsyncSession, email: str, raw_password: str) -> User | None:

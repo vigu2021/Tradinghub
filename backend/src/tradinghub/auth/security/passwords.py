@@ -1,4 +1,4 @@
-"""Pure cryptographic helpers: no database, no request context, no logging of any input."""
+"""Argon2id password hashing. Neither function logs its input."""
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
