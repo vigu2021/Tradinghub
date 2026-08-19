@@ -9,6 +9,7 @@ from tradinghub.core.config import get_settings
 
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_LIFETIME = timedelta(minutes=15)
+REFRESH_TOKEN_LIFETIME = timedelta(days=30)
 
 
 @dataclass(frozen=True, slots=True)

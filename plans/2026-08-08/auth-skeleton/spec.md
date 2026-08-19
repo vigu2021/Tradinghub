@@ -157,7 +157,7 @@ survive restarts and remain correct across multiple backend instances on AWS.
 
 ## Flows
 
-**Register.** Validate email format and a minimum password length of 12 characters, hash with
+**Register.** Validate email format and a minimum password length of 8 characters, hash with
 Argon2id, insert. A
 duplicate email returns a response identical to success — otherwise the endpoint becomes a tool for
 discovering who holds an account. Registration does not create a session; the user lands on the

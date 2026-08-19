@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, EmailStr, Field
 
-MIN_PASSWORD_LENGTH = 12
+MIN_PASSWORD_LENGTH = 8
 
 
 class RegisterRequest(BaseModel):

@@ -43,7 +43,7 @@ Hand any task to Claude by saying so. Default is you write it and Claude reviews
 - Python 3.13, Node 22, Postgres 16 — all confirmed installed
 - Dependencies managed by `uv`; never `pip install` into the project
 - SQLAlchemy 2.0 async style throughout (`AsyncSession`, `select()`), never the 1.x `Query` API
-- Minimum password length: **12 characters**
+- Minimum password length: **8 characters**
 - Session lifetime: **30 days** absolute; `last_seen_at` updated at most once per hour
 - Rate limits: **10** failed logins per email, **30** per IP, both in a rolling **15-minute** window
 - Cookie: name `session`, `HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` in production only
@@ -467,7 +467,7 @@ def register_error_handlers(app: FastAPI) -> None: ...
 # auth/schemas.py
 class RegisterRequest(BaseModel):
     email: EmailStr
-    password: str          # min_length=12
+    password: str          # min_length=8
 
 class UserResponse(BaseModel):
     id: uuid.UUID
@@ -485,7 +485,7 @@ router: APIRouter        # prefix="/auth", tags=["auth"]
 
 **Requirements — register:**
 4. `POST /auth/register` accepts `{email, password}` and returns **201** with no body.
-5. Passwords shorter than 12 characters are rejected by the schema, producing 422.
+5. Passwords shorter than 8 characters are rejected by the schema, producing 422.
 6. A duplicate email returns **201 with an identical response** to a successful registration. It
    must not reveal that the account exists.
 7. Registration does not create a session and sets no cookie.
@@ -495,7 +495,7 @@ Requirement 6 is the one worth pausing on. Check for the existing user and retur
 code path — do not let an `IntegrityError` bubble up, since a 500 is itself a signal that the email
 exists.
 
-Hints: `EmailStr` needs `uv add "pydantic[email]"`. `Field(min_length=12)`. Mount the router in
+Hints: `EmailStr` needs `uv add "pydantic[email]"`. `Field(min_length=8)`. Mount the router in
 `create_app()` and call `register_error_handlers(app)` there too.
 
 **Tests:**
