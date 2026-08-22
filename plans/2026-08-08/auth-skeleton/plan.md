@@ -722,7 +722,11 @@ only cleared the cookie, so **also** assert the `sessions` row count dropped to 
 
 ---
 
-## Task 7: Login rate limiting
+## Task 7: Login rate limiting  ⏸ DEFERRED
+
+Moved to after Phase 2. Nothing is deployed and nothing is being attacked; seeing the auth
+flow work in a browser is worth more than a defence with no traffic to defend against. Do it
+before anything is exposed to the internet.
 
 **Files:**
 - Create: `backend/src/tradinghub/auth/rate_limit.py`, one migration,
