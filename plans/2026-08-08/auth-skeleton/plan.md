@@ -18,7 +18,7 @@ it and does not restate its rationale.
 
 ## How to use this plan
 
-**Vignesh writes the implementation.** This is a guide to work through, not a task list for Claude
+**You write the implementation.** This is a guide to work through, not a task list for Claude
 to execute. It deliberately does not contain finished implementations of the auth logic — writing
 those is the point of the project.
 

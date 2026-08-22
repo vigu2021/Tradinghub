@@ -23,8 +23,8 @@ See `CONVENTIONS.md`.
 
 ## Who writes the code
 
-Vignesh writes the implementation. Claude designs, plans, explains, and reviews. Write
-implementation code only when explicitly handed a specific piece, and only that piece.
+Implementation is written by hand, not by Claude. Claude designs, plans, explains, and reviews.
+Write implementation code only when explicitly handed a specific piece, and only that piece.
 
 ## Commits
 
