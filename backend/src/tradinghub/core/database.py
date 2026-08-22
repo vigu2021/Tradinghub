@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import DeclarativeBase
 
 from tradinghub.core.config import get_settings
+from tradinghub.core.errors import AppError
 
 NAMING_CONVENTION = {
     "ix": "ix_%(table_name)s_%(column_0_name)s",
@@ -34,13 +35,18 @@ SessionFactory = async_sessionmaker(engine, expire_on_commit=False)
 async def get_db() -> AsyncIterator[AsyncSession]:
     """Yield a session and commit it once the request succeeds.
 
-    One transaction per request: a request that raises rolls back in full, and no route or
-    service has to remember to commit. Nothing below this may commit, or that guarantee is gone.
+    One transaction per request: a request that crashes rolls back in full, a deliberate 4xx
+    keeps what it wrote, and no route or service has to remember to commit. Nothing below this
+    may commit, or that guarantee is gone.
     """
     async with SessionFactory() as session:
         try:
             yield session
             await session.commit()
+        except AppError:
+            # A rendered 4xx is not a crash, and the writes on the way to one must outlive it.
+            await session.commit()
+            raise
         except Exception:
             await session.rollback()
             raise

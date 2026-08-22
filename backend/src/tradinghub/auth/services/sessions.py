@@ -12,7 +12,6 @@ from tradinghub.auth.crud.session import (
     get_session_by_token_hash,
     mark_session_used,
     revoke_family,
-    revoke_session,
 )
 from tradinghub.auth.crud.user import get_user_by_email
 from tradinghub.auth.models.user import User
@@ -99,7 +98,12 @@ async def refresh(db: AsyncSession, raw_refresh_token: str) -> TokenPair | None:
 
 
 async def logout(db: AsyncSession, raw_refresh_token: str) -> None:
-    """Delete the session for this token. An unknown token is not an error."""
+    """End the whole login chain this token belongs to. An unknown token is not an error.
+
+    The family goes rather than the one row, because a client that logs out holding an already
+    used token has been robbed: its successor is live in someone else's browser, and deleting
+    only what was presented would leave that session running and destroy the evidence of it.
+    """
     current_session = await get_session_by_token_hash(db, hash_refresh_token(raw_refresh_token))
     if current_session is not None:
-        await revoke_session(db, current_session)
+        await revoke_family(db, current_session.family_id)
