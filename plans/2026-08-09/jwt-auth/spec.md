@@ -30,7 +30,7 @@ Two tokens, deliberately different in kind.
 | | Access token | Refresh token |
 |---|---|---|
 | Format | JWT, HS256 | Opaque random string |
-| Lifetime | 15 minutes | 30 days |
+| Lifetime | 15 minutes | 7 days |
 | Stored server-side | No | Yes, SHA-256 hash only |
 | Revocable | No, until it expires | Yes, immediately |
 | Sent on | Every request | Only `POST /auth/refresh` |
@@ -116,7 +116,7 @@ opposite. Do not "fix" this with a revoked-token table.
 | `SameSite` | `Lax` | `Lax` |
 | `Secure` | production only | production only |
 | `Path` | `/` | `/auth/refresh` |
-| `Max-Age` | 15 minutes | 30 days |
+| `Max-Age` | 15 minutes | 7 days |
 
 Both are `HttpOnly`. The access token does **not** go in `localStorage` — that is the common
 tutorial advice and it is wrong: any XSS on the page can read it and exfiltrate it, which is
@@ -148,7 +148,7 @@ same timing, per the auth-skeleton spec.
 |---|---|---|
 | `jwt_secret` | none — required | Missing value fails at startup, not on first login |
 | `access_token_lifetime` | 15 minutes | |
-| `refresh_token_lifetime` | 30 days | |
+| `refresh_token_lifetime` | 7 days | |
 
 `jwt_secret` is a real secret: anyone holding it can mint a valid access token for any user id.
 It belongs in the environment, never in the repository, and rotating it invalidates every

@@ -52,8 +52,3 @@ async def mark_session_used(db: AsyncSession, session: Session) -> None:
 async def revoke_family(db: AsyncSession, family_id: uuid.UUID) -> None:
     """Delete every session in a login chain. Reuse detection revokes the whole family."""
     await db.execute(delete(Session).where(Session.family_id == family_id))
-
-
-async def revoke_session(db: AsyncSession, session: Session) -> None:
-    """Delete one refresh token. Logout."""
-    await db.delete(session)

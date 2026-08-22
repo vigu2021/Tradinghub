@@ -141,7 +141,7 @@ hash is not the token and is repeatable.
 
 ---
 
-## Task 7: Session crud and the login flow
+## Task 7: Session crud and the login flow  ✅ DONE
 
 **Files:**
 - Create: `backend/src/tradinghub/auth/crud/session.py`,
@@ -157,7 +157,6 @@ async def create_session(db, *, user_id: int, family_id: uuid.UUID,
                          hashed_refresh_token: str, expires_at: datetime) -> Session: ...
 async def mark_session_used(db, session: Session) -> None: ...
 async def revoke_family(db, family_id: uuid.UUID) -> None: ...
-async def revoke_session(db, session: Session) -> None: ...
 
 # services/sessions.py
 @dataclass(frozen=True)
@@ -165,9 +164,9 @@ class TokenPair:
     access_token: str
     refresh_token: str
 
-async def login(db, email: str, raw_password: str) -> TokenPair | None
-async def refresh(db, refresh_token: str) -> TokenPair | None
-async def logout(db, refresh_token: str) -> None
+async def login(db, *, email: str, raw_password: str) -> tuple[User, TokenPair] | None
+async def refresh(db, raw_refresh_token: str) -> TokenPair | None
+async def logout(db, raw_refresh_token: str) -> None
 ```
 
 **Requirements:**
@@ -181,8 +180,11 @@ async def logout(db, refresh_token: str) -> None
 5. A successful `refresh` marks the presented session used and inserts a successor row carrying the
    **same** `family_id`.
 6. The raw refresh token is never persisted and never logged — only its hash.
-7. `logout` deletes the session for that token. An unknown token is not an error.
-8. Nothing in this module commits; `get_db` owns the transaction.
+7. `logout` deletes the whole family the token belongs to. An unknown token is not an error.
+   Deleting only the presented row leaves a thief's successor alive whenever the client logs
+   out holding an already used token, and destroys the evidence that it was stolen.
+8. The revocation in requirement 4 commits, because the 401 that follows would otherwise roll
+   it back. Nothing else in this module commits; `get_db` owns the transaction.
 
 Requirement 4 is the one to write a test for first. The natural implementation returns `None` on a
 used token without revoking anything, which looks correct, passes an obvious test, and leaves a
