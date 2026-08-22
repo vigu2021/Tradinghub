@@ -17,3 +17,9 @@ async def create_user(db: AsyncSession, email: str, password_hash: str) -> User:
     db.add(user)
     await db.flush()
     return user
+
+
+async def get_user_by_id(db: AsyncSession, user_id: int) -> User | None:
+    """Return the account with that id, or None. Used by the one route that needs more than the
+    access token carries."""
+    return await db.get(User, user_id)

@@ -53,7 +53,7 @@ async def _issue_token_pair(db: AsyncSession, *, user_id: int, family_id: uuid.U
     return TokenPair(access_token=encode_access_token(user_id), refresh_token=refresh_token)
 
 
-async def login(db: AsyncSession, *, email: str, raw_password: str) -> tuple[User, TokenPair]:
+async def login_user(db: AsyncSession, *, email: str, raw_password: str) -> tuple[User, TokenPair]:
     """Start a new session family. Raises InvalidCredentialsError for a bad email or a bad password.
 
     One exception for both, raised after the same work, so the two failures are indistinguishable
@@ -73,7 +73,7 @@ async def login(db: AsyncSession, *, email: str, raw_password: str) -> tuple[Use
     return user, token_pair
 
 
-async def refresh(db: AsyncSession, raw_refresh_token: str) -> TokenPair:
+async def refresh_session(db: AsyncSession, raw_refresh_token: str) -> TokenPair:
     """Rotate a refresh token. Raises InvalidSessionError if it is unknown, expired, or spent.
 
     Spending a token twice means it leaked: the thief and the real client both hold it, and
@@ -108,7 +108,7 @@ async def refresh(db: AsyncSession, raw_refresh_token: str) -> TokenPair:
     )
 
 
-async def logout(db: AsyncSession, raw_refresh_token: str) -> None:
+async def logout_user(db: AsyncSession, raw_refresh_token: str) -> None:
     """End the whole login chain this token belongs to. An unknown token is not an error.
 
     The family goes rather than the one row, because a client that logs out holding an already
