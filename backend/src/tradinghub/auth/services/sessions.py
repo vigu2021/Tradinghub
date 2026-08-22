@@ -12,6 +12,7 @@ from tradinghub.auth.crud.session import (
     get_session_by_token_hash,
     mark_session_used,
     revoke_family,
+    revoke_session,
 )
 from tradinghub.auth.crud.user import get_user_by_email
 from tradinghub.auth.models.user import User
@@ -70,7 +71,7 @@ async def login(
     return user, token_pair
 
 
-async def refresh(db: AsyncSession, *, raw_refresh_token: str) -> TokenPair | None:
+async def refresh(db: AsyncSession, raw_refresh_token: str) -> TokenPair | None:
     """Rotate a refresh token, or return None if it is unknown, expired, or already spent.
 
     Spending a token twice means it leaked: the thief and the real client both hold it, and
@@ -95,3 +96,10 @@ async def refresh(db: AsyncSession, *, raw_refresh_token: str) -> TokenPair | No
     return await _issue_token_pair(
         db, user_id=current_session.user_id, family_id=current_session.family_id
     )
+
+
+async def logout(db: AsyncSession, raw_refresh_token: str) -> None:
+    """Delete the session for this token. An unknown token is not an error."""
+    current_session = await get_session_by_token_hash(db, hash_refresh_token(raw_refresh_token))
+    if current_session is not None:
+        await revoke_session(db, current_session)
