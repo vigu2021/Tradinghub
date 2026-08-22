@@ -36,6 +36,19 @@ class TokenPair:
     refresh_token: str
 
 
+async def _issue_token_pair(db: AsyncSession, *, user_id: int, family_id: uuid.UUID) -> TokenPair:
+    """Mint a pair and record the session. Only the refresh token's hash is stored."""
+    refresh_token = generate_refresh_token()
+    await create_session(
+        db,
+        user_id=user_id,
+        family_id=family_id,
+        hashed_refresh_token=hash_refresh_token(refresh_token),
+        expires_at=datetime.now(UTC) + REFRESH_TOKEN_LIFETIME,
+    )
+    return TokenPair(access_token=encode_access_token(user_id), refresh_token=refresh_token)
+
+
 async def login(
     db: AsyncSession, *, email: str, raw_password: str
 ) -> tuple[User, TokenPair] | None:
@@ -53,18 +66,8 @@ async def login(
     if user is None or not password_matches:
         return None
 
-    refresh_token = generate_refresh_token()
-    await create_session(
-        db,
-        user_id=user.id,
-        family_id=uuid.uuid4(),
-        hashed_refresh_token=hash_refresh_token(refresh_token),
-        expires_at=datetime.now(UTC) + REFRESH_TOKEN_LIFETIME,
-    )
-    return user, TokenPair(
-        access_token=encode_access_token(user.id),
-        refresh_token=refresh_token,
-    )
+    token_pair = await _issue_token_pair(db, user_id=user.id, family_id=uuid.uuid4())
+    return user, token_pair
 
 
 async def refresh(db: AsyncSession, *, raw_refresh_token: str) -> TokenPair | None:
@@ -89,15 +92,6 @@ async def refresh(db: AsyncSession, *, raw_refresh_token: str) -> TokenPair | No
 
     # Burn this one and issue the next, keeping the family_id so the chain stays linked.
     await mark_session_used(db, current_session)
-    refresh_token = generate_refresh_token()
-    await create_session(
-        db,
-        user_id=current_session.user_id,
-        family_id=current_session.family_id,
-        hashed_refresh_token=hash_refresh_token(refresh_token),
-        expires_at=datetime.now(UTC) + REFRESH_TOKEN_LIFETIME,
-    )
-    return TokenPair(
-        access_token=encode_access_token(current_session.user_id),
-        refresh_token=refresh_token,
+    return await _issue_token_pair(
+        db, user_id=current_session.user_id, family_id=current_session.family_id
     )
