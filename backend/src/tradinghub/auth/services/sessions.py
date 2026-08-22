@@ -1,5 +1,6 @@
 """Session lifecycle: login, refresh with rotation, logout."""
 
+import logging
 import secrets
 import uuid
 from dataclasses import dataclass
@@ -14,6 +15,7 @@ from tradinghub.auth.crud.session import (
     revoke_family,
 )
 from tradinghub.auth.crud.user import get_user_by_email
+from tradinghub.auth.errors import InvalidCredentialsError, InvalidSessionError
 from tradinghub.auth.models.user import User
 from tradinghub.auth.security.passwords import hash_password, verify_password
 from tradinghub.auth.security.tokens import (
@@ -22,6 +24,8 @@ from tradinghub.auth.security.tokens import (
     generate_refresh_token,
     hash_refresh_token,
 )
+
+logger = logging.getLogger(__name__)
 
 # Verified against when the email is unknown, so both failures cost one Argon2 verify. Random,
 # so nothing can match it.
@@ -49,13 +53,12 @@ async def _issue_token_pair(db: AsyncSession, *, user_id: int, family_id: uuid.U
     return TokenPair(access_token=encode_access_token(user_id), refresh_token=refresh_token)
 
 
-async def login(
-    db: AsyncSession, *, email: str, raw_password: str
-) -> tuple[User, TokenPair] | None:
-    """Start a new session family, or return None for an unknown email or a wrong password.
+async def login(db: AsyncSession, *, email: str, raw_password: str) -> tuple[User, TokenPair]:
+    """Start a new session family. Raises InvalidCredentialsError for a bad email or a bad password.
 
-    The two failures are indistinguishable in both content and timing; callers must keep them that
-    way. Returns the user because the route answers with it, saving a second lookup.
+    One exception for both, raised after the same work, so the two failures are indistinguishable
+    in content and in timing. Returns the user because the route answers with it, saving a second
+    lookup.
     """
     user = await get_user_by_email(db, email)
     password_hash = user.password_hash if user else DUMMY_PASSWORD_HASH
@@ -64,14 +67,14 @@ async def login(
     # faster reply tells an attacker which addresses are registered.
     password_matches = verify_password(raw_password=raw_password, password_hash=password_hash)
     if user is None or not password_matches:
-        return None
+        raise InvalidCredentialsError
 
     token_pair = await _issue_token_pair(db, user_id=user.id, family_id=uuid.uuid4())
     return user, token_pair
 
 
-async def refresh(db: AsyncSession, raw_refresh_token: str) -> TokenPair | None:
-    """Rotate a refresh token, or return None if it is unknown, expired, or already spent.
+async def refresh(db: AsyncSession, raw_refresh_token: str) -> TokenPair:
+    """Rotate a refresh token. Raises InvalidSessionError if it is unknown, expired, or spent.
 
     Spending a token twice means it leaked: the thief and the real client both hold it, and
     nothing here can tell them apart. The whole family goes, so neither of them keeps a session.
@@ -79,17 +82,24 @@ async def refresh(db: AsyncSession, raw_refresh_token: str) -> TokenPair | None:
     current_session = await get_session_by_token_hash(db, hash_refresh_token(raw_refresh_token))
     # Nothing to rotate: a revoked or logged-out token is deleted, so it looks like a fake one.
     if current_session is None:
-        return None
+        raise InvalidSessionError
 
     # Already used, so someone has a copy. We can't tell thief from client, so nobody keeps it.
     if current_session.used_at is not None:
+        logger.warning(
+            "refresh token reuse",
+            extra={
+                "user_id": current_session.user_id,
+                "family_id": str(current_session.family_id),
+            },
+        )
         await revoke_family(db, current_session.family_id)
         await db.commit()  # the 401 that follows would roll the revocation back
-        return None
+        raise InvalidSessionError
 
     # The refresh token has expired. Nothing to rotate here, this user logs in again.
     if current_session.expires_at < datetime.now(UTC):
-        return None
+        raise InvalidSessionError
 
     # Burn this one and issue the next, keeping the family_id so the chain stays linked.
     await mark_session_used(db, current_session)

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.auth.crud.session import get_session_by_token_hash
 from tradinghub.auth.crud.user import create_user
+from tradinghub.auth.errors import InvalidCredentialsError, InvalidSessionError
 from tradinghub.auth.models import Session, User
 from tradinghub.auth.security.passwords import hash_password
 from tradinghub.auth.security.tokens import hash_refresh_token
@@ -22,9 +23,8 @@ async def _account(db_session: AsyncSession, email: str) -> User:
 async def _login(db_session: AsyncSession, email: str) -> str:
     """Register an account, log it in, and return the raw refresh token."""
     await _account(db_session, email)
-    result = await login(db_session, email=email, raw_password=PASSWORD)
-    assert result is not None
-    return result[1].refresh_token
+    _, token_pair = await login(db_session, email=email, raw_password=PASSWORD)
+    return token_pair.refresh_token
 
 
 async def _expire(db_session: AsyncSession, raw_refresh_token: str) -> None:
@@ -37,10 +37,10 @@ async def _expire(db_session: AsyncSession, raw_refresh_token: str) -> None:
 async def test_login_returns_the_user_and_a_pair(db_session: AsyncSession) -> None:
     user = await _account(db_session, "login@example.com")
 
-    result = await login(db_session, email="login@example.com", raw_password=PASSWORD)
+    logged_in_user, token_pair = await login(
+        db_session, email="login@example.com", raw_password=PASSWORD
+    )
 
-    assert result is not None
-    logged_in_user, token_pair = result
     assert logged_in_user.id == user.id
     assert token_pair.access_token
     assert token_pair.refresh_token
@@ -49,11 +49,13 @@ async def test_login_returns_the_user_and_a_pair(db_session: AsyncSession) -> No
 async def test_login_rejects_a_wrong_password(db_session: AsyncSession) -> None:
     await _account(db_session, "wrong@example.com")
 
-    assert await login(db_session, email="wrong@example.com", raw_password="nope") is None
+    with pytest.raises(InvalidCredentialsError):
+        await login(db_session, email="wrong@example.com", raw_password="nope")
 
 
 async def test_login_rejects_an_unknown_email(db_session: AsyncSession) -> None:
-    assert await login(db_session, email="nobody@example.com", raw_password=PASSWORD) is None
+    with pytest.raises(InvalidCredentialsError):
+        await login(db_session, email="nobody@example.com", raw_password=PASSWORD)
 
 
 async def test_login_verifies_a_hash_even_for_an_unknown_email(
@@ -67,7 +69,8 @@ async def test_login_verifies_a_hash_even_for_an_unknown_email(
 
     monkeypatch.setattr(sessions, "verify_password", counting_verify)
 
-    await login(db_session, email="nobody@example.com", raw_password=PASSWORD)
+    with pytest.raises(InvalidCredentialsError):
+        await login(db_session, email="nobody@example.com", raw_password=PASSWORD)
 
     assert verified == [(PASSWORD, sessions.DUMMY_PASSWORD_HASH)]
 
@@ -75,16 +78,14 @@ async def test_login_verifies_a_hash_even_for_an_unknown_email(
 async def test_login_starts_a_new_family_each_time(db_session: AsyncSession) -> None:
     await _account(db_session, "families@example.com")
 
-    first = await login(db_session, email="families@example.com", raw_password=PASSWORD)
-    second = await login(db_session, email="families@example.com", raw_password=PASSWORD)
+    _, first_pair = await login(db_session, email="families@example.com", raw_password=PASSWORD)
+    _, second_pair = await login(db_session, email="families@example.com", raw_password=PASSWORD)
 
-    assert first is not None
-    assert second is not None
     first_session = await get_session_by_token_hash(
-        db_session, hash_refresh_token(first[1].refresh_token)
+        db_session, hash_refresh_token(first_pair.refresh_token)
     )
     second_session = await get_session_by_token_hash(
-        db_session, hash_refresh_token(second[1].refresh_token)
+        db_session, hash_refresh_token(second_pair.refresh_token)
     )
     assert first_session is not None
     assert second_session is not None
@@ -96,7 +97,6 @@ async def test_refresh_issues_a_new_pair(db_session: AsyncSession) -> None:
 
     token_pair = await refresh(db_session, first_token)
 
-    assert token_pair is not None
     assert token_pair.refresh_token != first_token
 
 
@@ -107,7 +107,6 @@ async def test_refresh_keeps_the_successor_in_the_family(db_session: AsyncSessio
 
     token_pair = await refresh(db_session, first_token)
 
-    assert token_pair is not None
     successor = await get_session_by_token_hash(
         db_session, hash_refresh_token(token_pair.refresh_token)
     )
@@ -119,17 +118,19 @@ async def test_refresh_burns_the_token_it_rotated(db_session: AsyncSession) -> N
     first_token = await _login(db_session, "burn@example.com")
     await refresh(db_session, first_token)
 
-    assert await refresh(db_session, first_token) is None
+    with pytest.raises(InvalidSessionError):
+        await refresh(db_session, first_token)
 
 
 async def test_replaying_a_used_token_kills_its_siblings(db_session: AsyncSession) -> None:
     stolen_token = await _login(db_session, "theft@example.com")
     successor = await refresh(db_session, stolen_token)
-    assert successor is not None
 
-    await refresh(db_session, stolen_token)
+    with pytest.raises(InvalidSessionError):
+        await refresh(db_session, stolen_token)
 
-    assert await refresh(db_session, successor.refresh_token) is None
+    with pytest.raises(InvalidSessionError):
+        await refresh(db_session, successor.refresh_token)
 
 
 async def test_replaying_a_used_token_empties_the_family(db_session: AsyncSession) -> None:
@@ -139,7 +140,8 @@ async def test_replaying_a_used_token_empties_the_family(db_session: AsyncSessio
     family_id = stolen_session.family_id
     await refresh(db_session, stolen_token)
 
-    await refresh(db_session, stolen_token)
+    with pytest.raises(InvalidSessionError):
+        await refresh(db_session, stolen_token)
 
     remaining = await db_session.scalar(
         select(func.count()).select_from(Session).where(Session.family_id == family_id)
@@ -151,11 +153,13 @@ async def test_refresh_rejects_an_expired_token(db_session: AsyncSession) -> Non
     first_token = await _login(db_session, "expired@example.com")
     await _expire(db_session, first_token)
 
-    assert await refresh(db_session, first_token) is None
+    with pytest.raises(InvalidSessionError):
+        await refresh(db_session, first_token)
 
 
 async def test_refresh_rejects_an_unknown_token(db_session: AsyncSession) -> None:
-    assert await refresh(db_session, "never-issued-by-us") is None
+    with pytest.raises(InvalidSessionError):
+        await refresh(db_session, "never-issued-by-us")
 
 
 async def test_logout_kills_the_token(db_session: AsyncSession) -> None:
@@ -163,7 +167,8 @@ async def test_logout_kills_the_token(db_session: AsyncSession) -> None:
 
     await logout(db_session, first_token)
 
-    assert await refresh(db_session, first_token) is None
+    with pytest.raises(InvalidSessionError):
+        await refresh(db_session, first_token)
 
 
 async def test_logout_with_a_stale_token_kills_the_live_successor(
@@ -171,11 +176,11 @@ async def test_logout_with_a_stale_token_kills_the_live_successor(
 ) -> None:
     stale_token = await _login(db_session, "robbed@example.com")
     successor = await refresh(db_session, stale_token)
-    assert successor is not None
 
     await logout(db_session, stale_token)
 
-    assert await refresh(db_session, successor.refresh_token) is None
+    with pytest.raises(InvalidSessionError):
+        await refresh(db_session, successor.refresh_token)
 
 
 async def test_logout_ignores_an_unknown_token(db_session: AsyncSession) -> None:

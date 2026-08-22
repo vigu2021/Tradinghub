@@ -15,16 +15,21 @@ logger = logging.getLogger(__name__)
 
 
 class AppError(Exception):
-    """An expected failure, raised where it is detected and rendered by the handler below."""
+    """An expected failure, raised where it is detected and rendered by the handler below.
 
-    def __init__(self, code: str, message: str, status_code: int) -> None:
-        super().__init__(message)
-        self.code = code
-        self.message = message
-        self.status_code = status_code
+    Subclasses declare the three fields and are raised without arguments. This class is never
+    raised on its own: it has no values to render.
+    """
+
+    code: str
+    message: str
+    status_code: HTTPStatus
+
+    def __init__(self) -> None:
+        super().__init__(self.message)
 
 
-def _error_response(status_code: int, code: str, message: str) -> JSONResponse:
+def _error_response(status_code: HTTPStatus, code: str, message: str) -> JSONResponse:
     return JSONResponse(
         status_code=status_code, content={"error": {"code": code, "message": message}}
     )
