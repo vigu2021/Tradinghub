@@ -7,7 +7,7 @@ from tradinghub.auth.security.tokens import AccessTokenClaims, decode_access_tok
 
 ACCESS_COOKIE = "access_token"
 REFRESH_COOKIE = "refresh_token"
-REFRESH_PATH = "/auth/refresh"
+REFRESH_PATH = "/auth"
 
 
 async def get_current_user(request: Request) -> AccessTokenClaims:

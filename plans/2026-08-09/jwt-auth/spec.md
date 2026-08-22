@@ -33,8 +33,8 @@ Two tokens, deliberately different in kind.
 | Lifetime | 15 minutes | 7 days |
 | Stored server-side | No | Yes, SHA-256 hash only |
 | Revocable | No, until it expires | Yes, immediately |
-| Sent on | Every request | Only `POST /auth/refresh` |
-| Cookie path | `/` | `/auth/refresh` |
+| Sent on | Every request | Only the `/auth` routes |
+| Cookie path | `/` | `/auth` |
 
 The refresh token is **not** a JWT. It must be revocable, and a JWT's defining property is that it
 is not. Making it a JWT would mean looking it up in the database anyway to check revocation, which
@@ -115,16 +115,18 @@ opposite. Do not "fix" this with a revoked-token table.
 | `HttpOnly` | yes | yes |
 | `SameSite` | `Lax` | `Lax` |
 | `Secure` | production only | production only |
-| `Path` | `/` | `/auth/refresh` |
+| `Path` | `/` | `/auth` |
 | `Max-Age` | 15 minutes | 7 days |
 
 Both are `HttpOnly`. The access token does **not** go in `localStorage` — that is the common
 tutorial advice and it is wrong: any XSS on the page can read it and exfiltrate it, which is
 precisely what `HttpOnly` prevents.
 
-The refresh cookie's `Path=/auth/refresh` means the browser only sends it to the endpoint that
-consumes it. A stolen access token expires in 15 minutes; a stolen refresh token is a 30-day key,
-so it should be exposed as rarely as possible.
+The refresh cookie's `Path=/auth` means the browser sends it only to the two endpoints that
+consume it, refresh and logout, and to no application route at all. Scoping it to
+`/auth/refresh` alone is tighter but breaks logout, which needs the token to know which
+session to delete. A stolen access token expires in 15 minutes; a stolen refresh token is a
+7-day key, so it should be exposed as rarely as possible.
 
 ## Endpoints
 

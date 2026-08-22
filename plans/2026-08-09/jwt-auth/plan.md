@@ -223,7 +223,9 @@ async def get_current_user(request: Request) -> AccessTokenClaims: ...
    no valid session — logout is never an error.
 4. `GET /auth/me` returns `{id, email}` for a valid access token, 401 otherwise.
 5. Both cookies are `HttpOnly`, `SameSite=Lax`, `Secure` from `settings.cookie_secure`, with
-   `domain` from `settings.cookie_domain` when set. The refresh cookie uses `Path=/auth/refresh`.
+   `domain` from `settings.cookie_domain` when set. The refresh cookie uses `Path=/auth`:
+   scoping it to `/auth/refresh` alone means `/auth/logout` never receives it and silently
+   deletes no session.
 6. `delete_cookie` must be given the same `path` and `domain` as `set_cookie`, or the browser keeps
    the original.
 7. **`get_current_user` performs no database query.** It decodes the access token and builds the
