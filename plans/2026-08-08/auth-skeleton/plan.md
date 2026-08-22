@@ -404,7 +404,7 @@ async def test_email_is_case_insensitive(db_session):
 
 ---
 
-## Task 3: Password hashing
+## Task 3: Password hashing  ✅ DONE
 
 **Files:**
 - Create: `backend/src/tradinghub/auth/passwords.py`, `backend/tests/auth/test_passwords.py`
@@ -449,7 +449,7 @@ def test_verify_rejects_malformed_hash():
 
 ---
 
-## Task 4: Error shape and the register endpoint
+## Task 4: Error shape and the register endpoint  ✅ DONE
 
 **Files:**
 - Create: `backend/src/tradinghub/core/errors.py`, `backend/src/tradinghub/auth/{schemas,routes}.py`,

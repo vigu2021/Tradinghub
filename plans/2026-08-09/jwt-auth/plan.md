@@ -200,7 +200,7 @@ token fails; logout makes the token fail; a forged token fails.
 
 ---
 
-## Task 8: Endpoints and the current-user dependency
+## Task 8: Endpoints and the current-user dependency  ✅ DONE
 
 **Files:**
 - Create: `backend/src/tradinghub/auth/dependencies.py`, `backend/tests/auth/test_login.py`
