@@ -84,6 +84,7 @@ async def refresh(db: AsyncSession, raw_refresh_token: str) -> TokenPair | None:
     # Already used, so someone has a copy. We can't tell thief from client, so nobody keeps it.
     if current_session.used_at is not None:
         await revoke_family(db, current_session.family_id)
+        await db.commit()  # the 401 that follows would roll the revocation back
         return None
 
     # The refresh token has expired. Nothing to rotate here, this user logs in again.

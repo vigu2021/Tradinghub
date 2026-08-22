@@ -7,7 +7,6 @@ from sqlalchemy.pool import NullPool
 
 from tradinghub.core.config import get_settings
 from tradinghub.core.database import get_db
-from tradinghub.core.errors import AppError
 from tradinghub.main import create_app
 
 
@@ -46,12 +45,8 @@ async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
 
     async def override_get_db() -> AsyncIterator[AsyncSession]:
         """Mirror get_db, so a route that relies on the request-scoped commit is really tested."""
-        try:
-            yield db_session
-            await db_session.commit()
-        except AppError:
-            await db_session.commit()
-            raise
+        yield db_session
+        await db_session.commit()
 
     app = create_app()
     app.dependency_overrides[get_db] = override_get_db
