@@ -1,4 +1,4 @@
-.PHONY: db api web migrate test check
+.PHONY: db api web migrate test check check-api check-web
 
 db:
 	docker compose up -d db
@@ -15,5 +15,10 @@ migrate: db
 test:
 	cd backend && uv run pytest
 
-check:
+check: check-api check-web
+
+check-api:
 	cd backend && uv run ruff check src tests && uv run ruff format --check src tests && uv run basedpyright src tests
+
+check-web:
+	cd frontend && npm run format:check && npm run typecheck && npm run lint
