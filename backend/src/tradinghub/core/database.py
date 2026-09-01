@@ -36,7 +36,7 @@ async def get_db() -> AsyncIterator[AsyncSession]:
 
     One transaction per request: a request that raises rolls back in full, and no route or
     service has to remember to commit. Nothing below this may commit, with one deliberate
-    exception documented where it happens: the reuse revocation in services/sessions.py.
+    exception documented where it happens: the reuse revocation in services/auth.py.
     """
     async with SessionFactory() as session:
         try:

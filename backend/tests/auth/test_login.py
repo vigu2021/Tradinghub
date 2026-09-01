@@ -24,27 +24,32 @@ def _cookie(response: Response, name: str) -> Morsel[str]:
 
 
 async def _sign_up(client: AsyncClient, email: str) -> Response:
-    """Register an account and log into it, leaving both cookies on the client."""
-    await client.post("/auth/register", json={"email": email, "password": PASSWORD})
+    """Register an account, which signs it in, leaving both cookies on the client."""
+    return await client.post("/auth/register", json={"email": email, "password": PASSWORD})
+
+
+async def _log_in(client: AsyncClient, email: str) -> Response:
+    """Register, then log in explicitly, for the tests that assert on the login response."""
+    await _sign_up(client, email)
     return await client.post("/auth/login", json={"email": email, "password": PASSWORD})
 
 
 async def test_login_returns_the_account(client: AsyncClient) -> None:
-    response = await _sign_up(client, "account@example.com")
+    response = await _log_in(client, "account@example.com")
 
     assert response.status_code == 200
     assert response.json() == {"id": response.json()["id"], "email": "account@example.com"}
 
 
 async def test_login_sets_both_cookies_httponly(client: AsyncClient) -> None:
-    response = await _sign_up(client, "cookies@example.com")
+    response = await _log_in(client, "cookies@example.com")
 
     assert _cookie(response, ACCESS_COOKIE)["httponly"]
     assert _cookie(response, REFRESH_COOKIE)["httponly"]
 
 
 async def test_the_refresh_cookie_is_scoped_to_the_auth_routes(client: AsyncClient) -> None:
-    response = await _sign_up(client, "scoped@example.com")
+    response = await _log_in(client, "scoped@example.com")
 
     assert _cookie(response, ACCESS_COOKIE)["path"] == "/"
     assert _cookie(response, REFRESH_COOKIE)["path"] == REFRESH_PATH

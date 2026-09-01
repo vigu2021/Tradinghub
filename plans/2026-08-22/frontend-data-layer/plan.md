@@ -291,8 +291,9 @@ export function RegisterForm(): JSX.Element;
    produces two different error styles for the same mistake.
 5. Field errors render per field. The server error renders once, near the submit button.
 6. Disable the submit button while the mutation is pending, and say so in its label.
-7. `RegisterForm` has no "email already taken" branch. The backend answers 201 either way — there is
-   nothing to branch on, and everyone lands on `/login`.
+7. `RegisterForm` branches on `email_taken`: a 409 with that code means the account exists, so show
+   the message with a link to `/login`. A successful registration signs the account in, so it goes
+   to `/dashboard`.
 8. `LoginForm` renders one message for every failure. Do not try to be more specific: the server
    answers wrong-password and unknown-email identically on purpose.
 9. Accessibility, which is cheap now and expensive later: every input has a `<label htmlFor>`, error

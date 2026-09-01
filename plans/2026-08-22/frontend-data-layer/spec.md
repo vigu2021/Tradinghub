@@ -156,8 +156,9 @@ Rejecting a short password client-side would tell an attacker the password is to
 The email pattern is deliberately loose. `EmailStr` on the server is the authority, and a clever
 regex rejects addresses that are valid.
 
-`RegisterForm` has no "email already taken" branch: the backend answers 201 either way, so there is
-nothing to branch on and everyone lands on the login page.
+`RegisterForm` handles `email_taken` specially — a 409 with that code means the account exists, so
+the form says so and offers a link to log in. Registering signs the new account in, so a success
+goes straight to the dashboard rather than back through the login page.
 
 ---
 

@@ -10,8 +10,8 @@ from tradinghub.auth.errors import InvalidCredentialsError, InvalidSessionError
 from tradinghub.auth.models import Session, User
 from tradinghub.auth.security.passwords import hash_password
 from tradinghub.auth.security.tokens import hash_refresh_token
-from tradinghub.auth.services import sessions
-from tradinghub.auth.services.sessions import login_user, logout_user, refresh_session
+from tradinghub.auth.services import auth
+from tradinghub.auth.services.auth import login_user, logout_user, refresh_session
 
 PASSWORD = "correct-horse-battery"
 
@@ -67,12 +67,12 @@ async def test_login_verifies_a_hash_even_for_an_unknown_email(
         verified.append((raw_password, password_hash))
         return False
 
-    monkeypatch.setattr(sessions, "verify_password", counting_verify)
+    monkeypatch.setattr(auth, "verify_password", counting_verify)
 
     with pytest.raises(InvalidCredentialsError):
         await login_user(db_session, email="nobody@example.com", raw_password=PASSWORD)
 
-    assert verified == [(PASSWORD, sessions.DUMMY_PASSWORD_HASH)]
+    assert verified == [(PASSWORD, auth.DUMMY_PASSWORD_HASH)]
 
 
 async def test_login_starts_a_new_family_each_time(db_session: AsyncSession) -> None:

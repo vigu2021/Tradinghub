@@ -29,3 +29,17 @@ class InvalidSessionError(AppError):
     code = "invalid_session"
     message = "Your session has expired. Please log in again."
     status_code = HTTPStatus.UNAUTHORIZED
+
+
+class EmailTakenError(AppError):
+    """Registration with an email that already has an account.
+
+    Registering signs you in, so a duplicate cannot be answered the same way as a success: one
+    sets cookies and one cannot. Enumeration is therefore unavoidable here, and saying so plainly
+    is more useful than leaking the same fact through a missing cookie. Rate limiting is what
+    makes it expensive to exploit.
+    """
+
+    code = "email_taken"
+    message = "That email is already registered."
+    status_code = HTTPStatus.CONFLICT

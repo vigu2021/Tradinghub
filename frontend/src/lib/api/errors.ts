@@ -4,6 +4,7 @@ const UNEXPECTED_MESSAGE = "Something went wrong. Please try again.";
 export const API_CODES = {
   INVALID_CREDENTIALS: "invalid_credentials",
   INVALID_SESSION: "invalid_session",
+  EMAIL_TAKEN: "email_taken",
   VALIDATION: "validation_error",
   INTERNAL: "internal_error",
 } as const;

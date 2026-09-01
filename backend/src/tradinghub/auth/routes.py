@@ -21,8 +21,13 @@ from tradinghub.auth.security.tokens import (
     REFRESH_TOKEN_LIFETIME,
     AccessTokenClaims,
 )
-from tradinghub.auth.services.sessions import TokenPair, login_user, logout_user, refresh_session
-from tradinghub.auth.services.users import register_user
+from tradinghub.auth.services.auth import (
+    TokenPair,
+    login_user,
+    logout_user,
+    refresh_session,
+    register_user,
+)
 from tradinghub.core.config import get_settings
 from tradinghub.core.database import get_db
 
@@ -65,14 +70,12 @@ def _clear_auth_cookies(response: Response) -> None:
 
 @router.post("/register", status_code=HTTPStatus.CREATED)
 async def register(
-    payload: RegisterRequest, db: Annotated[AsyncSession, Depends(get_db)]
-) -> Response:
-    """Register an account. 201 and an empty body whether or not the email was taken.
-
-    The return value is discarded on purpose, and no cookie is set: registering is not signing in.
-    """
-    await register_user(db, payload.email, payload.password)
-    return Response(status_code=HTTPStatus.CREATED)
+    payload: RegisterRequest, db: Annotated[AsyncSession, Depends(get_db)], response: Response
+) -> UserResponse:
+    """Register an account and sign in. Raises EmailTakenError if the email already has one."""
+    user, token_pair = await register_user(db, email=payload.email, raw_password=payload.password)
+    _set_auth_cookies(response, token_pair)
+    return UserResponse(id=user.id, email=user.email)
 
 
 @router.post("/login")

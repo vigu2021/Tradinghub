@@ -1,4 +1,4 @@
-"""Session lifecycle: login, refresh with rotation, logout."""
+"""Authentication: register, login, refresh with rotation, logout."""
 
 import logging
 import secrets
@@ -14,8 +14,12 @@ from tradinghub.auth.crud.session import (
     mark_session_used,
     revoke_family,
 )
-from tradinghub.auth.crud.user import get_user_by_email
-from tradinghub.auth.errors import InvalidCredentialsError, InvalidSessionError
+from tradinghub.auth.crud.user import create_user, get_user_by_email
+from tradinghub.auth.errors import (
+    EmailTakenError,
+    InvalidCredentialsError,
+    InvalidSessionError,
+)
 from tradinghub.auth.models.user import User
 from tradinghub.auth.security.passwords import hash_password, verify_password
 from tradinghub.auth.security.tokens import (
@@ -53,6 +57,22 @@ async def _issue_token_pair(db: AsyncSession, *, user_id: int, family_id: uuid.U
     return TokenPair(access_token=encode_access_token(user_id), refresh_token=refresh_token)
 
 
+async def start_session(db: AsyncSession, user_id: int) -> TokenPair:
+    """Begin a new login family for a user who has already been authenticated."""
+    return await _issue_token_pair(db, user_id=user_id, family_id=uuid.uuid4())
+
+
+async def register_user(
+    db: AsyncSession, *, email: str, raw_password: str
+) -> tuple[User, TokenPair]:
+    """Create an account and sign it in. Raises EmailTakenError when the email already has one."""
+    if await get_user_by_email(db, email) is not None:
+        raise EmailTakenError
+
+    user = await create_user(db, email, hash_password(raw_password))
+    return user, await start_session(db, user.id)
+
+
 async def login_user(db: AsyncSession, *, email: str, raw_password: str) -> tuple[User, TokenPair]:
     """Start a new session family. Raises InvalidCredentialsError for a bad email or a bad password.
 
@@ -69,7 +89,7 @@ async def login_user(db: AsyncSession, *, email: str, raw_password: str) -> tupl
     if user is None or not password_matches:
         raise InvalidCredentialsError
 
-    token_pair = await _issue_token_pair(db, user_id=user.id, family_id=uuid.uuid4())
+    token_pair = await start_session(db, user.id)
     return user, token_pair
 
 

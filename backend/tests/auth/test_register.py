@@ -56,14 +56,25 @@ async def test_a_rejected_password_is_never_echoed_back(client: AsyncClient) -> 
     assert "short" not in response.text
 
 
-async def test_duplicate_email_is_indistinguishable_from_success(client: AsyncClient) -> None:
+async def test_a_duplicate_email_is_rejected(client: AsyncClient) -> None:
+    """Registering signs you in, so a duplicate cannot answer like a success and does not try."""
     payload = _payload("dupe@example.com")
 
     first = await client.post("/auth/register", json=payload)
     second = await client.post("/auth/register", json=payload)
 
-    assert first.status_code == second.status_code == 201
-    assert first.content == second.content
+    assert first.status_code == 201
+    assert second.status_code == 409
+    assert second.json()["error"]["code"] == "email_taken"
+
+
+async def test_a_duplicate_registration_sets_no_cookies(client: AsyncClient) -> None:
+    payload = _payload("nocookie@example.com")
+    await client.post("/auth/register", json=payload)
+
+    second = await client.post("/auth/register", json=payload)
+
+    assert second.headers.get_list("set-cookie") == []
 
 
 async def test_registering_twice_leaves_one_account(
@@ -94,7 +105,12 @@ async def test_the_second_registration_does_not_change_the_password(
     assert current == original
 
 
-async def test_register_does_not_set_a_cookie(client: AsyncClient) -> None:
+async def test_register_signs_the_new_account_in(client: AsyncClient) -> None:
     response = await client.post("/auth/register", json=_payload("d@example.com"))
 
-    assert "set-cookie" not in response.headers
+    assert response.json()["email"] == "d@example.com"
+    assert len(response.headers.get_list("set-cookie")) == 2
+
+    me = await client.get("/auth/me")
+    assert me.status_code == 200
+    assert me.json()["email"] == "d@example.com"
