@@ -60,9 +60,10 @@ frontend/src/
 │       ├── validation.ts         field rules shared by the two forms
 │       └── components/           LoginForm, RegisterForm
 ├── lib/
-│   ├── api/
-│   │   ├── client.ts             axios instance and interceptors
-│   │   └── errors.ts             ApiError, NetworkError, API_CODES
+│   └── api/
+│       ├── client.ts             axios instance and interceptors
+│       └── errors.ts             ApiError, NetworkError, API_CODES
+├── providers/
 │   └── query-provider.tsx
 └── components/ui/                Button, Input, Field — when they earn themselves
 ```

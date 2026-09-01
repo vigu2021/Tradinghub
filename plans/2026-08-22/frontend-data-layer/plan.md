@@ -157,7 +157,7 @@ that arrive while it is set await the same promise; it is cleared when the rotat
 ## Task 4: The Query provider
 
 **Files:**
-- Create: `frontend/src/lib/query-provider.tsx`
+- Create: `frontend/src/providers/query-provider.tsx`
 - Modify: `frontend/src/app/layout.tsx`
 
 **Interfaces produced:**
