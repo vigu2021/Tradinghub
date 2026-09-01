@@ -46,7 +46,10 @@ would be a second source of truth that disagrees with the server the moment a se
 ```
 frontend/src/
 ├── app/                          routing only — thin pages that compose features
-│   ├── layout.tsx                mounts QueryProvider
+│   ├── layout.tsx                mounts GlobalProviders
+│   ├── providers/
+│   │   ├── index.tsx             GlobalProviders, composes the rest
+│   │   └── query-provider.tsx
 │   ├── (auth)/
 │   │   ├── login/page.tsx
 │   │   └── register/page.tsx
@@ -63,8 +66,6 @@ frontend/src/
 │   └── api/
 │       ├── client.ts             axios instance and interceptors
 │       └── errors.ts             ApiError, NetworkError, API_CODES
-├── providers/
-│   └── query-provider.tsx
 └── components/ui/                Button, Input, Field — when they earn themselves
 ```
 
