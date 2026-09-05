@@ -22,7 +22,7 @@ failure.
 | Server state | TanStack Query | Slice 2 is CRUD: lists, mutations, invalidation |
 | Client state | None | With cookie auth there is nothing left for a store to hold |
 | Errors | One `ApiError` class + code constants | Three branches in the UI; a hierarchy would cost a registry for no gain |
-| Forms | React Hook Form, no zod | Two fields each; zod earns itself at the trade form's cross-field rules |
+| Forms | React Hook Form + zod | Schemas double as the request types, and slice 2's trade form needs cross-field rules |
 | Structure | Feature-first | Mirrors the backend's `auth/` grouping |
 
 Three of these are trades rather than wins, and are worth recording as such.
@@ -145,8 +145,10 @@ the account that fetched it.
 
 ## Forms
 
-React Hook Form, rules in one shared object keyed by autocomplete value: `email`,
-`currentPassword`, `newPassword`.
+React Hook Form with zod schemas, one per form, resolved through `@hookform/resolvers`.
+`types.ts` derives the request types from those schemas with `z.infer`, so a field cannot exist in
+the validation and not in the type. `User` stays hand-written: it is a response, and no schema
+describes it.
 
 The asymmetry is deliberate and belongs in a comment: register enforces the 8-character minimum,
 login enforces no length rule at all, mirroring `LoginRequest` having no `Field(min_length=...)`.

@@ -4,7 +4,7 @@
 does not restate its rationale.
 
 **Tech:** Next.js 16.3 (App Router, Turbopack), React 19, TypeScript, Tailwind 4, axios, TanStack
-Query v5, React Hook Form.
+Query v5, React Hook Form, zod v4.
 
 ---
 
