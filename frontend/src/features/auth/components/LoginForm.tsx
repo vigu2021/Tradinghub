@@ -18,6 +18,7 @@ export function LoginForm() {
     formState: { errors },
   } = useForm<LoginRequest>({
     resolver: zodResolver(loginSchema),
+    mode: "onTouched",
   });
 
   const submit = handleSubmit((values) => {

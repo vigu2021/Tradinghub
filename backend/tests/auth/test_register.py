@@ -121,3 +121,12 @@ async def test_register_rejects_an_overlong_password(client: AsyncClient) -> Non
     response = await client.post("/auth/register", json=_payload("long@example.com", "x" * 129))
 
     assert response.status_code == 422
+
+
+async def test_register_rejects_an_overlong_email(client: AsyncClient) -> None:
+    """Unbounded input on an unauthenticated endpoint, capped at the RFC limit."""
+    overlong = "a" * 250 + "@example.com"
+
+    response = await client.post("/auth/register", json=_payload(overlong))
+
+    assert response.status_code == 422

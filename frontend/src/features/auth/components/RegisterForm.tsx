@@ -23,6 +23,7 @@ export function RegisterForm() {
     formState: { errors },
   } = useForm<RegisterRequest>({
     resolver: zodResolver(registerSchema),
+    mode: "onTouched",
   });
 
   const submit = handleSubmit((values) => {

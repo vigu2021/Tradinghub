@@ -4,6 +4,9 @@ from pydantic import BaseModel, EmailStr, Field
 
 MIN_PASSWORD_LENGTH = 8
 
+# RFC 5321's limit on a full address.
+MAX_EMAIL_LENGTH = 254
+
 # Argon2 hashes whatever it is given, so an unbounded password is a cheap way to burn CPU.
 MAX_PASSWORD_LENGTH = 128
 
@@ -11,7 +14,7 @@ MAX_PASSWORD_LENGTH = 128
 class RegisterRequest(BaseModel):
     """A registration submission, rejected by the schema before any route code runs."""
 
-    email: EmailStr
+    email: EmailStr = Field(max_length=MAX_EMAIL_LENGTH)
     password: str = Field(min_length=MIN_PASSWORD_LENGTH, max_length=MAX_PASSWORD_LENGTH)
 
 
@@ -23,7 +26,7 @@ class LoginRequest(BaseModel):
     an unauthenticated caller can make Argon2 chew through a megabyte per request.
     """
 
-    email: EmailStr
+    email: EmailStr = Field(max_length=MAX_EMAIL_LENGTH)
     password: str = Field(max_length=MAX_PASSWORD_LENGTH)
 
 
