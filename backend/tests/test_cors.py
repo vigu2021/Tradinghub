@@ -1,6 +1,6 @@
 from httpx import AsyncClient
 
-FRONTEND_ORIGIN = "http://localhost:3000"
+FRONTEND_ORIGIN = "http://localhost:3210"
 
 PREFLIGHT_HEADERS = {"Access-Control-Request-Method": "POST"}
 

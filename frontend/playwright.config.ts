@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 // Must match FRONTEND_ORIGIN in the backend's .env, or CORS rejects every request and the whole
 // suite fails with "still on /register" rather than anything about origins.
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "http://localhost:3210";
 
 /**
  * The backend is not started here on purpose: it needs Postgres, and a test run that silently
