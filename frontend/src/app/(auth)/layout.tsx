@@ -1,27 +1,26 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { Logo } from "@/components/ui/Logo";
+
 /**
- * The shell both auth pages sit in. A narrow column rather than a card: the ledger grid in the
- * background is the surface, and floating a panel above it would hide the thing that gives the
- * page its character.
+ * The shell both auth screens sit in. A narrow column rather than a card: the ledger grid in the
+ * background is the surface, and floating a panel above it would hide what gives the page its
+ * character.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-dvh flex-col px-6 py-10 sm:px-10">
+    <div className="flex min-h-dvh flex-col px-6 py-8 sm:px-10">
       <header className="rise">
         <Link
           href="/"
-          className="inline-flex items-baseline gap-2 outline-none focus-visible:text-accent"
+          className="inline-block text-ink outline-none transition-colors hover:text-accent focus-visible:text-accent"
         >
-          <span className="font-display text-xl tracking-tight">
-            Tradinghub
-          </span>
-          <span className="h-1 w-1 translate-y-[-0.15rem] rounded-full bg-accent" />
+          <Logo size="lg" />
         </Link>
       </header>
 
-      <main className="flex flex-1 items-center justify-center py-14">
+      <main className="flex flex-1 items-center justify-center py-12">
         <div className="w-full max-w-[26rem]">{children}</div>
       </main>
 

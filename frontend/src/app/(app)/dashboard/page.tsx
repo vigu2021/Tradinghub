@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
+import { Logo } from "@/components/ui/Logo";
 import { useLogout, useUser } from "@/features/auth/hooks";
 import { messageFor } from "@/lib/api/errors";
 
@@ -11,7 +12,7 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-dvh flex-col px-6 py-10 sm:px-10">
       <header className="rise flex items-baseline justify-between gap-6 border-b border-rule pb-6">
-        <span className="font-display text-xl tracking-tight">Tradinghub</span>
+        <Logo />
         <div className="w-32">
           <Button
             variant="ghost"

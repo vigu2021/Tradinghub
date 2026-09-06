@@ -19,12 +19,12 @@ export default function LoginPage() {
       </div>
 
       <p className="mt-8 border-t border-rule pt-6 text-xs text-ink-faint">
-        No account yet?{" "}
+        New here?{" "}
         <Link
           href="/register"
           className="text-ink underline decoration-rule-strong underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
         >
-          Start a journal
+          Create an account
         </Link>
       </p>
     </div>
