@@ -725,84 +725,122 @@ only cleared the cookie, so **also** assert the `sessions` row count dropped to 
 
 ## Task 7: Login rate limiting  ⏸ DEFERRED
 
-Moved to after Phase 2. Nothing is deployed and nothing is being attacked; seeing the auth
-flow work in a browser is worth more than a defence with no traffic to defend against. Do it
+Deferred past the frontend: nothing is deployed and nothing is being attacked, so seeing the auth
+flow work in a browser was worth more than a defence with no traffic to defend against. Do it
 before anything is exposed to the internet.
 
+Rewritten for Redis. The original specified a `login_attempts` table counted with a rolling window
+in Postgres. Redis was chosen instead — partly to learn it, and partly because counters that live
+outside the request transaction sidestep a real problem: `get_db` rolls back on any exception, so a
+failed login raising `InvalidCredentialsError` would discard its own attempt row before the 401 was
+rendered. Failures would never accumulate, and every test that was not specifically about counting
+would still pass. Postgres would have needed a second deliberate `commit()` next to the one in
+`services/auth.py`; Redis needs none.
+
 **Files:**
-- Create: `backend/src/tradinghub/auth/rate_limit.py`, one migration,
-  `backend/tests/auth/test_rate_limit.py`
-- Modify: `backend/src/tradinghub/auth/{models,routes}.py`
+- Create: `backend/src/tradinghub/core/redis.py`,
+  `backend/src/tradinghub/auth/rate_limit.py`, `backend/tests/auth/test_rate_limit.py`
+- Modify: `docker-compose.yml`, `backend/pyproject.toml`, `backend/.env{,.example}`,
+  `backend/src/tradinghub/core/{config,errors}.py`,
+  `backend/src/tradinghub/auth/{errors.py,services/auth.py,routes.py}`
+
+No migration. There is no table.
 
 **Interfaces produced:**
 ```python
-class LoginAttempt(Base):
-    __tablename__ = "login_attempts"
-    id: Mapped[uuid.UUID]
-    email: Mapped[str]          # CITEXT
-    ip: Mapped[str | None]      # postgresql.INET
-    succeeded: Mapped[bool]
-    created_at: Mapped[datetime]
-
+# auth/rate_limit.py
 RATE_WINDOW = timedelta(minutes=15)
 MAX_FAILURES_PER_EMAIL = 10
 MAX_FAILURES_PER_IP = 30
 
-async def check_login_allowed(db, email: str, ip: str | None) -> None: ...
-    # raises AppError("rate_limited", 429) when over either limit
-async def record_attempt(db, email: str, ip: str | None, *, succeeded: bool) -> None: ...
+async def check_login_allowed(redis: Redis, email: str, ip: str | None) -> None: ...
+    # raises RateLimitedError when either counter is at or above its limit
+async def record_failure(redis: Redis, email: str, ip: str | None) -> None: ...
+async def clear_failures(redis: Redis, email: str) -> None: ...
 ```
 
-**Requirements:**
-1. `check_login_allowed` counts **failed** attempts inside the rolling 15-minute window and raises
-   when either limit is exceeded. Successful logins never count against you.
-2. The 429 response carries a `Retry-After` header in seconds.
-3. Login calls `check_login_allowed` **before** verifying the password, so a locked-out attacker
-   costs you no Argon2 work.
-4. `record_attempt` runs on both success and failure.
-5. Only `/auth/login` is limited; `/auth/register` is not, per the spec.
-6. Composite indexes on `(email, created_at)` and `(ip, created_at)` — without them this is a
-   sequential scan on every login.
-7. Attempts are committed even when login fails, so failures actually accumulate. Verify this
-   interacts correctly with however routes handle transactions.
+**Requirements — infrastructure:**
+1. A `redis:8-alpine` service in `docker-compose.yml`, published to `127.0.0.1:6380` only, for the
+   same reason the database is: no password on a loopback-only development container. 6380 rather
+   than the default because a system `redis-server` is commonly already on 6379, exactly why
+   Postgres sits on 5433. No volume: rate-limit counters are meant to be lost on restart.
+2. `redis_url: str` on `Settings` with no default, so a missing value fails at startup the way
+   `jwt_secret` does.
+3. `redis>=5` in `pyproject.toml`. Async support ships in the same package as `redis.asyncio`.
+   Do not install `aioredis`; it was absorbed into redis-py and is unmaintained.
 
-**Tests:**
+**Requirements — the client:**
+4. `get_redis()` in `core/redis.py`, shaped as a FastAPI dependency like `get_db` and **not** as an
+   `@lru_cache` singleton. A cached connection pool hits the same event-loop problem `conftest.py`
+   documents for the database engine: a connection created in one test's loop cannot be reused in
+   another. A dependency can be overridden per test; a cached global cannot.
+
+**Requirements — the counters:**
+5. Two keys, `login:fail:email:{email}` and `login:fail:ip:{ip}`, incremented together in one
+   pipeline so a failure costs one round trip.
+6. `INCR`, then `EXPIRE <key> 900 NX`. `NX` sets the TTL only when the key has none, so the window
+   starts at the first failure rather than sliding forward with every subsequent one. Redis 7+;
+   `if count == 1: EXPIRE` is the version-agnostic equivalent.
+7. A successful login `DEL`s the email key. One operation, and it replaces the old design's
+   "successful attempts never count against you" bookkeeping.
+8. The window is fixed, not sliding. An attacker can land ten failures at the end of one window and
+   ten at the start of the next. Accepted: a sliding window costs a sorted set plus
+   `ZREMRANGEBYSCORE`/`ZCARD`/`ZADD` on every attempt and unbounded memory per key, to defend
+   against an attacker who is already locked out half the time.
+
+**Requirements — behaviour:**
+9. `check_login_allowed` runs **before** the password is verified, so a locked-out attacker costs
+   no Argon2 work.
+10. Failures are recorded for **unknown emails too**. Recording only against real accounts would
+    make the 429 appear exclusively for addresses that exist — precisely the enumeration oracle
+    that `DUMMY_PASSWORD_HASH` and the byte-identical 401s exist to prevent.
+11. `RateLimitedError(AppError)` in `auth/errors.py`, declarative like its siblings: `code`,
+    `message`, `status_code`, raised without arguments. `Retry-After` is a fixed class attribute
+    equal to the window in seconds — time-until-release buys nothing and costs a constructor.
+12. `_error_response` in `core/errors.py` takes no headers today. It needs a `headers` parameter,
+    and the `AppError` handler needs to pass whatever the error declares.
+13. Only `/auth/login` is limited. `/auth/register` is not.
+
+**Requirements — failure modes:**
+14. **Redis being unreachable fails open**: the login proceeds and a `warning` is logged. A cache
+    outage that locks every user out turns a degraded dependency into a full outage. The limiter is
+    a defence, not the authorization — Argon2 and the password check are unaffected. Catch
+    `redis.RedisError` around the pipeline.
+15. Per-email lockout means anyone who knows an address can lock its owner out for fifteen minutes.
+    That is inherent to email-keyed limiting and is accepted here: the window bounds the damage, and
+    the alternatives (keying on email plus IP, exponential backoff instead of a block) cost more
+    than the attack is worth for a journal.
+
+**What this gives up:** no audit trail. The table would have answered "who tried to sign in as this
+user last week"; counters that expire in fifteen minutes cannot. If that is wanted later it is a
+structured log line at the record site, not a table.
+
+**Tests:** real Redis on a separate logical database (`redis://localhost:6379/1`), `FLUSHDB` in the
+fixture teardown. Not `fakeredis` — half the point is learning what `EXPIRE NX` actually does.
+
 ```python
-async def test_lockout_after_ten_failures(client, registered_user):
-    for _ in range(10):
-        await client.post("/auth/login",
-                          json={"email": registered_user.email, "password": "wrong-password-x"})
-    response = await client.post("/auth/login",
-                                 json={"email": registered_user.email, "password": PASSWORD})
-    assert response.status_code == 429
-    assert response.json()["error"]["code"] == "rate_limited"
-    assert "retry-after" in response.headers
+async def test_lockout_after_ten_failures(client): ...
+    # ten wrong passwords, then the correct one -> 429, code "rate_limited", Retry-After present
 
-async def test_old_failures_fall_out_of_the_window(client, db_session, registered_user):
-    for _ in range(10):
-        await client.post("/auth/login",
-                          json={"email": registered_user.email, "password": "wrong-password-x"})
-    await db_session.execute(
-        update(LoginAttempt).values(created_at=datetime.now(timezone.utc) - timedelta(minutes=16))
-    )
-    await db_session.flush()
-    response = await client.post("/auth/login",
-                                 json={"email": registered_user.email, "password": PASSWORD})
-    assert response.status_code == 200
+async def test_a_successful_login_clears_the_counter(client): ...
+    # nine failures, one success, nine more failures -> still 200
 
-async def test_lockout_is_per_email(client, registered_user, second_user):
-    for _ in range(10):
-        await client.post("/auth/login",
-                          json={"email": registered_user.email, "password": "wrong-password-x"})
-    response = await client.post("/auth/login",
-                                 json={"email": second_user.email, "password": PASSWORD})
-    assert response.status_code == 200
+async def test_the_lockout_is_per_email(client): ...
+    # ten failures for one address, then a correct login for another -> 200.
+    # Both share an IP, so this also proves the per-IP limit of 30 is not firing early.
+
+async def test_an_unknown_email_is_rate_limited_too(client): ...
+    # ten failures against an address with no account -> 429, not 401.
+    # The 429 must not be reserved for addresses that exist.
+
+async def test_login_survives_redis_being_down(client): ...
+    # a client whose every call raises RedisError -> login still returns 200
 ```
 
-Note the third test shares an IP across both users, so it also proves the per-IP limit of 30 is not
-firing early. Rewinding timestamps rather than sleeping keeps the suite fast.
+The old suite rewound `created_at` to prove the window expires. TTLs cannot be rewound, so either
+`DEL` the key or assert the TTL directly with `PTTL`.
 
-**Verify:** `uv run alembic upgrade head` then `uv run pytest -v` — 24 passed.
+**Verify:** `docker compose up -d` then `uv run pytest` — 100 passing plus the new cases.
 **Commit:** `Add login rate limiting`
 
 ---
@@ -1064,7 +1102,7 @@ cd ../frontend && npx playwright test                            # 1 passed
 - [ ] `docker compose up -d` starts Postgres; `alembic upgrade head` builds the schema from scratch
 - [ ] Both dev servers start and the frontend can register, log in, and log out against the backend
 - [ ] `/dashboard` is unreachable without a valid session, verified with a forged cookie
-- [ ] 26 backend tests and 1 Playwright test pass from a clean database
+- [ ] 100 backend tests and 12 Playwright tests pass from a clean database
 - [ ] `.env.example` is complete and the README documents the startup sequence
 - [ ] No secrets committed; every diff was scanned before landing
 
@@ -1073,7 +1111,23 @@ cd ../frontend && npx playwright test                            # 1 passed
 Email verification, password reset, OAuth, refresh tokens, an active-sessions screen, any trading
 feature, and any deployment. Slice 2 begins with the `journal/` package.
 
-**Carried to slice 5:** `Settings` has no guard forcing `cookie_secure` on when
-`environment` is `PRODUCTION`. Nothing runs in production yet, so it would be dead code — but the
-default is `False`, which fails open. Add the validator as part of the deployment slice, before
-anything serves real traffic.
+## Carried to slice 5
+
+Three things that are correct for a laptop and wrong the moment anything serves real traffic. Each
+fails open and fails silently, which is why they are written down rather than left to be noticed.
+
+**`cookie_secure` has no production guard.** `Settings` does not force it on when `environment` is
+`PRODUCTION`, and the default is `False`. Add the validator before anything is deployed; today it
+would be dead code.
+
+**Redis has no password.** The container runs `requirepass` empty, `protected-mode no`, and a
+`default` ACL user of `nopass ~* &* +@all` — every key, every command, including `CONFIG SET`, which
+is what turns an exposed Redis into remote code execution. The `127.0.0.1:` in the compose port
+mapping is the only thing preventing that, and it stops applying the moment the service is not on
+localhost. Deployment needs `requirepass` from a secret, or an ACL user scoped to the
+`login:fail:*` keys, plus a private subnet. Note that `protected-mode no` is set by the official
+image on purpose, so the usual fallback that catches a passwordless Redis is already disabled.
+
+**Postgres credentials are in the repository.** `tradinghub:localdev` is committed in
+`docker-compose.yml`, which is why the database publishes on loopback only. Real deployment takes
+them from a secret store, never from a file in git.

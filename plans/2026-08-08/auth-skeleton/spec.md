@@ -62,7 +62,7 @@ Tradinghub/
 │   │       ├── passwords.py    # argon2id hash + verify
 │   │       ├── tokens.py       # generate + hash session tokens
 │   │       ├── sessions.py     # create / look up / revoke
-│   │       ├── rate_limit.py   # failed-attempt counting
+│   │       ├── rate_limit.py   # failed-attempt counting, in Redis
 │   │       ├── dependencies.py # get_current_user
 │   │       └── routes.py       # the four endpoints
 │   └── tests/
@@ -137,16 +137,10 @@ reasoning as password hashing, at the cost of one line.
 
 ### `login_attempts`
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID | Primary key |
-| `email` | citext | Indexed with `created_at` |
-| `ip` | inet | Indexed with `created_at` |
-| `succeeded` | boolean | |
-| `created_at` | timestamptz | |
-
-Append-only. The rate limiter counts over this table rather than an in-memory counter, so limits
-survive restarts and remain correct across multiple backend instances on AWS.
+Dropped. Failed logins are counted in Redis instead of a table — see Task 7 in `plan.md`. Counters
+outside the request transaction avoid a rollback discarding the very attempt that failed, and they
+still survive restarts and stay correct across multiple backend instances on AWS. The cost is that
+there is no audit trail of who tried to sign in.
 
 ## Endpoints
 
@@ -179,9 +173,11 @@ indexed read with no write.
 **Logout.** Delete the session row, then clear the cookie. Server-side deletion is what makes it
 real; clearing the cookie alone would leave a token that still works if it was ever captured.
 
-**Rate limiting.** Both limits use the same rolling 15-minute window: more than 10 failed attempts
-for one email, or more than 30 failed attempts from one IP, returns 429 with a `Retry-After` header
-and no password check. Only `/auth/login` is rate limited in slice 1; `/auth/register` is not.
+**Rate limiting.** Two Redis counters, one keyed on email and one on IP, both expiring after 15
+minutes. More than 10 failures for one email, or more than 30 from one IP, returns 429 with a
+`Retry-After` header and no password check. A successful login clears the email counter. Redis being
+unreachable fails open: a cache outage must not lock everyone out of the application. Only
+`/auth/login` is rate limited in slice 1; `/auth/register` is not.
 
 ## The cookie
 
