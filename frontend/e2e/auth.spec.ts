@@ -31,6 +31,26 @@ test("the root sends a visitor to the login screen", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("the dashboard is closed to a visitor without a session", async ({
+  page,
+}) => {
+  await page.goto("/dashboard");
+
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(
+    page.getByRole("heading", { name: "Welcome back." }),
+  ).toBeVisible();
+});
+
+test("the sign-in screen moves a signed-in visitor along", async ({ page }) => {
+  await register(page, uniqueEmail("bounce"));
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  await page.goto("/login");
+
+  await expect(page).toHaveURL(/\/dashboard$/);
+});
+
 test("registering signs the new account in", async ({ page }) => {
   const email = uniqueEmail("signup");
 
@@ -156,4 +176,5 @@ test("signing out clears the session", async ({ page, context }) => {
       ),
     )
     .toBe(false);
+  await expect(page).toHaveURL(/\/login$/);
 });
