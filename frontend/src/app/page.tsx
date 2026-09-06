@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
 /**
- * No landing page yet. Middleware will decide between the dashboard and the login screen once it
- * exists; until then the honest default is the door.
+ * No landing page yet. The door is the honest default: the auth layouts take it from here, and
+ * a visitor with a live session is moved along to the dashboard.
  */
 export default function Home() {
   redirect("/login");

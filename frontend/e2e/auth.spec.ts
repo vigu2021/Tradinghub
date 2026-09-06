@@ -98,6 +98,8 @@ test("a duplicate email is rejected with a way out", async ({ page }) => {
   await register(page, email);
   await expect(page).toHaveURL(/\/dashboard$/);
 
+  // A signed-in visitor is bounced off /register, so the second attempt has to be a new one.
+  await page.context().clearCookies();
   await register(page, email);
 
   await expect(formAlert(page)).toContainText("already registered");

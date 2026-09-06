@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { Logo } from "@/components/ui/Logo";
+import { useRouter } from "next/navigation";
+import { useUser } from "@/features/auth/hooks";
 
 /**
  * The shell both auth screens sit in. A narrow column rather than a card: the ledger grid in the
@@ -9,6 +13,15 @@ import { Logo } from "@/components/ui/Logo";
  * character.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const { data: user } = useUser();
+
+  useEffect(() => {
+    if (user) {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
+
   return (
     <div className="flex min-h-dvh flex-col px-6 py-8 sm:px-10">
       <header className="rise">
