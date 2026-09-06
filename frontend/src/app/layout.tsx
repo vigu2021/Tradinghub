@@ -1,21 +1,8 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Instrument_Serif } from "next/font/google";
 
 import "./globals.css";
+import { display, mono } from "./fonts";
 import { GlobalProviders } from "./providers";
-
-const display = Instrument_Serif({
-  variable: "--font-display",
-  weight: "400",
-  style: ["normal", "italic"],
-  subsets: ["latin"],
-});
-
-const mono = IBM_Plex_Mono({
-  variable: "--font-mono",
-  weight: ["400", "500", "600"],
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Tradinghub",
