@@ -15,8 +15,11 @@
   --ink-faint: #5a5854;
   --rule: rgba(232, 230, 225, 0.09);
   --rule-strong: rgba(232, 230, 225, 0.18);
-  --accent: #f0b429;
-  --accent-dim: rgba(240, 180, 41, 0.14);
+  /* Dimmer than --rule: the ledger grid is texture, not a border, and it has to survive
+     sitting behind a table of trades without competing with its own row lines. */
+  --grid: rgba(232, 230, 225, 0.035);
+  --accent: #d8b45f;
+  --accent-dim: rgba(216, 180, 95, 0.14);
   --danger: #f08a7a;
 }
 
@@ -43,15 +46,15 @@ body {
   background-image:
     radial-gradient(
       110ch 70ch at 12% -10%,
-      rgba(240, 180, 41, 0.05),
+      rgba(216, 180, 95, 0.05),
       transparent 70%
     ),
-    linear-gradient(var(--rule) 1px, transparent 1px),
-    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
   background-size:
     100% 100%,
-    100% 4.5rem,
-    4.5rem 100%;
+    100% 5.5rem,
+    5.5rem 100%;
   -webkit-font-smoothing: antialiased;
 }
 
