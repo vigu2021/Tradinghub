@@ -203,3 +203,12 @@ async def test_an_access_token_outlives_logout(client: AsyncClient) -> None:
     response = await client.get("/auth/me")
 
     assert response.status_code == 200
+
+
+async def test_login_rejects_an_overlong_password(client: AsyncClient) -> None:
+    """Unauthenticated and Argon2-backed, so this is the endpoint the cap matters most on."""
+    response = await client.post(
+        "/auth/login", json={"email": "any@example.com", "password": "x" * 129}
+    )
+
+    assert response.status_code == 422

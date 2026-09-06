@@ -114,3 +114,10 @@ async def test_register_signs_the_new_account_in(client: AsyncClient) -> None:
     me = await client.get("/auth/me")
     assert me.status_code == 200
     assert me.json()["email"] == "d@example.com"
+
+
+async def test_register_rejects_an_overlong_password(client: AsyncClient) -> None:
+    """Argon2 hashes whatever it is given, so the cap is what stops a cheap CPU burn."""
+    response = await client.post("/auth/register", json=_payload("long@example.com", "x" * 129))
+
+    assert response.status_code == 422

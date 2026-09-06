@@ -14,8 +14,7 @@ from tradinghub.auth.dependencies import (
     get_current_user,
 )
 from tradinghub.auth.errors import InvalidSessionError
-from tradinghub.auth.schemas.session import LoginRequest
-from tradinghub.auth.schemas.user import RegisterRequest, UserResponse
+from tradinghub.auth.schemas.auth import LoginRequest, RegisterRequest, UserResponse
 from tradinghub.auth.security.tokens import (
     ACCESS_TOKEN_LIFETIME,
     REFRESH_TOKEN_LIFETIME,
