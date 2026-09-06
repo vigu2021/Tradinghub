@@ -858,7 +858,7 @@ async def test_other_origins_are_not_allowed(client):
 
 # Phase 2 — Frontend
 
-## Task 9: Next.js scaffold and the API client
+## Task 9: Next.js scaffold and the API client  ✅ DONE
 
 **Files:**
 - Create: `frontend/` (via CLI), `frontend/src/lib/api.ts`, `frontend/.env.local.example`
@@ -914,7 +914,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T>;
 
 ---
 
-## Task 10: Register and login pages
+## Task 10: Register and login pages  ✅ DONE
 
 **Files:**
 - Create: `frontend/src/app/(auth)/register/page.tsx`, `frontend/src/app/(auth)/login/page.tsx`,
@@ -1001,7 +1001,7 @@ loads, not a security property. The API is the gate either way.
 
 ---
 
-## Task 12: End-to-end test and README
+## Task 12: End-to-end test and README  ✅ DONE
 
 **Files:**
 - Create: `frontend/e2e/auth.spec.ts`, `frontend/playwright.config.ts`
