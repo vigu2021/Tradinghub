@@ -28,6 +28,13 @@ async def _sign_up(client: AsyncClient, email: str) -> Response:
     return await client.post("/auth/register", json={"email": email, "password": PASSWORD})
 
 
+async def _count_sessions(db_session: AsyncSession, user_id: int) -> int | None:
+    """Scoped to one account: the development database this suite runs against holds real rows."""
+    return await db_session.scalar(
+        select(func.count()).select_from(Session).where(Session.user_id == user_id)
+    )
+
+
 async def _log_in(client: AsyncClient, email: str) -> Response:
     """Register, then log in explicitly, for the tests that assert on the login response."""
     await _sign_up(client, email)
@@ -173,12 +180,12 @@ async def test_logout_clears_both_cookies(client: AsyncClient) -> None:
 
 
 async def test_logout_drops_the_session_row(client: AsyncClient, db_session: AsyncSession) -> None:
-    await _sign_up(client, "dropped@example.com")
-    assert await db_session.scalar(select(func.count()).select_from(Session)) == 1
+    user_id = (await _sign_up(client, "dropped@example.com")).json()["id"]
+    assert await _count_sessions(db_session, user_id) == 1
 
     await client.post("/auth/logout")
 
-    assert await db_session.scalar(select(func.count()).select_from(Session)) == 0
+    assert await _count_sessions(db_session, user_id) == 0
 
 
 async def test_logout_without_a_session_still_succeeds(client: AsyncClient) -> None:
