@@ -67,13 +67,12 @@ Tradinghub/
 │   │       └── routes.py       # the four endpoints
 │   └── tests/
 └── frontend/
-    ├── middleware.ts           # cheap presence gate on protected paths
     ├── e2e/                    # Playwright
     └── src/
         ├── lib/api.ts          # fetch wrapper, always credentials: "include"
         └── app/
-            ├── (auth)/login, register
-            └── (app)/dashboard
+            ├── (auth)/layout.tsx + login, register
+            └── (app)/layout.tsx  + dashboard   # the guard lives in the layout
 ```
 
 ### Backend stack
@@ -94,10 +93,13 @@ Next.js 16 App Router with TypeScript and Tailwind 4. Server Components are the 
 components appear only where forms need interactivity. Next.js 16 differs from the 13/14-era
 conventions most tutorials assume — notably `cookies()` is async.
 
-`middleware.ts` performs a cheap presence-check on the session cookie to redirect obviously
-anonymous users away from protected routes. It deliberately does **not** validate the session —
-that is the backend's job, and middleware runs on every request. Real authorization always happens
-in FastAPI.
+Route protection lives in the two group layouts rather than in `proxy.ts` (the Next 16 rename of
+`middleware.ts`). A proxy can only check that a cookie is present, and the one it would see at
+`/dashboard` is the fifteen-minute access token — the refresh token is scoped `Path=/auth` and
+never reaches it. Gating on a cookie that expires forty times faster than the session would eject
+people who are still signed in, so the `(app)` layout asks `/auth/me` instead and the `(auth)`
+layout does the mirror. Neither is the real gate: authorization always happens in FastAPI, and a
+redirect in the browser is a courtesy.
 
 ### The seam
 

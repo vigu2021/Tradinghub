@@ -97,13 +97,14 @@ Tradinghub/
 │       ├── core/
 │       └── auth/
 └── frontend/
-    ├── middleware.ts
     ├── e2e/auth.spec.ts
     └── src/
         ├── lib/api.ts
         └── app/
+            ├── (auth)/layout.tsx      # bounces a signed-in visitor to the dashboard
             ├── (auth)/login/page.tsx
             ├── (auth)/register/page.tsx
+            ├── (app)/layout.tsx       # the guard and the signed-in chrome
             └── (app)/dashboard/page.tsx
 ```
 
@@ -934,48 +935,69 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T>;
 Keep styling minimal — Tailwind defaults, a centered card. Slice 4 owns visual design.
 
 **Verify manually:** register a new account, get redirected to login, log in, land on `/dashboard`
-(404 until Task 11 — that is expected). In DevTools → Application → Cookies, confirm a `session`
-cookie exists and is flagged `HttpOnly`.
+(404 until Task 11 — that is expected). In DevTools → Application → Cookies, confirm `access_token`
+and `refresh_token` exist and are both flagged `HttpOnly`.
 **Commit:** `Add register and login pages`
 
 ---
 
-## Task 11: Protected dashboard, middleware, and logout
+## Task 11: Route guards, dashboard, and logout  ✅ DONE
 
 **Files:**
-- Create: `frontend/middleware.ts`, `frontend/src/app/(app)/dashboard/page.tsx`,
-  `frontend/src/app/(app)/logout-button.tsx`
+- Create: `frontend/src/app/(app)/layout.tsx`, `frontend/src/app/(app)/dashboard/page.tsx`
+- Modify: `frontend/src/app/(auth)/layout.tsx`, `frontend/src/app/page.tsx`
 
-**Requirements — middleware:**
-1. Matches `/dashboard` and anything beneath it.
-2. Redirects to `/login` when the `session` cookie is **absent**.
-3. Checks presence only. It does not call the backend and does not validate the token — middleware
-   runs on every matching request, and real authorization is the backend's job.
+**No proxy layer.** This task originally called for `frontend/middleware.ts` gating on a `session`
+cookie. Two things happened after it was written. Next 16 renamed the file convention to
+`proxy.ts` (same behaviour, `npx @next/codemod@canary middleware-to-proxy .` migrates it), and the
+rotation design made the check itself unworkable: nothing sets a cookie named `session` any more,
+and of the two that replaced it, `refresh_token` is scoped `Path=/auth` so a proxy never receives
+it at `/dashboard`, while `access_token` carries `max_age=900`. The browser therefore drops the
+only cookie a proxy can see fifteen minutes after the last request, leaving six days of valid
+session behind it. A presence check on that cookie would eject people who are still signed in.
 
-**Requirements — dashboard:**
-4. A Server Component that calls `GET /auth/me`, forwarding the incoming cookie via `cookies()`
-   from `next/headers`. Server-side fetches do not carry browser cookies automatically.
-5. Renders the user's email and a logout button.
-6. Redirects to `/login` if the call returns 401 — this is the real gate, catching the expired or
-   forged cookies that middleware waves through.
+It could not settle the question even with a live cookie in hand. The access token is an HS256 JWT
+that `jose` can verify on the Edge runtime, but only at the cost of handing the signing secret to a
+second process, and a valid signature still says nothing about revocation — see
+`test_an_access_token_outlives_logout`. The refresh token is opaque and needs the `sessions` table.
+Next's own guidance agrees: a proxy is for optimistic checks, not session management.
 
-**Requirements — logout:**
-7. A Client Component posting to `/auth/logout`, then navigating to `/login`.
-8. Uses `router.refresh()` or a full navigation so cached Server Component output for the
-   authenticated view is discarded.
+Revisit only with a cookie that outlives the access token at `Path=/`. Two ways to get one, both
+recorded here so the reasoning is not re-derived: widen `refresh_token` to `Path=/`, which trades
+away the scoping deliberately built in Task 6; or set a separate valueless `has_session` hint
+cookie next to the pair. Neither is required — what a proxy buys is a 307 before any JavaScript
+loads, not a security property. The API is the gate either way.
 
-Hints: `import { cookies } from "next/headers"` — in current Next.js it is async, so `await` it.
-`redirect()` from `next/navigation` throws to interrupt rendering; do not wrap it in a `try`.
+**Requirements — the signed-in shell (`(app)/layout.tsx`):**
+1. A Client Component. Pages beneath it stay Server Components: `children` arrives already
+   rendered, so their `metadata` exports keep working.
+2. Redirects to `/login` in a `useEffect` when `useUser()` reports an error. In the render body it
+   would warn and re-fire every render until the navigation commits.
+3. Returns `null` until a user is known, so a signed-out visitor never sees the header painted
+   before the effect runs. The cost is a blank screen for the length of the `/auth/me` round trip.
+4. Owns the header — the mark and the sign-out button — because it is chrome, not dashboard
+   content, and slice 2's screens must not redraw it.
 
-**Verify manually:**
-1. Visit `/dashboard` logged out → redirected to `/login`
-2. Log in → dashboard shows your email
-3. Click logout → back at `/login`
-4. Press Back → still redirected to `/login`, not a cached dashboard
-5. Delete the `session` cookie in DevTools, reload → redirected
-6. Edit the cookie to a garbage value, reload → still redirected, proving step 6's server check
+**Requirements — the auth shell (`(auth)/layout.tsx`):**
+5. The mirror: redirects to `/dashboard` when `useUser()` returns a user.
+6. Deliberately does **not** hold back rendering. Most visitors here are signed out, and blanking
+   the form for a round trip to spare a rare signed-in visitor one frame is the wrong trade.
 
-**Commit:** `Add protected dashboard and logout`
+**Requirements — dashboard and logout:**
+7. The page renders content only, and keeps a bare `if (!user) return null` — not dead code, but
+   the layout's guarantee restated in types, since `useQuery` returns `User | undefined`.
+8. Logout needs no redirect of its own. `queryClient.clear()` invalidates the session query, the
+   refetch 401s, and the `(app)` guard ejects.
+
+**Verify:**
+1. Visit `/dashboard` signed out -> redirected to `/login`
+2. Sign in -> dashboard shows your email
+3. Visit `/login` while signed in -> redirected to `/dashboard`
+4. Sign out -> back at `/login`
+5. Press Back -> still `/login`, not a cached dashboard
+
+**Commits:** `Move the misplaced dashboard chrome into the app layout`,
+`Redirect between the dashboard and the auth screens by session`
 
 ---
 
