@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Ten Directions for Tradinghub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Archivo:wdth,wght@75..125,400;75..125,600;75..125,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+
+<style>
+  /* ---------- page chrome tokens: light is the base, dark redefines ---------- */
+  :root {
+    --paper: #f2f3f5;
+    --panel: #ffffff;
+    --ink: #16181d;
+    --ink-2: #4a4f58;
+    --ink-3: #7c828d;
+    --line: #d8dbe0;
+    --line-soft: #e6e8ec;
+    --accent: #9a6b12;
+    --accent-soft: rgba(154, 107, 18, 0.12);
+    --shadow: 0 1px 2px rgba(22, 24, 29, 0.06), 0 8px 24px rgba(22, 24, 29, 0.05);
+  }
+
+  :root:not([data-theme="light"]) {
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #121317;
+      --panel: #191b20;
+      --ink: #e9eaed;
+      --ink-2: #a8adb6;
+      --ink-3: #767c86;
+      --line: #2b2e35;
+      --line-soft: #23262c;
+      --accent: #e2a63c;
+      --accent-soft: rgba(226, 166, 60, 0.14);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.35);
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #121317;
+    --panel: #191b20;
+    --ink: #e9eaed;
+    --ink-2: #a8adb6;
+    --ink-3: #767c86;
+    --line: #2b2e35;
+    --line-soft: #23262c;
+    --accent: #e2a63c;
+    --accent-soft: rgba(226, 166, 60, 0.14);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Source Serif 4", Georgia, serif;
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  .wrap {
+    max-width: 78rem;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 6rem;
+  }
+
+  /* ---------- header ---------- */
+  .masthead { display: flex; flex-direction: column; gap: 1.1rem; max-width: 46rem; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+  }
+
+  h1 {
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.4rem, 6vw, 3.9rem);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .standfirst { margin: 0; font-size: 1.15rem; color: var(--ink-2); max-width: 42rem; }
+
+  /* ---------- research strip ---------- */
+  .findings {
+    margin-top: 3.25rem;
+    display: grid;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  }
+
+  .finding { background: var(--panel); padding: 1.35rem 1.4rem; display: flex; flex-direction: column; gap: 0.45rem; }
+
+  .finding b {
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .finding span { font-size: 0.94rem; color: var(--ink-2); line-height: 1.45; }
+
+  .finding cite {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.6875rem;
+    font-style: normal;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  /* ---------- section rule ---------- */
+  .section-head {
+    margin: 4.5rem 0 1.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--ink);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .section-head h2 {
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  .section-head p { margin: 0; color: var(--ink-3); font-size: 0.94rem; }
+
+  /* ---------- direction grid ---------- */
+  .grid { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr)); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .card__meta { padding: 1.15rem 1.25rem 1.35rem; display: flex; flex-direction: column; gap: 0.6rem; flex: 1; }
+
+  .card__name {
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-size: 1.18rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 0.55rem;
+  }
+
+  .card__name em {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-style: normal;
+    font-size: 0.6875rem;
+    color: var(--ink-3);
+    letter-spacing: 0.1em;
+  }
+
+  .card__thesis { margin: 0; font-size: 0.97rem; color: var(--ink-2); line-height: 1.5; }
+
+  .spec {
+    margin: 0.2rem 0 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.3rem 0.85rem;
+    font-size: 0.85rem;
+  }
+
+  .spec dt {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding-top: 0.22rem;
+  }
+
+  .spec dd { margin: 0; color: var(--ink-2); }
+
+  .swatches { display: flex; gap: 0.3rem; }
+  .swatches i { width: 1.15rem; height: 1.15rem; border: 1px solid rgba(128, 128, 128, 0.35); display: block; }
+
+  .risk {
+    margin: 0.35rem 0 0;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--line-soft);
+    font-size: 0.88rem;
+    color: var(--ink-3);
+  }
+
+  .risk b { color: var(--ink-2); font-weight: 600; }
+
+  /* ---------- the specimen frame ----------
+     Each mock is a fixed specimen, like a paint chip: it keeps its own palette in either theme,
+     because the point is to show the direction, not to react to the viewer. */
+  .mock {
+    aspect-ratio: 4 / 3;
+    padding: 0.9rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--line);
+    container-type: inline-size;
+    overflow: hidden;
+  }
+
+  .mock__bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .mock__logo { font-size: 0.82rem; font-weight: 600; letter-spacing: -0.01em; }
+  .mock__body { display: flex; flex-direction: column; gap: 0.52rem; flex: 1; justify-content: center; }
+  .mock__h { font-size: 1.32rem; line-height: 1.1; letter-spacing: -0.02em; }
+  .mock__sub { font-size: 0.68rem; opacity: 0.75; line-height: 1.35; }
+  .mock__field { display: flex; flex-direction: column; gap: 0.2rem; }
+  .mock__field span { font-size: 0.5rem; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.75; }
+  .mock__field i { display: block; height: 1.15rem; }
+  .mock__btn {
+    margin-top: 0.15rem;
+    text-align: center;
+    padding: 0.42rem;
+    font-size: 0.56rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .mock__foot { font-size: 0.55rem; opacity: 0.6; }
+
+  /* 01 — terminal ledger (what exists today) */
+  .m-terminal {
+    background: #0a0a0c;
+    color: #e8e6e1;
+    background-image: linear-gradient(rgba(232, 230, 225, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232, 230, 225, 0.07) 1px, transparent 1px);
+    background-size: 2.2rem 2.2rem;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  .m-terminal .mock__logo, .m-terminal .mock__h { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; }
+  .m-terminal .mock__field i { border-bottom: 1px solid rgba(232, 230, 225, 0.28); }
+  .m-terminal .mock__field:first-of-type i { border-bottom-color: #f0b429; }
+  .m-terminal .mock__field:first-of-type span { color: #f0b429; opacity: 1; }
+  .m-terminal .mock__btn { background: #f0b429; color: #0a0a0c; }
+
+  /* 02 — bloomberg amber */
+  .m-bloomberg {
+    background: #000000;
+    color: #ff9e18;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    gap: 0.4rem;
+  }
+  .m-bloomberg .mock__bar { border-bottom: 1px solid #ff9e18; padding-bottom: 0.3rem; }
+  .m-bloomberg .mock__logo { text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.62rem; }
+  .m-bloomberg .mock__h { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .m-bloomberg .mock__sub { color: #b06d0f; }
+  .m-bloomberg .mock__field i { background: #17120a; border: 1px solid #6b4409; height: 1rem; }
+  .m-bloomberg .mock__btn { background: #ff9e18; color: #000; }
+  .m-bloomberg .mock__foot { color: #6b4409; }
+
+  /* 03 — swiss ledger */
+  .m-swiss {
+    background: #ffffff;
+    color: #111111;
+    font-family: "Archivo", Helvetica, Arial, sans-serif;
+  }
+  .m-swiss .mock__bar { border-bottom: 3px solid #111; padding-bottom: 0.35rem; }
+  .m-swiss .mock__logo { font-weight: 800; letter-spacing: -0.03em; }
+  .m-swiss .mock__h { font-weight: 800; letter-spacing: -0.04em; font-size: 1.45rem; }
+  .m-swiss .mock__field i { border-bottom: 2px solid #111; }
+  .m-swiss .mock__btn { background: #e2231a; color: #fff; }
+  .m-swiss .mock__sub { color: #555; }
+
+  /* 04 — paper trade */
+  .m-paper {
+    background: #eceadf;
+    color: #23303d;
+    font-family: "Source Serif 4", Georgia, serif;
+    background-image: repeating-linear-gradient(#eceadf 0 1.55rem, #cfd5cd 1.55rem 1.6rem);
+  }
+  .m-paper .mock__logo { font-style: italic; font-size: 0.9rem; }
+  .m-paper .mock__h { font-style: italic; font-weight: 400; }
+  .m-paper .mock__field span { font-family: "IBM Plex Mono", monospace; color: #6b7a6a; }
+  .m-paper .mock__field i { border-bottom: 1px solid #23303d; }
+  .m-paper .mock__btn { background: #23303d; color: #eceadf; }
+
+  /* 05 — brutalist broker */
+  .m-brutal {
+    background: #f4f3ee;
+    color: #000;
+    font-family: "Archivo", Helvetica, sans-serif;
+  }
+  .m-brutal .mock__bar { background: #000; color: #f4f3ee; padding: 0.25rem 0.45rem; }
+  .m-brutal .mock__logo { text-transform: uppercase; font-weight: 800; letter-spacing: 0.02em; }
+  .m-brutal .mock__h { font-weight: 800; text-transform: uppercase; font-size: 1.15rem; line-height: 0.98; }
+  .m-brutal .mock__field i { border: 2px solid #000; background: #fff; box-shadow: 3px 3px 0 #000; }
+  .m-brutal .mock__btn { background: #2f5bff; color: #fff; border: 2px solid #000; box-shadow: 3px 3px 0 #000; }
+
+  /* 06 — bank vault */
+  .m-vault {
+    background: #0e1a2b;
+    color: #e7e3d8;
+    font-family: "Source Serif 4", Georgia, serif;
+  }
+  .m-vault .mock__bar { border-bottom: 1px solid #b08d3f; padding-bottom: 0.35rem; }
+  .m-vault .mock__logo { letter-spacing: 0.16em; text-transform: uppercase; font-size: 0.58rem; color: #b08d3f; }
+  .m-vault .mock__h { font-weight: 400; font-size: 1.4rem; }
+  .m-vault .mock__field span { letter-spacing: 0.2em; color: #8c93a1; }
+  .m-vault .mock__field i { border-bottom: 1px solid #2c3f57; }
+  .m-vault .mock__btn { border: 1px solid #b08d3f; color: #b08d3f; letter-spacing: 0.22em; }
+
+  /* 07 — chart first */
+  .m-chart {
+    background: #0d1117;
+    color: #e6edf3;
+    font-family: "DM Sans", system-ui, sans-serif;
+    position: relative;
+  }
+  .m-chart::before {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 58%;
+    background:
+      linear-gradient(to top, rgba(46, 160, 96, 0.22), transparent),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 100' preserveAspectRatio='none'%3E%3Cpath d='M0 82 L30 74 L60 79 L90 58 L120 63 L150 44 L180 49 L210 30 L240 34 L270 16 L300 10' fill='none' stroke='%232ea060' stroke-width='2'/%3E%3C/svg%3E") no-repeat bottom / 100% 100%;
+    pointer-events: none;
+  }
+  .m-chart > * { position: relative; }
+  .m-chart .mock__logo { font-weight: 700; }
+  .m-chart .mock__h { font-weight: 700; letter-spacing: -0.03em; }
+  .m-chart .mock__field i { background: rgba(230, 237, 243, 0.07); border-radius: 3px; }
+  .m-chart .mock__btn { background: #2ea060; color: #05130b; border-radius: 3px; }
+
+  /* 08 — monochrome editorial */
+  .m-mono {
+    background: #f7f7f7;
+    color: #0d0d0d;
+    font-family: "Archivo", Helvetica, sans-serif;
+  }
+  .m-mono .mock__logo { font-weight: 400; letter-spacing: 0.3em; text-transform: uppercase; font-size: 0.55rem; }
+  .m-mono .mock__h { font-weight: 800; font-size: 1.85rem; letter-spacing: -0.05em; line-height: 0.92; }
+  .m-mono .mock__sub { color: #6a6a6a; }
+  .m-mono .mock__field span { color: #9a9a9a; }
+  .m-mono .mock__field i { border-bottom: 1px solid #0d0d0d; }
+  .m-mono .mock__btn { background: #0d0d0d; color: #f7f7f7; }
+
+  /* 09 — soft fintech */
+  .m-soft {
+    background: #f6f7fb;
+    color: #1c2033;
+    font-family: "DM Sans", system-ui, sans-serif;
+  }
+  .m-soft .mock__body { background: #fff; border-radius: 12px; padding: 0.7rem; box-shadow: 0 6px 18px rgba(28, 32, 51, 0.08); }
+  .m-soft .mock__logo { font-weight: 700; color: #4b5bd6; }
+  .m-soft .mock__h { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .m-soft .mock__field i { background: #f1f2f8; border-radius: 8px; }
+  .m-soft .mock__field span { color: #7a819c; }
+  .m-soft .mock__btn { background: #4b5bd6; color: #fff; border-radius: 8px; }
+
+  /* 10 — split proof */
+  .m-split {
+    background: #141416;
+    color: #ededed;
+    font-family: "DM Sans", system-ui, sans-serif;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: 0;
+  }
+  .m-split__pane { padding: 0.85rem 0.8rem; display: flex; flex-direction: column; gap: 0.5rem; justify-content: center; }
+  .m-split__quote { background: #1e1e21; border-right: 1px solid #2a2a2e; font-family: "Source Serif 4", Georgia, serif; }
+  .m-split__quote p { margin: 0; font-size: 0.66rem; line-height: 1.45; font-style: italic; }
+  .m-split__quote small { font-family: "DM Sans", sans-serif; font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; color: #8a8a90; font-style: normal; }
+  .m-split .mock__h { font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; }
+  .m-split .mock__field i { border-bottom: 1px solid #3a3a40; height: 0.95rem; }
+  .m-split .mock__btn { background: #ededed; color: #141416; }
+
+  /* ---------- recommendation ---------- */
+  .rec {
+    margin-top: 4.5rem;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    background: var(--panel);
+    padding: 1.75rem 1.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .rec h2 {
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  .rec p { margin: 0; color: var(--ink-2); max-width: 46rem; }
+  .rec strong { color: var(--ink); font-weight: 600; }
+
+  .sources { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--line); font-size: 0.85rem; color: var(--ink-3); }
+  .sources a { color: var(--ink-2); text-decoration-color: var(--line); text-underline-offset: 3px; }
+  .sources a:hover { color: var(--accent); }
+
+  a:focus-visible, .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card { transition: border-color 0.18s ease; }
+    .card:hover { border-color: var(--accent); }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">Design review · Slice 1 · 6 Sep 2026</p>
+    <h1>Ten directions for Tradinghub</h1>
+    <p class="standfirst">
+      Ten visual directions for the auth screens and the app that follows, each rendered rather than
+      described. Every specimen shows the same register screen, so the only variable is the design.
+      Research first, because a few of these choices are settled by evidence rather than taste.
+    </p>
+  </header>
+
+  <section class="findings" aria-label="Research findings">
+    <div class="finding">
+      <b>27%</b>
+      <span>of users have abandoned a form purely because it felt long-winded. Two fields is already near the floor.</span>
+      <cite>Eleken, 2026</cite>
+    </div>
+    <div class="finding">
+      <b>88%</b>
+      <span>won't return after one bad experience. The first screen is the product for most visitors.</span>
+      <cite>Ivyforms</cite>
+    </div>
+    <div class="finding">
+      <b>26%</b>
+      <span>lift from social proof on the form itself — a real number, a real quote, not a logo wall.</span>
+      <cite>Ivyforms</cite>
+    </div>
+    <div class="finding">
+      <b>Dark</b>
+      <span>is an expectation in fintech now, not a differentiator — and neither is light. Both are table stakes.</span>
+      <cite>WANDR, 2026</cite>
+    </div>
+  </section>
+
+  <div class="section-head">
+    <h2>The ten</h2>
+    <p>Specimens keep their own palette in either theme — they are paint chips, not components.</p>
+  </div>
+
+  <div class="grid">
+
+    <article class="card">
+      <div class="mock m-terminal">
+        <div class="mock__bar"><span class="mock__logo">Tradinghub</span></div>
+        <div class="mock__body">
+          <div class="mock__h">Create your account</div>
+          <div class="mock__sub">An email and a password, nothing else.</div>
+          <div class="mock__field"><span>Email</span><i></i></div>
+          <div class="mock__field"><span>Password</span><i></i></div>
+          <div class="mock__btn">Create account</div>
+        </div>
+        <div class="mock__foot">A journal for reviewing your own decisions</div>
+      </div>
+      <div class="card__meta">
+        <h3 class="card__name">Terminal Ledger <em>built</em></h3>
+        <p class="card__thesis">Graph-paper ground, ledger-line inputs, a serif display against monospace data. What exists today.</p>
+        <dl class="spec">
+          <dt>Type</dt><dd>Instrument Serif + IBM Plex Mono</dd>
+          <dt>Palette</dt><dd class="swatches"><i style="background:#0a0a0c"></i><i style="background:#e8e6e1"></i><i style="background:#f0b429"></i><i style="background:#f08a7a"></i></dd>
+        </dl>
+        <p class="risk"><b>Risk:</b> the grid is loud. It earns itself once tables of trades sit on it; on an empty auth screen it is decoration.</p>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="mock m-bloomberg">
+        <div class="mock__bar"><span class="mock__logo">Tradinghub</span><span class="mock__foot">03:12:44</span></div>
+        <div class="mock__body">
+          <div class="mock__h">New account</div>
+          <div class="mock__sub">&gt; awaiting credentials</div>
+          <div class="mock__field"><span>Email</span><i></i></div>
+          <div class="mock__field"><span>Password</span><i></i></div>
+          <div class="mock__btn">Execute</div>
+        </div>
+      </div>
+      <div class="card__meta">
+        <h3 class="card__name">Amber Terminal <em>02</em></h3>
+        <p class="card__thesis">The Bloomberg lineage taken literally. Pure black, one amber, monospace everywhere, no decoration and no radius.</p>
+        <dl class="spec">
+          <dt>Type</dt><dd>IBM Plex Mono, single family</dd>
+          <dt>Palette</dt><dd class="swatches"><i style="background:#000000"></i><i style="background:#ff9e18"></i><i style="background:#6b4409"></i></dd>
+        </dl>
+        <p class="risk"><b>Risk:</b> costume. Terminals look like that because of 1980s phosphor, not because it is legible — and "Execute" on a signup button is a joke that gets old.</p>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="mock m-swiss">
+        <div class="mock__bar"><span class="mock__logo">Tradinghub</span><span class="mock__foot">01 / 02</span></div>
+        <div class="mock__body">
+          <div class="mock__h">Create your account</div>
+          <div class="mock__sub">An email and a password, nothing else.</div>
+          <div class="mock__field"><span>Email</span><i></i></div>
+          <div class="mock__field"><span>Password</span><i></i></div>
+          <div class="mock__btn">Create account</div>
+        </div>
+      </div>
+      <div class="card__meta">
+        <h3 class="card__name">Swiss Ledger <em>03</em></h3>
+        <p class="card__thesis">International Style: white ground, a hard rule, tight grotesque headings, one red. Everything aligned to a strict grid.</p>
+        <dl class="spec">
+          <dt>Type</dt><dd>Archivo, weights 400/800</dd>
+          <dt>Palette</dt><dd class="swatches"><i style="background:#ffffff"></i><i style="background:#111111"></i><i style="background:#e2231a"></i></dd>
+        </dl>
+        <p class="risk"><b>Risk:</b> red is the loss colour. Spending it on chrome means every button reads as a sell, and slice 4's P&amp;L has nowhere to go.</p>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="mock m-paper">
+        <div class="mock__bar"><span class="mock__logo">Tradinghub</span></div>
+        <div class="mock__body">
+          <div class="mock__h">Open a new book</div>
+          <div class="mock__sub">Every trade, and what you were thinking.</div>
+          <div class="mock__field"><span>Email</span><i></i></div>
+          <div class="mock__field"><span>Password</span><i></i></div>
+          <div class="mock__btn">Create account</div>
+        </div>
+      </div>
+      <div class="card__meta">
+        <h3 class="card__name">Paper Trade <em>04</em></h3>
+        <p class="card__thesis">The analogue metaphor made real: ruled ledger stock, ink blue, an italic serif. A journal that looks like a journal.</p>
+        <dl class="spec">
+          <dt>Type</dt><dd>Source Serif 4 italic + Plex Mono labels</dd>
+          <dt>Palette</dt><dd class="swatches"><i style="background:#eceadf"></i><i style="background:#23303d"></i><i style="background:#6b7a6a"></i></dd>
+        </dl>
+        <p class="risk"><b>Risk:</b> a metaphor with an expiry date. Ruled paper is charming behind two fields and hostile behind a sortable table of 400 trades.</p>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="mock m-brutal">
+        <div class="mock__bar"><span class="mock__logo">Tradinghub</span></div>
+        <div class="mock__body">
+          <div class="mock__h">Create your<br>account</div>
+          <div class="mock__field"><span>Email</span><i></i></div>
+          <div class="mock__field"><span>Password</span><i></i></div>
+          <div class="mock__btn">Create account</div>
+        </div>
+      </div>
+      <div class="card__meta">
+        <h3 class="card__name">Hard Edges <em>05</em></h3>
+        <p class="card__thesis">Neo-brutalist: 2px borders, offset shadows, no radius anywhere, one electric blue doing all the work.</p>
+        <dl class="spec">
+          <dt>Type</dt><dd>Archivo 800, uppercase headings</dd>
+          <dt>Palette</dt><dd class="swatches"><i style="background:#f4f3ee"></i><i style="background:#000000"></i><i style="background:#2f5bff"></i></dd>
+        </dl>
+        <p class="risk"><b>Risk:</b> personality that fights the content. It reads as a design-tool landing page, and it is the hardest of these to keep coherent across a data-dense app.</p>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="mock m-vault">
+        <div class="mock__bar"><span class="mock__logo">Tradinghub</span></div>
+        <div class="mock__body">
+          <div class="mock__h">Create your account</div>
+          <div class="mock__sub">An email and a password, nothing else.</div>
+          <div class="mock__field"><span>Email</span><i></i></div>
+          <div class="mock__field"><span>Password</span><i></i></div>
+          <div class="mock__btn">Create account</div>
+        </div>
+      </div>
+      <div class="card__meta">
+        <h3 class="card__name">Private Bank <em>06</em></h3>
+        <p class="card__thesis">Deep navy, gold hairlines, a quiet serif and a great deal of space. The formality of an institution rather than a tool.</p>
+        <dl class="spec">
+          <dt>Type</dt><dd>Source Serif 4 + wide-tracked labels</dd>
+          <dt>Palette</dt><dd class="swatches"><i style="background:#0e1a2b"></i><i style="background:#b08d3f"></i><i style="background:#e7e3d8"></i></dd>
+        </dl>
+        <p class="risk"><b>Risk:</b> borrowed authority. It promises other people's money under management; this is a notebook for one person's own trades.</p>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="mock m-chart">
+        <div class="mock__bar"><span class="mock__logo">Tradinghub</span></div>
+        <div class="mock__body">
+          <div class="mock__h">Create your account</div>
+          <div class="mock__sub">Your equity curve, from the first entry.</div>
+          <div class="mock__field"><span>Email</span><i></i></div>
+          <div class="mock__field"><span>Password</span><i></i></div>
+          <div class="mock__btn">Create account</div>
+        </div>
+      </div>
+      <div class="card__meta">
+        <h3 class="card__name">Curve First <em>07</em></h3>
+        <p class="card__thesis">The form sits over a live equity curve. The product's whole promise is visible before anyone signs up.</p>
+        <dl class="spec">
+          <dt>Type</dt><dd>DM Sans, one family</dd>
+          <dt>Palette</dt><dd class="swatches"><i style="background:#0d1117"></i><i style="background:#2ea060"></i><i style="background:#e6edf3"></i></dd>
+        </dl>
+        <p class="risk"><b>Risk:</b> the curve is fiction until someone has trades, and a rising fake one on a signup page is the oldest lie in this industry.</p>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="mock m-mono">
+        <div class="mock__bar"><span class="mock__logo">Tradinghub</span></div>
+        <div class="mock__body">
+          <div class="mock__h">Create<br>account</div>
+          <div class="mock__sub">An email and a password, nothing else.</div>
+          <div class="mock__field"><span>Email</span><i></i></div>
+          <div class="mock__field"><span>Password</span><i></i></div>
+          <div class="mock__btn">Create account</div>
+        </div>
+      </div>
+      <div class="card__meta">
+        <h3 class="card__name">No Colour <em>08</em></h3>
+        <p class="card__thesis">Pure greyscale, one family across a huge weight range. Colour is reserved entirely for data — the first green you see is a real profit.</p>
+        <dl class="spec">
+          <dt>Type</dt><dd>Archivo, 400 through 800</dd>
+          <dt>Palette</dt><dd class="swatches"><i style="background:#f7f7f7"></i><i style="background:#0d0d0d"></i><i style="background:#9a9a9a"></i></dd>
+        </dl>
+        <p class="risk"><b>Risk:</b> nothing to remember it by, and errors have to carry their weight through type and position alone.</p>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="mock m-soft">
+        <div class="mock__bar"><span class="mock__logo">Tradinghub</span></div>
+        <div class="mock__body">
+          <div class="mock__h">Create your account</div>
+          <div class="mock__field"><span>Email</span><i></i></div>
+          <div class="mock__field"><span>Password</span><i></i></div>
+          <div class="mock__btn">Create account</div>
+        </div>
+      </div>
+      <div class="card__meta">
+        <h3 class="card__name">Soft Fintech <em>09</em></h3>
+        <p class="card__thesis">The consumer-app default: light ground, rounded card, generous padding, one friendly indigo. Included honestly as the safe option.</p>
+        <dl class="spec">
+          <dt>Type</dt><dd>DM Sans, 400/700</dd>
+          <dt>Palette</dt><dd class="swatches"><i style="background:#f6f7fb"></i><i style="background:#4b5bd6"></i><i style="background:#1c2033"></i></dd>
+        </dl>
+        <p class="risk"><b>Risk:</b> indistinguishable. This is the look every fintech template ships with, and nobody will remember which product it was.</p>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="mock m-split">
+        <div class="mock__pane m-split__pane m-split__quote">
+          <p>“Took the long because everyone else was. Not because of the setup.”</p>
+          <small>Journal · 14 Mar</small>
+        </div>
+        <div class="mock__pane m-split__pane">
+          <div class="mock__h">Create your account</div>
+          <div class="mock__field"><span>Email</span><i></i></div>
+          <div class="mock__field"><span>Password</span><i></i></div>
+          <div class="mock__btn">Create account</div>
+        </div>
+      </div>
+      <div class="card__meta">
+        <h3 class="card__name">Split Proof <em>10</em></h3>
+        <p class="card__thesis">Two panes: the form beside a real journal entry. The 26% social-proof finding applied literally — show the writing, not a logo wall.</p>
+        <dl class="spec">
+          <dt>Type</dt><dd>Source Serif 4 entries + DM Sans chrome</dd>
+          <dt>Palette</dt><dd class="swatches"><i style="background:#141416"></i><i style="background:#1e1e21"></i><i style="background:#ededed"></i></dd>
+        </dl>
+        <p class="risk"><b>Risk:</b> half the screen is marketing on a page whose only job is a form, and it collapses to nothing useful on a phone.</p>
+      </div>
+    </article>
+
+  </div>
+
+  <section class="rec">
+    <h2>What I'd actually do</h2>
+    <p>
+      <strong>Keep Terminal Ledger and steal one idea from Split Proof.</strong> The direction you have
+      is already the one that survives contact with slice 2: monospace with tabular figures is what a
+      table of 400 trades needs, and amber leaves green and red free for profit and loss — which
+      <em>every</em> other direction here spends on chrome.
+    </p>
+    <p>
+      Two changes worth making. <strong>Turn the grid down</strong> — it is doing decoration work on an
+      empty auth screen and will fight a data table later; halve its opacity and let the ground breathe.
+      And <strong>put one real journal entry beside the register form</strong>, the way direction 10
+      does. It is the cheapest version of the 26% finding, it shows what the product is for before
+      anyone commits, and unlike a fake equity curve it is honest.
+    </p>
+    <p>
+      The direction I would reject hardest is <strong>Soft Fintech</strong> — not because it is bad, but
+      because it is the one you would not be able to pick out of a lineup of ten other products a year
+      from now.
+    </p>
+  </section>
+
+  <footer class="sources">
+    Research:
+    <a href="https://www.eleken.co/blog-posts/sign-up-flow">Eleken — Sign-up flows that convert</a> ·
+    <a href="https://ivyforms.com/blog/sign-up-form-best-practices/">Ivyforms — Sign-up form best practices</a> ·
+    <a href="https://www.wandr.studio/blog/fintech-design-trends-2026">WANDR — Fintech design trends 2026</a> ·
+    <a href="https://www.authgear.com/post/login-signup-ux-guide/">Authgear — Login &amp; signup UX guide</a> ·
+    <a href="https://uxplanet.org/10-best-practices-for-creating-sign-up-forms-48470ce94b16">UX Planet — Sign-up form practices</a>
+  </footer>
+</div>
+
+</body>
+</html>
