@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
+import { Button } from "@/components/ui/Button";
+import { Field } from "@/components/ui/Field";
 import { API_CODES, ApiError, messageFor } from "@/lib/api/errors";
 
 import { useRegister } from "../hooks";
@@ -37,39 +39,47 @@ export function RegisterForm() {
     registerMutation.error.code === API_CODES.EMAIL_TAKEN;
 
   return (
-    <form onSubmit={submit} noValidate>
-      <label htmlFor="email">Email</label>
-      <input
+    <form onSubmit={submit} noValidate className="space-y-7">
+      <Field
         id="email"
+        label="Email"
         type="email"
         autoComplete="email"
-        aria-invalid={Boolean(errors.email)}
+        autoFocus
+        error={errors.email?.message}
         {...field("email")}
       />
-      {errors.email && <p role="alert">{errors.email.message}</p>}
 
-      <label htmlFor="password">Password</label>
-      <input
+      <Field
         id="password"
+        label="Password"
         type="password"
         autoComplete="new-password"
-        aria-describedby="password-hint"
-        aria-invalid={Boolean(errors.password)}
+        hint={`At least ${MIN_PASSWORD_LENGTH} characters`}
+        error={errors.password?.message}
         {...field("password")}
       />
-      <p id="password-hint">At least {MIN_PASSWORD_LENGTH} characters</p>
-      {errors.password && <p role="alert">{errors.password.message}</p>}
 
       {registerMutation.error && (
-        <p role="alert">
+        <p
+          role="alert"
+          className="border-l-2 border-danger bg-danger/5 py-2 pl-3 text-sm text-danger"
+        >
           {messageFor(registerMutation.error)}{" "}
-          {emailTaken && <Link href="/login">Log in instead</Link>}
+          {emailTaken && (
+            <Link
+              href="/login"
+              className="underline decoration-danger/40 underline-offset-4 hover:decoration-danger"
+            >
+              Sign in instead
+            </Link>
+          )}
         </p>
       )}
 
-      <button type="submit" disabled={registerMutation.isPending}>
-        {registerMutation.isPending ? "Creating account…" : "Create account"}
-      </button>
+      <Button type="submit" disabled={registerMutation.isPending}>
+        {registerMutation.isPending ? "Creating account" : "Create account"}
+      </Button>
     </form>
   );
 }

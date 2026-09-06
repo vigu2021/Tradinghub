@@ -1,26 +1,78 @@
 @import "tailwindcss";
 
+/*
+ * Tradinghub is a ledger you argue with yourself in. The surface should read as an instrument:
+ * near-black ground, hairline rules, monospace for anything countable, one warm accent.
+ *
+ * The accent is amber, not green, on purpose. Green and red belong to profit and loss; spending
+ * them on chrome would make every button look like a position.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ground: #0a0a0c;
+  --ground-raised: #101014;
+  --ink: #e8e6e1;
+  --ink-dim: #8f8d88;
+  --ink-faint: #5a5854;
+  --rule: rgba(232, 230, 225, 0.09);
+  --rule-strong: rgba(232, 230, 225, 0.18);
+  --accent: #f0b429;
+  --accent-dim: rgba(240, 180, 41, 0.14);
+  --danger: #f08a7a;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-ground: var(--ground);
+  --color-ground-raised: var(--ground-raised);
+  --color-ink: var(--ink);
+  --color-ink-dim: var(--ink-dim);
+  --color-ink-faint: var(--ink-faint);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-danger: var(--danger);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  /* A faint ledger grid, and a wash of warmth from the top left so the ground is not flat black. */
+  background-image:
+    radial-gradient(
+      110ch 70ch at 12% -10%,
+      rgba(240, 180, 41, 0.05),
+      transparent 70%
+    ),
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    100% 4.5rem,
+    4.5rem 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* One orchestrated entrance rather than scattered micro-animations. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
 }

@@ -26,7 +26,7 @@ from 13 and 14. Most tutorials you find target the old versions. The bundled doc
 
 ---
 
-## Task 1: Dependencies and the environment file
+## Task 1: Dependencies and the environment file  ✅ DONE
 
 **Files:**
 - Modify: `frontend/package.json`, `frontend/.gitignore`
@@ -58,7 +58,7 @@ the JavaScript bundle and is fully public.
 
 ---
 
-## Task 2: Error types
+## Task 2: Error types  ✅ DONE
 
 **Files:**
 - Create: `frontend/src/lib/api/errors.ts`
@@ -100,7 +100,7 @@ export function messageFor(error: unknown): string;
 
 ---
 
-## Task 3: The axios client
+## Task 3: The axios client  ✅ DONE
 
 The heart of the layer. Take your time here.
 
@@ -154,7 +154,7 @@ that arrive while it is set await the same promise; it is cleared when the rotat
 
 ---
 
-## Task 4: The Query provider
+## Task 4: The Query provider  ✅ DONE
 
 **Files:**
 - Create: `frontend/src/providers/query-provider.tsx`
@@ -188,7 +188,7 @@ corner.
 
 ---
 
-## Task 5: Auth types and endpoint functions
+## Task 5: Auth types and endpoint functions  ✅ DONE
 
 **Files:**
 - Create: `frontend/src/features/auth/types.ts`, `frontend/src/features/auth/api.ts`
@@ -226,7 +226,7 @@ export function getCurrentUser(): Promise<User>;
 
 ---
 
-## Task 6: Auth hooks
+## Task 6: Auth hooks  ✅ DONE
 
 **Files:**
 - Create: `frontend/src/features/auth/hooks.ts`
@@ -258,7 +258,7 @@ export function useLogout(): UseMutationResult<void, Error, void>;
 
 ---
 
-## Task 7: Validation rules and the two forms
+## Task 7: Validation rules and the two forms  ✅ DONE
 
 **Files:**
 - Create: `frontend/src/features/auth/validation.ts`,
@@ -311,7 +311,7 @@ export function RegisterForm(): JSX.Element;
 
 ---
 
-## Task 8: Pages, and clicking through it
+## Task 8: Pages, and clicking through it  ✅ DONE
 
 **Files:**
 - Create: `frontend/src/app/(auth)/login/page.tsx`,
@@ -351,5 +351,14 @@ Then in the browser, with devtools open on the Network tab:
 
 ## Where this leaves you
 
-`middleware.ts` and the protected-route redirect, the visual design pass, and the Playwright e2e —
-including the concurrency test for the rotation guard that the spec flags as the known gap.
+Slice 1 is complete apart from `middleware.ts` and the protected-route redirect. The dashboard is
+reachable while signed out and shows its error state rather than redirecting — expected, not a bug.
+
+Carried forward, all recorded in the spec:
+
+- **`middleware.ts`** — the page-level redirect the interceptor deliberately does not do
+- **the concurrency gap** — the e2e proves the rotation retry works, not that parallel 401s share
+  one refresh
+- **login rate limiting** — deferred in `plans/2026-08-08/auth-skeleton/plan.md`, due before
+  anything is exposed to the internet
+- **password strength and a breach check** — length is not strength, and `12345678` passes today

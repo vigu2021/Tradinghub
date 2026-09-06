@@ -4,8 +4,9 @@
 cached. Everything Phase 2 builds on, and everything slice 2's trade journal inherits without
 redesign.
 
-**Scope:** the data layer, the auth forms that exercise it, and the project structure that holds
-both. Not the visual design, not the protected-route middleware, not the Playwright test.
+**Scope:** the data layer, the auth forms and pages that exercise it, the visual design, and the
+Playwright suite that proves the whole thing works in a browser. Not the protected-route
+middleware.
 
 **Depends on:** the auth API from `plans/2026-08-09/jwt-auth/`, shipped and tested: five endpoints,
 cookie sessions, refresh rotation with reuse detection, `{"error": {"code", "message"}}` on every
@@ -46,11 +47,13 @@ would be a second source of truth that disagrees with the server the moment a se
 ```
 frontend/src/
 ├── app/                          routing only — thin pages that compose features
-│   ├── layout.tsx                mounts GlobalProviders
+│   ├── layout.tsx                fonts, GlobalProviders
+│   ├── page.tsx                  redirects to /login until middleware exists
 │   ├── providers/
 │   │   ├── index.tsx             GlobalProviders, composes the rest
 │   │   └── query-provider.tsx
 │   ├── (auth)/
+│   │   ├── layout.tsx            the shell both auth screens sit in
 │   │   ├── login/page.tsx
 │   │   └── register/page.tsx
 │   └── (app)/
@@ -59,14 +62,13 @@ frontend/src/
 │   └── auth/
 │       ├── api.ts                endpoint functions and query keys
 │       ├── hooks.ts              useUser, useLogin, useLogout, useRegister
-│       ├── types.ts              mirrors of the auth Pydantic schemas
-│       ├── validation.ts         field rules shared by the two forms
+│       ├── types.ts              zod schemas, their inferred types, and the User mirror
 │       └── components/           LoginForm, RegisterForm
 ├── lib/
 │   └── api/
 │       ├── client.ts             axios instance and interceptors
 │       └── errors.ts             ApiError, NetworkError, API_CODES
-└── components/ui/                Button, Input, Field — when they earn themselves
+└── components/ui/                Button, Field
 ```
 
 Three rules keep it from rotting:
@@ -166,20 +168,31 @@ goes straight to the dashboard rather than back through the login page.
 
 ## Testing
 
-No unit test framework. Vitest and MSW are a toolchain for one module, and the flows are covered by
-the Playwright e2e in Task 12.
+Playwright against the real stack — the frontend it starts itself, the API and Postgres brought up
+separately with `make api`. Not started automatically on purpose: a run that silently boots
+infrastructure hides which half is broken.
 
-**The known gap:** the single-flight rotation guard is the subtlest code here and nothing tests it.
-Task 12 should include an e2e that expires the access token and fires several requests at once,
-asserting exactly one refresh reaches the server. If that proves too fiddly in Playwright, add
-Vitest for that one function rather than leave it unverified — the failure mode is the client
-revoking its own session, and it will not reproduce on a developer machine making one request at a
-time.
+Ten specs cover the flows that matter, and three of them assert things no unit test can reach:
+
+- **cookie flags in a real browser** — both `HttpOnly`, the refresh one scoped to `/auth`
+- **silent rotation** — delete only the access cookie, reload, and assert a `204` from
+  `/auth/refresh` arrives before the page renders the account
+- **the identical 401** — a wrong password and an unknown email produce the same sentence
+
+Playwright's base URL must match the backend's `FRONTEND_ORIGIN`. Any other port and CORS rejects
+every request, and the suite fails with "still on /register" rather than anything about origins.
+
+**The known gap:** the single-flight rotation guard is the subtlest code here and nothing exercises
+it concurrently. The rotation test drives one request at a time, so it proves the retry works, not
+that five parallel 401s share one refresh. The failure mode is the client revoking its own session,
+and it will not reproduce on a developer machine making one request at a time.
+
+**No unit test framework.** Vitest and MSW would be a toolchain for one module, and the e2e suite
+covers the same ground against real infrastructure.
 
 ---
 
 ## Out of scope
 
-Visual design and the shared UI primitives beyond their names. `middleware.ts`. The Playwright e2e
-itself. Login rate limiting, deferred in `plans/2026-08-08/auth-skeleton/plan.md` until after
-Phase 2.
+`middleware.ts` and the protected-route redirect. Password strength scoring and a breach check.
+Login rate limiting, deferred in `plans/2026-08-08/auth-skeleton/plan.md` until after Phase 2.

@@ -1,4 +1,4 @@
-.PHONY: db api web migrate test check check-api check-web
+.PHONY: db api web migrate test e2e check check-api check-web
 
 db:
 	docker compose up -d db
@@ -14,6 +14,10 @@ migrate: db
 
 test:
 	cd backend && uv run pytest
+
+# Needs the API running: `make api` in another shell. Playwright starts the frontend itself.
+e2e:
+	cd frontend && npm run e2e
 
 check: check-api check-web
 
