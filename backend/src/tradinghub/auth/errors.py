@@ -1,5 +1,6 @@
 """Failures the auth services raise. Routes let them through; the handler renders them."""
 
+from collections.abc import Mapping
 from http import HTTPStatus
 from typing import ClassVar
 
@@ -60,4 +61,4 @@ class RateLimitedError(AppError):
     code = "rate_limited"
     message = "Too many failed login attempts. Please try again later."
     status_code = HTTPStatus.TOO_MANY_REQUESTS
-    headers: ClassVar[dict[str, str]] = {"Retry-After": str(retry_after_seconds)}
+    headers: ClassVar[Mapping[str, str]] = {"Retry-After": str(retry_after_seconds)}

@@ -98,6 +98,20 @@ async def test_login_verifies_a_hash_even_for_an_unknown_email(
     assert verified == [(PASSWORD, auth.DUMMY_PASSWORD_HASH)]
 
 
+async def test_login_succeeds_when_redis_is_down(db_session: AsyncSession) -> None:
+    """The limiter is a defence, not the authorization: an outage must not lock everyone out."""
+    await _account(db_session, "outage@example.com")
+    dead_redis = Redis.from_url("redis://localhost:1", socket_connect_timeout=0.2)
+    try:
+        user, _ = await login_user(
+            db_session, dead_redis, email="outage@example.com", raw_password=PASSWORD, ip=IP
+        )
+    finally:
+        await dead_redis.aclose()
+
+    assert user.email == "outage@example.com"
+
+
 async def test_login_starts_a_new_family_each_time(
     db_session: AsyncSession, redis_client: Redis
 ) -> None:

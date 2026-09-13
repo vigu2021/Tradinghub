@@ -49,6 +49,7 @@ async def redis_client() -> AsyncIterator[Redis]:
     engine above. Database 1 keeps test counters away from a dev server on database 0.
     """
     client = Redis.from_url(get_settings().redis_url, db=1, decode_responses=True)
+    await client.flushdb()  # a run killed mid-test leaves counters behind
     try:
         yield client
     finally:

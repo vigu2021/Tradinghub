@@ -247,11 +247,16 @@ async def test_a_successful_login_clears_the_counter(client: AsyncClient) -> Non
     await client.post("/auth/login", json={"email": "cleared@example.com", "password": PASSWORD})
     await _fail_login(client, "cleared@example.com", MAX_FAILURES_PER_EMAIL - 1)
 
-    response = await client.post(
+    still_allowed = await client.post(
+        "/auth/login", json={"email": "cleared@example.com", "password": PASSWORD}
+    )
+    await _fail_login(client, "cleared@example.com", MAX_FAILURES_PER_EMAIL)
+    locked = await client.post(
         "/auth/login", json={"email": "cleared@example.com", "password": PASSWORD}
     )
 
-    assert response.status_code == 200
+    assert still_allowed.status_code == 200
+    assert locked.status_code == 429  # the counter really restarted, the limiter is live
 
 
 async def test_the_lockout_is_per_email(client: AsyncClient) -> None:
@@ -261,11 +266,15 @@ async def test_the_lockout_is_per_email(client: AsyncClient) -> None:
     await _sign_up(client, "bystander@example.com")
     await _fail_login(client, "victim@example.com", MAX_FAILURES_PER_EMAIL)
 
-    response = await client.post(
+    bystander = await client.post(
         "/auth/login", json={"email": "bystander@example.com", "password": PASSWORD}
     )
+    victim = await client.post(
+        "/auth/login", json={"email": "victim@example.com", "password": PASSWORD}
+    )
 
-    assert response.status_code == 200
+    assert bystander.status_code == 200
+    assert victim.status_code == 429
 
 
 async def test_an_unknown_email_is_rate_limited_too(client: AsyncClient) -> None:

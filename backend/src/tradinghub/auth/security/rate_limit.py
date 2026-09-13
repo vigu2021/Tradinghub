@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 def _email_key(email: str) -> str:
-    return f"login:fail:email:{email}"
+    # casefold: the users table is CITEXT, so Alice@ and alice@ are one account and must share
+    # one counter. Pydantic's EmailStr lowercases only the domain.
+    return f"login:fail:email:{email.casefold()}"
 
 
 def _ip_key(ip: str) -> str:
@@ -34,7 +36,7 @@ async def check_login_allowed(redis: Redis, email: str, ip: str) -> None:
     try:
         failure_counts = await redis.mget(keys)
     except RedisError:
-        logger.warning("redis unreachable, skipping rate limit check")
+        logger.warning("redis unreachable, skipping rate limit check", exc_info=True)
         return
 
     email_failures = int(failure_counts[0] or 0)
@@ -56,13 +58,13 @@ async def record_login_failure(redis: Redis, email: str, ip: str) -> None:
     """
     keys = [_email_key(email), _ip_key(ip)]
     try:
-        async with redis.pipeline() as pipe:
+        async with redis.pipeline() as pipeline:
             for key in keys:
-                pipe.incr(key)
-                pipe.expire(key, RATE_WINDOW_SECONDS, nx=True)
-            await pipe.execute()
+                pipeline.incr(key)
+                pipeline.expire(key, RATE_WINDOW_SECONDS, nx=True)
+            await pipeline.execute()
     except RedisError:
-        logger.warning("redis unreachable, login failure not recorded")
+        logger.warning("redis unreachable, login failure not recorded", exc_info=True)
 
 
 async def clear_login_failures(redis: Redis, email: str) -> None:
@@ -74,4 +76,4 @@ async def clear_login_failures(redis: Redis, email: str) -> None:
     try:
         await redis.delete(_email_key(email))
     except RedisError:
-        logger.warning("redis unreachable, login failures not cleared")
+        logger.warning("redis unreachable, login failures not cleared", exc_info=True)

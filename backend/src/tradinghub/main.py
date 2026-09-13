@@ -37,10 +37,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     try:
         await redis_client.ping()
     except RedisError:
-        logger.error("redis unreachable at startup, rate limiting is disabled")
-    yield
-    await redis_client.aclose()
-    await engine.dispose()
+        logger.exception("redis unreachable at startup, rate limiting is disabled")
+    try:
+        yield
+    finally:
+        await redis_client.aclose()
+        await engine.dispose()
 
 
 @router.get("/health")

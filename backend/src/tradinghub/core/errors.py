@@ -5,6 +5,7 @@ lets the message change without breaking it.
 """
 
 import logging
+from collections.abc import Mapping
 from http import HTTPStatus
 from typing import ClassVar
 
@@ -26,14 +27,14 @@ class AppError(Exception):
     code: str
     message: str
     status_code: HTTPStatus
-    headers: ClassVar[dict[str, str]] = {}
+    headers: ClassVar[Mapping[str, str]] = {}  # Mapping: shared across subclasses, never mutated
 
     def __init__(self) -> None:
         super().__init__(self.message)
 
 
 def _error_response(
-    status_code: HTTPStatus, code: str, message: str, headers: dict[str, str] | None = None
+    status_code: HTTPStatus, code: str, message: str, headers: Mapping[str, str] | None = None
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
