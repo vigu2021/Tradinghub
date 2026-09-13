@@ -6,6 +6,7 @@ lets the message change without breaking it.
 
 import logging
 from http import HTTPStatus
+from typing import ClassVar
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -18,20 +19,26 @@ class AppError(Exception):
     """An expected failure, raised where it is detected and rendered by the handler below.
 
     Subclasses declare the three fields and are raised without arguments. This class is never
-    raised on its own: it has no values to render.
+    raised on its own: it has no values to render. Headers are optional: most errors have none,
+    a rate limit carries Retry-After.
     """
 
     code: str
     message: str
     status_code: HTTPStatus
+    headers: ClassVar[dict[str, str]] = {}
 
     def __init__(self) -> None:
         super().__init__(self.message)
 
 
-def _error_response(status_code: HTTPStatus, code: str, message: str) -> JSONResponse:
+def _error_response(
+    status_code: HTTPStatus, code: str, message: str, headers: dict[str, str] | None = None
+) -> JSONResponse:
     return JSONResponse(
-        status_code=status_code, content={"error": {"code": code, "message": message}}
+        status_code=status_code,
+        content={"error": {"code": code, "message": message}},
+        headers=headers,
     )
 
 
@@ -40,7 +47,7 @@ def register_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, error: AppError) -> JSONResponse:
-        return _error_response(error.status_code, error.code, error.message)
+        return _error_response(error.status_code, error.code, error.message, error.headers)
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(

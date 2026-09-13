@@ -2,11 +2,13 @@ from collections.abc import AsyncIterator
 
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from tradinghub.core.config import get_settings
 from tradinghub.core.database import get_db
+from tradinghub.core.redis import get_redis
 from tradinghub.main import create_app
 
 
@@ -40,7 +42,22 @@ async def db_session() -> AsyncIterator[AsyncSession]:
 
 
 @pytest_asyncio.fixture
-async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
+async def redis_client() -> AsyncIterator[Redis]:
+    """A client on Redis logical database 1, flushed when the test ends.
+
+    Its own client rather than the module-level one, for the same event-loop reason as the
+    engine above. Database 1 keeps test counters away from a dev server on database 0.
+    """
+    client = Redis.from_url(get_settings().redis_url, db=1, decode_responses=True)
+    try:
+        yield client
+    finally:
+        await client.flushdb()
+        await client.aclose()
+
+
+@pytest_asyncio.fixture
+async def client(db_session: AsyncSession, redis_client: Redis) -> AsyncIterator[AsyncClient]:
     """An HTTP client wired straight to the ASGI app, sharing the test's transaction."""
 
     async def override_get_db() -> AsyncIterator[AsyncSession]:
@@ -48,8 +65,12 @@ async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
         yield db_session
         await db_session.commit()
 
+    async def override_get_redis() -> AsyncIterator[Redis]:
+        yield redis_client
+
     app = create_app()
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_redis] = override_get_redis
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as http_client:
         yield http_client

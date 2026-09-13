@@ -3,7 +3,8 @@
 from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, Response
+from fastapi import APIRouter, Cookie, Depends, Request, Response
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.auth.crud.user import get_user_by_id
@@ -29,6 +30,7 @@ from tradinghub.auth.services.auth import (
 )
 from tradinghub.core.config import get_settings
 from tradinghub.core.database import get_db
+from tradinghub.core.redis import get_redis
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -79,10 +81,23 @@ async def register(
 
 @router.post("/login")
 async def login(
-    payload: LoginRequest, db: Annotated[AsyncSession, Depends(get_db)], response: Response
+    payload: LoginRequest,
+    request: Request,
+    response: Response,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    redis: Annotated[Redis, Depends(get_redis)],
 ) -> UserResponse:
-    """Start a session and set both cookies. Raises InvalidCredentialsError on a failed login."""
-    user, token_pair = await login_user(db, email=payload.email, raw_password=payload.password)
+    """Start a session and set both cookies.
+
+    Raises RateLimitedError when the caller is locked out and InvalidCredentialsError on a failed
+    login. Raises RuntimeError if the request carries no client address, which only happens
+    when serving over a unix socket: the IP limiter needs a peer.
+    """
+    if request.client is None:
+        raise RuntimeError("no client address on the request")
+    user, token_pair = await login_user(
+        db, redis, email=payload.email, raw_password=payload.password, ip=request.client.host
+    )
     _set_auth_cookies(response, token_pair)
     return UserResponse(id=user.id, email=user.email)
 

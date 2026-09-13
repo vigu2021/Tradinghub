@@ -1,6 +1,7 @@
 """Failures the auth services raise. Routes let them through; the handler renders them."""
 
 from http import HTTPStatus
+from typing import ClassVar
 
 from tradinghub.core.errors import AppError
 
@@ -43,3 +44,20 @@ class EmailTakenError(AppError):
     code = "email_taken"
     message = "That email is already registered."
     status_code = HTTPStatus.CONFLICT
+
+
+class RateLimitedError(AppError):
+    """Too many failed logins for this email or from this IP inside the window.
+
+    Retry-After is the full window rather than the time until release: the exact remaining time
+    buys a user nothing and would tell an attacker precisely when to resume. The window lives
+    here, not in the limiter, because the limiter imports this class and the reverse import
+    would be circular.
+    """
+
+    retry_after_seconds = 15 * 60
+
+    code = "rate_limited"
+    message = "Too many failed login attempts. Please try again later."
+    status_code = HTTPStatus.TOO_MANY_REQUESTS
+    headers: ClassVar[dict[str, str]] = {"Retry-After": str(retry_after_seconds)}

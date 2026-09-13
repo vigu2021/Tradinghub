@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.auth.dependencies import ACCESS_COOKIE, REFRESH_COOKIE, REFRESH_PATH
 from tradinghub.auth.models import Session
+from tradinghub.auth.security.rate_limit import MAX_FAILURES_PER_EMAIL, RATE_WINDOW_SECONDS
 from tradinghub.auth.security.tokens import ACCESS_TOKEN_LIFETIME, JWT_ALGORITHM
 
 PASSWORD = "correct horse battery"
@@ -39,6 +40,12 @@ async def _log_in(client: AsyncClient, email: str) -> Response:
     """Register, then log in explicitly, for the tests that assert on the login response."""
     await _sign_up(client, email)
     return await client.post("/auth/login", json={"email": email, "password": PASSWORD})
+
+
+async def _fail_login(client: AsyncClient, email: str, times: int) -> None:
+    """Post that many wrong passwords for the email."""
+    for _ in range(times):
+        await client.post("/auth/login", json={"email": email, "password": "not the password"})
 
 
 async def test_login_returns_the_account(client: AsyncClient) -> None:
@@ -219,3 +226,54 @@ async def test_login_rejects_an_overlong_password(client: AsyncClient) -> None:
     )
 
     assert response.status_code == 422
+
+
+async def test_lockout_after_too_many_failures(client: AsyncClient) -> None:
+    await _sign_up(client, "locked@example.com")
+    await _fail_login(client, "locked@example.com", MAX_FAILURES_PER_EMAIL)
+
+    response = await client.post(
+        "/auth/login", json={"email": "locked@example.com", "password": PASSWORD}
+    )
+
+    assert response.status_code == 429
+    assert response.json()["error"]["code"] == "rate_limited"
+    assert response.headers["Retry-After"] == str(RATE_WINDOW_SECONDS)
+
+
+async def test_a_successful_login_clears_the_counter(client: AsyncClient) -> None:
+    await _sign_up(client, "cleared@example.com")
+    await _fail_login(client, "cleared@example.com", MAX_FAILURES_PER_EMAIL - 1)
+    await client.post("/auth/login", json={"email": "cleared@example.com", "password": PASSWORD})
+    await _fail_login(client, "cleared@example.com", MAX_FAILURES_PER_EMAIL - 1)
+
+    response = await client.post(
+        "/auth/login", json={"email": "cleared@example.com", "password": PASSWORD}
+    )
+
+    assert response.status_code == 200
+
+
+async def test_the_lockout_is_per_email(client: AsyncClient) -> None:
+    """Both accounts share the test client's IP, so this also proves the IP limit is not
+    firing early."""
+    await _sign_up(client, "victim@example.com")
+    await _sign_up(client, "bystander@example.com")
+    await _fail_login(client, "victim@example.com", MAX_FAILURES_PER_EMAIL)
+
+    response = await client.post(
+        "/auth/login", json={"email": "bystander@example.com", "password": PASSWORD}
+    )
+
+    assert response.status_code == 200
+
+
+async def test_an_unknown_email_is_rate_limited_too(client: AsyncClient) -> None:
+    """A 429 only for registered addresses would be an enumeration oracle."""
+    await _fail_login(client, "ghost@example.com", MAX_FAILURES_PER_EMAIL)
+
+    response = await client.post(
+        "/auth/login", json={"email": "ghost@example.com", "password": PASSWORD}
+    )
+
+    assert response.status_code == 429

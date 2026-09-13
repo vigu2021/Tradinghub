@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from redis.asyncio import Redis
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,9 +12,15 @@ from tradinghub.auth.models import Session, User
 from tradinghub.auth.security.passwords import hash_password
 from tradinghub.auth.security.tokens import hash_refresh_token
 from tradinghub.auth.services import auth
-from tradinghub.auth.services.auth import login_user, logout_user, refresh_session
+from tradinghub.auth.services.auth import (
+    login_user,
+    logout_user,
+    refresh_session,
+    start_session,
+)
 
 PASSWORD = "correct-horse-battery"
+IP = "127.0.0.1"
 
 
 async def _account(db_session: AsyncSession, email: str) -> User:
@@ -21,9 +28,13 @@ async def _account(db_session: AsyncSession, email: str) -> User:
 
 
 async def _login(db_session: AsyncSession, email: str) -> str:
-    """Register an account, log it in, and return the raw refresh token."""
-    await _account(db_session, email)
-    _, token_pair = await login_user(db_session, email=email, raw_password=PASSWORD)
+    """Register an account, start a session for it, and return the raw refresh token.
+
+    Goes through start_session rather than login_user: the refresh and logout tests are not
+    about passwords or rate limits, and skipping both keeps them free of Redis.
+    """
+    user = await _account(db_session, email)
+    token_pair = await start_session(db_session, user.id)
     return token_pair.refresh_token
 
 
@@ -34,11 +45,13 @@ async def _expire(db_session: AsyncSession, raw_refresh_token: str) -> None:
     await db_session.flush()
 
 
-async def test_login_returns_the_user_and_a_pair(db_session: AsyncSession) -> None:
+async def test_login_returns_the_user_and_a_pair(
+    db_session: AsyncSession, redis_client: Redis
+) -> None:
     user = await _account(db_session, "login@example.com")
 
     logged_in_user, token_pair = await login_user(
-        db_session, email="login@example.com", raw_password=PASSWORD
+        db_session, redis_client, email="login@example.com", raw_password=PASSWORD, ip=IP
     )
 
     assert logged_in_user.id == user.id
@@ -46,20 +59,28 @@ async def test_login_returns_the_user_and_a_pair(db_session: AsyncSession) -> No
     assert token_pair.refresh_token
 
 
-async def test_login_rejects_a_wrong_password(db_session: AsyncSession) -> None:
+async def test_login_rejects_a_wrong_password(
+    db_session: AsyncSession, redis_client: Redis
+) -> None:
     await _account(db_session, "wrong@example.com")
 
     with pytest.raises(InvalidCredentialsError):
-        await login_user(db_session, email="wrong@example.com", raw_password="nope")
+        await login_user(
+            db_session, redis_client, email="wrong@example.com", raw_password="nope", ip=IP
+        )
 
 
-async def test_login_rejects_an_unknown_email(db_session: AsyncSession) -> None:
+async def test_login_rejects_an_unknown_email(
+    db_session: AsyncSession, redis_client: Redis
+) -> None:
     with pytest.raises(InvalidCredentialsError):
-        await login_user(db_session, email="nobody@example.com", raw_password=PASSWORD)
+        await login_user(
+            db_session, redis_client, email="nobody@example.com", raw_password=PASSWORD, ip=IP
+        )
 
 
 async def test_login_verifies_a_hash_even_for_an_unknown_email(
-    db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+    db_session: AsyncSession, redis_client: Redis, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     verified: list[tuple[str, str]] = []
 
@@ -70,19 +91,23 @@ async def test_login_verifies_a_hash_even_for_an_unknown_email(
     monkeypatch.setattr(auth, "verify_password", counting_verify)
 
     with pytest.raises(InvalidCredentialsError):
-        await login_user(db_session, email="nobody@example.com", raw_password=PASSWORD)
+        await login_user(
+            db_session, redis_client, email="nobody@example.com", raw_password=PASSWORD, ip=IP
+        )
 
     assert verified == [(PASSWORD, auth.DUMMY_PASSWORD_HASH)]
 
 
-async def test_login_starts_a_new_family_each_time(db_session: AsyncSession) -> None:
+async def test_login_starts_a_new_family_each_time(
+    db_session: AsyncSession, redis_client: Redis
+) -> None:
     await _account(db_session, "families@example.com")
 
     _, first_pair = await login_user(
-        db_session, email="families@example.com", raw_password=PASSWORD
+        db_session, redis_client, email="families@example.com", raw_password=PASSWORD, ip=IP
     )
     _, second_pair = await login_user(
-        db_session, email="families@example.com", raw_password=PASSWORD
+        db_session, redis_client, email="families@example.com", raw_password=PASSWORD, ip=IP
     )
 
     first_session = await get_session_by_token_hash(
