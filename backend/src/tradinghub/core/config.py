@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     log_level: LogLevel = LogLevel.INFO
     log_format: LogFormat | None = None
     jwt_secret: str
+    redis_url: str
 
 
 @lru_cache
