@@ -25,55 +25,48 @@ def _ip_key(ip: str) -> str:
     return f"login:fail:ip:{ip}"
 
 
-async def check_login_allowed(redis: Redis, email: str, ip: str) -> None:
-    """Raise RateLimitedError when the email or the IP is at its failure limit.
+async def count_login_attempt(redis: Redis, email: str, ip: str) -> None:
+    """Count the attempt against both keys, then raise RateLimitedError if either is over its limit.
 
-    Read-only, and run before any password work so a locked-out caller costs nothing.
-    A Redis outage is logged and treated as allowed: the limiter is a defence, not the
-    authorization.
+    Increment first and decide from the returned count, so a burst of concurrent attempts is
+    counted before any of them is judged: a read-then-write check would let every request in the
+    burst see the same stale count. EXPIRE with NX starts the window on the first attempt and
+    leaves it alone after, so the window is fixed rather than sliding. Runs before any password
+    work, so a locked-out caller costs one round trip. A Redis outage is logged and treated as
+    allowed: the limiter is a defence, not the authorization.
     """
-    keys = [_email_key(email), _ip_key(ip)]
     try:
-        failure_counts = await redis.mget(keys)
+        async with redis.pipeline() as pipeline:
+            for key in (_email_key(email), _ip_key(ip)):
+                pipeline.incr(key)
+                pipeline.expire(key, RATE_WINDOW_SECONDS, nx=True)
+            email_attempts, _, ip_attempts, _ = await pipeline.execute()
     except RedisError:
-        logger.warning("redis unreachable, skipping rate limit check", exc_info=True)
+        logger.warning("redis unreachable, login attempt not counted", exc_info=True)
         return
 
-    email_failures = int(failure_counts[0] or 0)
-    ip_failures = int(failure_counts[1] or 0)
-    if email_failures >= MAX_FAILURES_PER_EMAIL or ip_failures >= MAX_FAILURES_PER_IP:
+    if email_attempts > MAX_FAILURES_PER_EMAIL or ip_attempts > MAX_FAILURES_PER_IP:
         logger.warning(
             "login rate limited",
-            extra={"email_failures": email_failures, "ip_failures": ip_failures},
+            extra={"email_attempts": email_attempts, "ip_attempts": ip_attempts},
         )
         raise RateLimitedError
 
 
-async def record_login_failure(redis: Redis, email: str, ip: str) -> None:
-    """Count one failure against both the email and the IP.
+async def forgive_login_attempt(redis: Redis, email: str, ip: str) -> None:
+    """Undo the count for an attempt that turned out to be a correct password.
 
-    EXPIRE with NX starts the window on the first failure and leaves it alone after, so the
-    window is fixed rather than sliding. A Redis outage is logged and the failure goes
-    uncounted.
+    The email key goes entirely: a correct password vouches for the account owner. The IP key
+    only loses this attempt's increment, since a shared address may have other people's failures
+    on it. Together with count_login_attempt this means only failures accumulate. A Redis outage
+    is logged; the counters expire on their own.
     """
-    keys = [_email_key(email), _ip_key(ip)]
+    # ponytail: if the IP key expired between the INCR and this DECR it is recreated at -1 with
+    # no TTL. Harmless: negative never refuses, and the next INCR's EXPIRE NX gives it a window.
     try:
         async with redis.pipeline() as pipeline:
-            for key in keys:
-                pipeline.incr(key)
-                pipeline.expire(key, RATE_WINDOW_SECONDS, nx=True)
+            pipeline.delete(_email_key(email))
+            pipeline.decr(_ip_key(ip))
             await pipeline.execute()
     except RedisError:
-        logger.warning("redis unreachable, login failure not recorded", exc_info=True)
-
-
-async def clear_login_failures(redis: Redis, email: str) -> None:
-    """Forget the email's failures after a successful login.
-
-    Only the email key: a correct password vouches for the account owner, not for everyone
-    behind the IP. A Redis outage is logged; the counter expires on its own.
-    """
-    try:
-        await redis.delete(_email_key(email))
-    except RedisError:
-        logger.warning("redis unreachable, login failures not cleared", exc_info=True)
+        logger.warning("redis unreachable, login attempt not forgiven", exc_info=True)

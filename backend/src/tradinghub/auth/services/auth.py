@@ -23,11 +23,7 @@ from tradinghub.auth.errors import (
 )
 from tradinghub.auth.models.user import User
 from tradinghub.auth.security.passwords import hash_password, verify_password
-from tradinghub.auth.security.rate_limit import (
-    check_login_allowed,
-    clear_login_failures,
-    record_login_failure,
-)
+from tradinghub.auth.security.rate_limit import count_login_attempt, forgive_login_attempt
 from tradinghub.auth.security.tokens import (
     REFRESH_TOKEN_LIFETIME,
     encode_access_token,
@@ -87,11 +83,11 @@ async def login_user(
     Raises RateLimitedError when the email or the IP is locked out, before any password work so
     a locked-out caller costs nothing. Raises InvalidCredentialsError for a bad email or a bad
     password: one exception for both, raised after the same work, so the two failures are
-    indistinguishable in content and in timing. A failure counts against both keys; a success
-    clears the email's. Returns the user because the route answers with it, saving a second
-    lookup.
+    indistinguishable in content and in timing. Every attempt is counted up front and a success
+    is forgiven afterwards, so only failures accumulate. Returns the user because the route
+    answers with it, saving a second lookup.
     """
-    await check_login_allowed(redis, email, ip)
+    await count_login_attempt(redis, email, ip)
 
     user = await get_user_by_email(db, email)
     password_hash = user.password_hash if user else DUMMY_PASSWORD_HASH
@@ -100,10 +96,9 @@ async def login_user(
     # faster reply tells an attacker which addresses are registered.
     password_matches = verify_password(raw_password=raw_password, password_hash=password_hash)
     if user is None or not password_matches:
-        await record_login_failure(redis, email, ip)
         raise InvalidCredentialsError
 
-    await clear_login_failures(redis, email)
+    await forgive_login_attempt(redis, email, ip)
     token_pair = await start_session(db, user.id)
     return user, token_pair
 
