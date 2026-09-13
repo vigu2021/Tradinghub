@@ -759,10 +759,10 @@ RATE_WINDOW_SECONDS: Final[int] = RateLimitedError.retry_after_seconds   # 15 * 
 MAX_FAILURES_PER_EMAIL: Final[int] = 10
 MAX_FAILURES_PER_IP: Final[int] = 30
 
-async def check_login_allowed(redis: Redis, email: str, ip: str) -> None: ...
-    # raises RateLimitedError when either counter is at or above its limit
-async def record_login_failure(redis: Redis, email: str, ip: str) -> None: ...
-async def clear_login_failures(redis: Redis, email: str) -> None: ...
+async def count_login_attempt(redis: Redis, email: str, ip: str) -> None: ...
+    # INCR both keys, then raises RateLimitedError when either count is over its limit
+async def forgive_login_attempt(redis: Redis, email: str, ip: str) -> None: ...
+    # DEL the email key, DECR the IP key: undoes the count for a correct password
 ```
 
 `ip` is a plain `str`, not `str | None`: the route raises `RuntimeError` if `request.client` is
@@ -791,29 +791,31 @@ because `rate_limit.py` imports `RateLimitedError`; the reverse import would be 
 
 **Requirements — the counters:**
 5. Two keys, `login:fail:email:{email}` and `login:fail:ip:{ip}`, incremented together in one
-   pipeline so a failure costs one round trip. The email is `casefold()`ed first: the `users`
+   pipeline so an attempt costs one round trip. The email is `casefold()`ed first: the `users`
    table is `CITEXT`, so `Alice@` and `alice@` are one account and must share one counter, and
    Pydantic's `EmailStr` lowercases only the domain. Without this the lockout is bypassed by
    changing capitalisation, and a user who logs in with one casing cannot clear failures recorded
    under another.
 6. `INCR`, then `EXPIRE <key> 900 NX`. `NX` sets the TTL only when the key has none, so the window
-   starts at the first failure rather than sliding forward with every subsequent one. Redis 7+;
+   starts at the first attempt rather than sliding forward with every subsequent one. Redis 7+;
    `if count == 1: EXPIRE` is the version-agnostic equivalent.
-7. A successful login `DEL`s the email key. One operation, and it replaces the old design's
-   "successful attempts never count against you" bookkeeping.
+7. **Count first, forgive on success.** Every attempt is counted before the password is checked,
+   and the decision is made from the count `INCR` returns. A correct password then `DEL`s the
+   email key and `DECR`s the IP key, undoing its own increment. Net effect: only failures
+   accumulate, but there is no read-then-write gap. The first version read the counters, verified
+   the password, then wrote a failure; a burst of N concurrent requests all read the same stale
+   count and every one got a guess. The IP key is decremented rather than deleted because a
+   shared address may carry other people's failures. If the IP key expires between the `INCR`
+   and the `DECR` it is recreated at -1 with no TTL; harmless, since negative never refuses and
+   the next `INCR`'s `EXPIRE NX` gives it a window.
 8. The window is fixed, not sliding. An attacker can land ten failures at the end of one window and
    ten at the start of the next. Accepted: a sliding window costs a sorted set plus
    `ZREMRANGEBYSCORE`/`ZCARD`/`ZADD` on every attempt and unbounded memory per key, to defend
    against an attacker who is already locked out half the time.
-8a. Check-then-record is not atomic. A burst of N concurrent requests all pass the read before
-    any of them writes, so an attacker gets roughly N extra guesses per window on top of the
-    limit, once. Accepted for the same reason as 8: the alternative is `INCR` first and decide
-    from the returned count, which counts successful logins too and makes the clear load-bearing.
-    Revisit if the journal ever has enough traffic for a burst to matter.
 
 **Requirements — behaviour:**
-9. `check_login_allowed` runs **before** the password is verified, so a locked-out attacker costs
-   no Argon2 work.
+9. `count_login_attempt` runs **before** the password is verified, so a locked-out attacker costs
+   one Redis round trip and no Argon2 work.
 10. Failures are recorded for **unknown emails too**. Recording only against real accounts would
     make the 429 appear exclusively for addresses that exist — precisely the enumeration oracle
     that `DUMMY_PASSWORD_HASH` and the byte-identical 401s exist to prevent.
@@ -831,8 +833,8 @@ because `rate_limit.py` imports `RateLimitedError`; the reverse import would be 
 14. **Redis being unreachable fails open**: the login proceeds and a `warning` with the traceback
     (`exc_info=True`) is logged. A cache outage that locks every user out turns a degraded
     dependency into a full outage. The limiter is a defence, not the authorization — Argon2 and
-    the password check are unaffected. Catch `redis.RedisError` around every Redis call, in all
-    three functions.
+    the password check are unaffected. Catch `redis.RedisError` around every Redis call, in both
+    functions.
 15. Per-email lockout means anyone who knows an address can lock its owner out for fifteen minutes.
     That is inherent to email-keyed limiting and is accepted here: the window bounds the damage, and
     the alternatives (keying on email plus IP, exponential backoff instead of a block) cost more
@@ -846,13 +848,14 @@ structured log line at the record site, not a table.
 after every test (before, because a run killed mid-test leaves counters behind). Not `fakeredis` —
 half the point is learning what `EXPIRE NX` actually does.
 
-Unit level, `tests/auth/security/test_rate_limit.py`, driving the three functions directly:
+Unit level, `tests/auth/security/test_rate_limit.py`, driving the two functions directly:
 ```python
-test_the_email_limit_refuses_at_the_threshold      # 9 pass, the 10th refuses
+test_the_email_limit_refuses_the_attempt_after_the_last_allowed_one   # 10 pass, the 11th refuses
 test_the_ip_limit_counts_across_emails             # 30 distinct emails from one IP lock the IP
-test_the_email_key_ignores_case                    # Victim@ failures lock victim@
-test_a_failure_starts_a_window_that_later_failures_do_not_extend   # TTL set once, NX holds
-test_clearing_forgets_the_email_but_not_the_ip
+test_the_email_key_ignores_case                    # Victim@ attempts lock victim@
+test_an_attempt_starts_a_window_that_later_attempts_do_not_extend   # TTL set once, NX holds
+test_forgiving_forgets_the_email_and_only_its_own_ip_increment
+test_a_burst_cannot_exceed_the_limit               # 40 concurrent attempts, exactly 10 allowed
 test_every_call_fails_open_when_redis_is_unreachable   # a client on a dead port, nothing raises
 ```
 
@@ -870,7 +873,7 @@ Service level, `test_login_succeeds_when_redis_is_down` in `tests/auth/services/
 The old suite rewound `created_at` to prove the window expires. TTLs cannot be rewound, so the
 unit test asserts `TTL` directly.
 
-**Verify:** `docker compose up -d` then `uv run pytest` — 111 passing.
+**Verify:** `docker compose up -d` then `uv run pytest` — 112 passing.
 **Commit:** `Add login rate limiting`
 
 ---
