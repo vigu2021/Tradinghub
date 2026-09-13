@@ -723,7 +723,7 @@ only cleared the cookie, so **also** assert the `sessions` row count dropped to 
 
 ---
 
-## Task 7: Login rate limiting  ⏸ DEFERRED
+## Task 7: Login rate limiting  ✅ DONE
 
 Deferred past the frontend: nothing is deployed and nothing is being attacked, so seeing the auth
 flow work in a browser was worth more than a defence with no traffic to defend against. Do it
@@ -739,25 +739,35 @@ would still pass. Postgres would have needed a second deliberate `commit()` next
 
 **Files:**
 - Create: `backend/src/tradinghub/core/redis.py`,
-  `backend/src/tradinghub/auth/rate_limit.py`, `backend/tests/auth/test_rate_limit.py`
+  `backend/src/tradinghub/auth/security/rate_limit.py`,
+  `backend/tests/auth/security/test_rate_limit.py`
 - Modify: `docker-compose.yml`, `backend/pyproject.toml`, `backend/.env{,.example}`,
-  `backend/src/tradinghub/core/{config,errors}.py`,
-  `backend/src/tradinghub/auth/{errors.py,services/auth.py,routes.py}`
+  `backend/src/tradinghub/core/{config,errors}.py`, `backend/src/tradinghub/main.py`,
+  `backend/src/tradinghub/auth/{errors.py,services/auth.py,routes.py}`,
+  `backend/tests/{conftest.py,auth/test_login.py,auth/services/test_auth.py}`
+
+The limiter lives under `auth/security/` next to `passwords.py` and `tokens.py`: a defence with no
+table, which is what that package holds. The path was `auth/rate_limit.py` before the package was
+split.
 
 No migration. There is no table.
 
 **Interfaces produced:**
 ```python
-# auth/rate_limit.py
-RATE_WINDOW = timedelta(minutes=15)
-MAX_FAILURES_PER_EMAIL = 10
-MAX_FAILURES_PER_IP = 30
+# auth/security/rate_limit.py
+RATE_WINDOW_SECONDS: Final[int] = RateLimitedError.retry_after_seconds   # 15 * 60
+MAX_FAILURES_PER_EMAIL: Final[int] = 10
+MAX_FAILURES_PER_IP: Final[int] = 30
 
-async def check_login_allowed(redis: Redis, email: str, ip: str | None) -> None: ...
+async def check_login_allowed(redis: Redis, email: str, ip: str) -> None: ...
     # raises RateLimitedError when either counter is at or above its limit
-async def record_failure(redis: Redis, email: str, ip: str | None) -> None: ...
-async def clear_failures(redis: Redis, email: str) -> None: ...
+async def record_login_failure(redis: Redis, email: str, ip: str) -> None: ...
+async def clear_login_failures(redis: Redis, email: str) -> None: ...
 ```
+
+`ip` is a plain `str`, not `str | None`: the route raises `RuntimeError` if `request.client` is
+missing, which only happens over a unix socket. The window constant is read off the error class
+because `rate_limit.py` imports `RateLimitedError`; the reverse import would be circular.
 
 **Requirements — infrastructure:**
 1. A `redis:8-alpine` service in `docker-compose.yml`, published to `127.0.0.1:6380` only, for the
@@ -766,18 +776,26 @@ async def clear_failures(redis: Redis, email: str) -> None: ...
    Postgres sits on 5433. No volume: rate-limit counters are meant to be lost on restart.
 2. `redis_url: str` on `Settings` with no default, so a missing value fails at startup the way
    `jwt_secret` does.
-3. `redis>=5` in `pyproject.toml`. Async support ships in the same package as `redis.asyncio`.
-   Do not install `aioredis`; it was absorbed into redis-py and is unmaintained.
+3. `redis>=8` in `pyproject.toml`, matching the `redis:8-alpine` image. Async support ships in the
+   same package as `redis.asyncio`. Do not install `aioredis`; it was absorbed into redis-py and
+   is unmaintained.
 
 **Requirements — the client:**
-4. `get_redis()` in `core/redis.py`, shaped as a FastAPI dependency like `get_db` and **not** as an
-   `@lru_cache` singleton. A cached connection pool hits the same event-loop problem `conftest.py`
-   documents for the database engine: a connection created in one test's loop cannot be reused in
-   another. A dependency can be overridden per test; a cached global cannot.
+4. `core/redis.py` holds a module-level `redis_client` (a pool, created once at import, the same
+   shape as `engine` in `core/database.py`) and a `get_redis()` dependency that yields it. The
+   dependency exists so tests can override it: each test builds its own client on logical
+   database 1, because a pooled connection created in one test's event loop cannot be reused in
+   another, exactly the problem `conftest.py` documents for the engine. Never an `@lru_cache`
+   singleton: it could not be overridden. The lifespan in `main.py` pings Redis at startup (an
+   `error` log if unreachable, not a crash) and closes the pool on shutdown.
 
 **Requirements — the counters:**
 5. Two keys, `login:fail:email:{email}` and `login:fail:ip:{ip}`, incremented together in one
-   pipeline so a failure costs one round trip.
+   pipeline so a failure costs one round trip. The email is `casefold()`ed first: the `users`
+   table is `CITEXT`, so `Alice@` and `alice@` are one account and must share one counter, and
+   Pydantic's `EmailStr` lowercases only the domain. Without this the lockout is bypassed by
+   changing capitalisation, and a user who logs in with one casing cannot clear failures recorded
+   under another.
 6. `INCR`, then `EXPIRE <key> 900 NX`. `NX` sets the TTL only when the key has none, so the window
    starts at the first failure rather than sliding forward with every subsequent one. Redis 7+;
    `if count == 1: EXPIRE` is the version-agnostic equivalent.
@@ -787,6 +805,11 @@ async def clear_failures(redis: Redis, email: str) -> None: ...
    ten at the start of the next. Accepted: a sliding window costs a sorted set plus
    `ZREMRANGEBYSCORE`/`ZCARD`/`ZADD` on every attempt and unbounded memory per key, to defend
    against an attacker who is already locked out half the time.
+8a. Check-then-record is not atomic. A burst of N concurrent requests all pass the read before
+    any of them writes, so an attacker gets roughly N extra guesses per window on top of the
+    limit, once. Accepted for the same reason as 8: the alternative is `INCR` first and decide
+    from the returned count, which counts successful logins too and makes the clear load-bearing.
+    Revisit if the journal ever has enough traffic for a burst to matter.
 
 **Requirements — behaviour:**
 9. `check_login_allowed` runs **before** the password is verified, so a locked-out attacker costs
@@ -797,15 +820,19 @@ async def clear_failures(redis: Redis, email: str) -> None: ...
 11. `RateLimitedError(AppError)` in `auth/errors.py`, declarative like its siblings: `code`,
     `message`, `status_code`, raised without arguments. `Retry-After` is a fixed class attribute
     equal to the window in seconds — time-until-release buys nothing and costs a constructor.
-12. `_error_response` in `core/errors.py` takes no headers today. It needs a `headers` parameter,
-    and the `AppError` handler needs to pass whatever the error declares.
+    The window itself (`retry_after_seconds = 15 * 60`) lives on this class; see the interfaces
+    note above for why.
+12. `AppError` carries `headers: ClassVar[Mapping[str, str]] = {}` (a `Mapping` so the shared
+    default is never mutated in place), `_error_response` in `core/errors.py` takes a `headers`
+    parameter, and the `AppError` handler passes whatever the error declares.
 13. Only `/auth/login` is limited. `/auth/register` is not.
 
 **Requirements — failure modes:**
-14. **Redis being unreachable fails open**: the login proceeds and a `warning` is logged. A cache
-    outage that locks every user out turns a degraded dependency into a full outage. The limiter is
-    a defence, not the authorization — Argon2 and the password check are unaffected. Catch
-    `redis.RedisError` around the pipeline.
+14. **Redis being unreachable fails open**: the login proceeds and a `warning` with the traceback
+    (`exc_info=True`) is logged. A cache outage that locks every user out turns a degraded
+    dependency into a full outage. The limiter is a defence, not the authorization — Argon2 and
+    the password check are unaffected. Catch `redis.RedisError` around every Redis call, in all
+    three functions.
 15. Per-email lockout means anyone who knows an address can lock its owner out for fifteen minutes.
     That is inherent to email-keyed limiting and is accepted here: the window bounds the damage, and
     the alternatives (keying on email plus IP, exponential backoff instead of a block) cost more
@@ -815,32 +842,35 @@ async def clear_failures(redis: Redis, email: str) -> None: ...
 user last week"; counters that expire in fifteen minutes cannot. If that is wanted later it is a
 structured log line at the record site, not a table.
 
-**Tests:** real Redis on a separate logical database (`redis://localhost:6379/1`), `FLUSHDB` in the
-fixture teardown. Not `fakeredis` — half the point is learning what `EXPIRE NX` actually does.
+**Tests:** real Redis on logical database 1 of the configured `REDIS_URL`, `FLUSHDB` before and
+after every test (before, because a run killed mid-test leaves counters behind). Not `fakeredis` —
+half the point is learning what `EXPIRE NX` actually does.
 
+Unit level, `tests/auth/security/test_rate_limit.py`, driving the three functions directly:
 ```python
-async def test_lockout_after_ten_failures(client): ...
-    # ten wrong passwords, then the correct one -> 429, code "rate_limited", Retry-After present
-
-async def test_a_successful_login_clears_the_counter(client): ...
-    # nine failures, one success, nine more failures -> still 200
-
-async def test_the_lockout_is_per_email(client): ...
-    # ten failures for one address, then a correct login for another -> 200.
-    # Both share an IP, so this also proves the per-IP limit of 30 is not firing early.
-
-async def test_an_unknown_email_is_rate_limited_too(client): ...
-    # ten failures against an address with no account -> 429, not 401.
-    # The 429 must not be reserved for addresses that exist.
-
-async def test_login_survives_redis_being_down(client): ...
-    # a client whose every call raises RedisError -> login still returns 200
+test_the_email_limit_refuses_at_the_threshold      # 9 pass, the 10th refuses
+test_the_ip_limit_counts_across_emails             # 30 distinct emails from one IP lock the IP
+test_the_email_key_ignores_case                    # Victim@ failures lock victim@
+test_a_failure_starts_a_window_that_later_failures_do_not_extend   # TTL set once, NX holds
+test_clearing_forgets_the_email_but_not_the_ip
+test_every_call_fails_open_when_redis_is_unreachable   # a client on a dead port, nothing raises
 ```
 
-The old suite rewound `created_at` to prove the window expires. TTLs cannot be rewound, so either
-`DEL` the key or assert the TTL directly with `PTTL`.
+Endpoint level, in `tests/auth/test_login.py` with the rest of the login tests, each with a
+negative half so it fails if the limiter is removed:
+```python
+test_lockout_after_too_many_failures         # 429, code "rate_limited", Retry-After == window
+test_a_successful_login_clears_the_counter   # 9 fail, 1 success, 9 fail -> 200; 10 more -> 429
+test_the_lockout_is_per_email                # bystander on the same IP -> 200, victim -> 429
+test_an_unknown_email_is_rate_limited_too    # 429, not 401, for an address with no account
+```
 
-**Verify:** `docker compose up -d` then `uv run pytest` — 100 passing plus the new cases.
+Service level, `test_login_succeeds_when_redis_is_down` in `tests/auth/services/test_auth.py`.
+
+The old suite rewound `created_at` to prove the window expires. TTLs cannot be rewound, so the
+unit test asserts `TTL` directly.
+
+**Verify:** `docker compose up -d` then `uv run pytest` — 111 passing.
 **Commit:** `Add login rate limiting`
 
 ---
@@ -1113,7 +1143,7 @@ feature, and any deployment. Slice 2 begins with the `journal/` package.
 
 ## Carried to slice 5
 
-Three things that are correct for a laptop and wrong the moment anything serves real traffic. Each
+Four things that are correct for a laptop and wrong the moment anything serves real traffic. Each
 fails open and fails silently, which is why they are written down rather than left to be noticed.
 
 **`cookie_secure` has no production guard.** `Settings` does not force it on when `environment` is
@@ -1131,3 +1161,11 @@ image on purpose, so the usual fallback that catches a passwordless Redis is alr
 **Postgres credentials are in the repository.** `tradinghub:localdev` is committed in
 `docker-compose.yml`, which is why the database publishes on loopback only. Real deployment takes
 them from a secret store, never from a file in git.
+
+**The IP limiter reads the socket peer.** `request.client.host` is whoever opened the TCP
+connection. Behind a load balancer that is the balancer, so every login shares one
+`login:fail:ip:*` key: thirty failures from anyone lock the IP limiter for everyone, for fifteen
+minutes. The fix is a uvicorn flag, not code: `--proxy-headers --forwarded-allow-ips=<vpc cidr>`
+makes uvicorn rewrite `request.client` from `X-Forwarded-For`, but only for connections from the
+listed range. Never read the header in the route: an unauthenticated caller can set it and mint a
+fresh counter per request.
