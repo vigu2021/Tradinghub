@@ -3,7 +3,8 @@
 A multi-user trading journal. Built in ordered slices, primarily as a way to learn FastAPI,
 Next.js, Postgres, and Terraform on AWS in depth.
 
-Slice 1 — hand-rolled authentication — is done. Slice 2 is the trade journal itself.
+Slice 1 — hand-rolled authentication — is done. Slice 2 is the ledger: accounts, transactions,
+balances, and spending by period.
 
 ## Stack
 

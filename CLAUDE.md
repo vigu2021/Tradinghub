@@ -37,10 +37,14 @@ collaborators or a deployed environment appear.
 ## Slice order
 
 1. Auth + skeleton — hand-rolled sessions, no email or OAuth
-2. Trade journal CRUD
-3. Binance read-only fill import
-4. Charting + dashboard
-5. Terraform on AWS
+2. Ledger — accounts, transactions, balances, spending by period
+3. Trade journal CRUD — a trade belongs to a ledger account
+4. Binance read-only fill import
+5. Charting + dashboard
+6. Terraform on AWS
+
+Slices 2 and 3 were swapped after slice 1: a trade belongs to an account, so the ledger has to
+exist first or `account_id` arrives later as a migration and a backfill.
 
 Each slice gets its own `plans/` folder containing a `spec.md` and a `plan.md`, both written and
 approved before any code.
