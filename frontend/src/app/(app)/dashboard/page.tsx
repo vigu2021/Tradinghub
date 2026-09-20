@@ -1,14 +1,9 @@
 "use client";
 
-import { useUser } from "@/features/auth/hooks";
+import { useAuthenticatedUser } from "@/features/auth/hooks";
 
 export default function DashboardPage() {
-  const { data: user } = useUser();
-
-  // The layout holds this page back until the session is known; this is that promise in types.
-  if (!user) {
-    return null;
-  }
+  const user = useAuthenticatedUser();
 
   return (
     <>

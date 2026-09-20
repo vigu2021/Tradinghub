@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 // Must match FRONTEND_ORIGIN in the backend's .env, or CORS rejects every request and the whole
 // suite fails with "still on /register" rather than anything about origins.
-const BASE_URL = "http://localhost:3210";
+export const BASE_URL = "http://localhost:3210";
 
 /**
  * The backend is not started here on purpose: it needs Postgres, and a test run that silently
@@ -10,6 +10,7 @@ const BASE_URL = "http://localhost:3210";
  */
 export default defineConfig({
   testDir: "./e2e",
+  globalSetup: "./e2e/global-setup.ts",
   fullyParallel: false,
   workers: 1,
   reporter: process.env.CI ? "github" : "list",

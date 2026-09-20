@@ -28,18 +28,33 @@ function toFailure(error: AxiosError): ApiError | NetworkError {
     return new NetworkError(error.message);
   }
 
-  return new ApiError(envelope.message, envelope.code, error.response.status);
+  const retryAfterSeconds =
+    Number(error.response.headers["retry-after"]) || undefined;
+
+  return new ApiError(
+    envelope.message,
+    envelope.code,
+    error.response.status,
+    retryAfterSeconds,
+  );
 }
 
-// Shared so concurrent 401s await one rotation. Separate ones would replay a spent token, which
-// the server reads as theft and answers by revoking the family.
+// Two refreshes carrying one token read as theft. The promise serialises them within a tab, the
+// browser lock between tabs.
+const REFRESH_LOCK = "tradinghub-refresh";
 let refreshInFlight: Promise<boolean> | null = null;
 
 function rotateSessionOnce(): Promise<boolean> {
-  refreshInFlight ??= apiClient
-    .post(REFRESH_PATH)
+  refreshInFlight ??= navigator.locks
+    .request(REFRESH_LOCK, () => apiClient.post(REFRESH_PATH))
     .then(() => true)
-    .catch(() => false)
+    .catch((error: unknown) => {
+      // Only the API refusing means the session is gone. A refresh that never arrived says nothing.
+      if (isApiError(error)) {
+        return false;
+      }
+      throw error;
+    })
     .finally(() => {
       refreshInFlight = null;
     });

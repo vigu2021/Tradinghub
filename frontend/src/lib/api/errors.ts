@@ -5,6 +5,7 @@ export const API_CODES = {
   INVALID_CREDENTIALS: "invalid_credentials",
   INVALID_SESSION: "invalid_session",
   EMAIL_TAKEN: "email_taken",
+  RATE_LIMITED: "rate_limited",
   VALIDATION: "validation_error",
   INTERNAL: "internal_error",
 } as const;
@@ -23,6 +24,7 @@ export class ApiError extends Error {
     message: string,
     readonly code: ApiCode,
     readonly status: number,
+    readonly retryAfterSeconds?: number,
   ) {
     super(message);
     this.name = "ApiError";

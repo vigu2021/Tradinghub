@@ -5,7 +5,7 @@ import { useEffect, type ReactNode } from "react";
 
 import { Logo } from "@/components/ui/Logo";
 import { useRouter } from "next/navigation";
-import { useUser } from "@/features/auth/hooks";
+import { useSession } from "@/features/auth/hooks";
 
 /**
  * The shell both auth screens sit in. A narrow column rather than a card: the ledger grid in the
@@ -14,13 +14,14 @@ import { useUser } from "@/features/auth/hooks";
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { data: user } = useUser();
+  const session = useSession();
+  const authenticated = session.status === "authenticated";
 
   useEffect(() => {
-    if (user) {
+    if (authenticated) {
       router.replace("/dashboard");
     }
-  }, [user, router]);
+  }, [authenticated, router]);
 
   return (
     <div className="flex min-h-dvh flex-col px-6 py-8 sm:px-10">

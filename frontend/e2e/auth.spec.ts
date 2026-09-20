@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { BASE_URL } from "../playwright.config";
+
 const PASSWORD = "correct horse battery";
 
 /** A fresh address per run, so the suite never depends on the state of the dev database. */
@@ -114,6 +116,55 @@ test("an expired access token is rotated behind the scenes", async ({
   await expect(page.getByRole("heading", { name: email })).toBeVisible();
 });
 
+test("two tabs whose access token expires together both stay signed in", async ({
+  page,
+  context,
+}) => {
+  const email = uniqueEmail("tabs");
+  await register(page, email);
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const secondTab = await context.newPage();
+  await secondTab.goto("/dashboard");
+  await expect(secondTab.getByRole("heading", { name: email })).toBeVisible();
+
+  const surviving = (await context.cookies()).filter(
+    (cookie) => cookie.name !== "access_token",
+  );
+  await context.clearCookies();
+  await context.addCookies(surviving);
+
+  // Hold the first refresh until a second arrives, so an unserialised pair leaves together.
+  let refreshesSeen = 0;
+  let releaseFirst = () => {};
+  const secondArrived = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  await context.route("**/auth/refresh", async (route) => {
+    refreshesSeen += 1;
+    if (refreshesSeen === 1) {
+      await Promise.race([
+        secondArrived,
+        new Promise((resolve) => setTimeout(resolve, 1000)),
+      ]);
+    } else {
+      releaseFirst();
+    }
+    await route.continue();
+  });
+  const refreshStatuses: number[] = [];
+  context.on("response", (response) => {
+    if (response.url().includes("/auth/refresh")) {
+      refreshStatuses.push(response.status());
+    }
+  });
+
+  await Promise.all([page.reload(), secondTab.reload()]);
+
+  await expect(page.getByRole("heading", { name: email })).toBeVisible();
+  await expect(secondTab.getByRole("heading", { name: email })).toBeVisible();
+  expect(refreshStatuses.every((status) => status === 204)).toBe(true);
+});
+
 test("a duplicate email is rejected with a way out", async ({ page }) => {
   const email = uniqueEmail("duplicate");
   await register(page, email);
@@ -214,4 +265,126 @@ test("signing out clears the session", async ({ page, context }) => {
 
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole("heading", { name: email })).toHaveCount(0);
+});
+
+test("a lost connection offers a retry instead of signing the visitor out", async ({
+  page,
+}) => {
+  const email = uniqueEmail("offline");
+  await register(page, email);
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  await page.route("**/auth/me", (route) => route.abort());
+  await page.reload();
+
+  await expect(page).toHaveURL(/\/dashboard$/);
+  // Two network retries with backoff run before the query gives up.
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible({
+    timeout: 15_000,
+  });
+
+  await page.unroute("**/auth/me");
+  await page.getByRole("button", { name: "Try again" }).click();
+
+  await expect(page.getByRole("heading", { name: email })).toBeVisible();
+});
+
+test("a failing server offers a retry instead of signing the visitor out", async ({
+  page,
+}) => {
+  const email = uniqueEmail("servererror");
+  await register(page, email);
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  await page.route("**/auth/me", (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      headers: {
+        "access-control-allow-origin": BASE_URL,
+        "access-control-allow-credentials": "true",
+      },
+      body: JSON.stringify({
+        error: { code: "internal_error", message: "Internal error." },
+      }),
+    }),
+  );
+  await page.reload();
+
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+  await expect(page).toHaveURL(/\/dashboard$/);
+});
+
+test("a refresh that never arrives offers a retry instead of signing the visitor out", async ({
+  page,
+  context,
+}) => {
+  const email = uniqueEmail("refreshlost");
+  await register(page, email);
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const surviving = (await context.cookies()).filter(
+    (cookie) => cookie.name !== "access_token",
+  );
+  await context.clearCookies();
+  await context.addCookies(surviving);
+  await page.route("**/auth/refresh", (route) => route.abort());
+  await page.reload();
+
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(page).toHaveURL(/\/dashboard$/);
+});
+
+test("a session that dies while the dashboard is open ends at the login screen", async ({
+  page,
+  context,
+}) => {
+  await page.clock.install();
+  await register(page, uniqueEmail("revoked"));
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  await context.clearCookies();
+  await page.clock.fastForward("03:00");
+  // React Query listens for this on window, and a plain Event does not bubble there from document.
+  await page.evaluate(() =>
+    window.dispatchEvent(new Event("visibilitychange")),
+  );
+
+  await expect(page).toHaveURL(/\/login$/);
+  await page.waitForTimeout(1500);
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+});
+
+test("a rate limited login says when to try again and holds the button", async ({
+  page,
+}) => {
+  await page.route("**/auth/login", (route) =>
+    route.fulfill({
+      status: 429,
+      headers: {
+        "content-type": "application/json",
+        "retry-after": "900",
+        "access-control-allow-origin": BASE_URL,
+        "access-control-allow-credentials": "true",
+        "access-control-expose-headers": "Retry-After",
+      },
+      body: JSON.stringify({
+        error: {
+          code: "rate_limited",
+          message: "Too many attempts. Please try again later.",
+        },
+      }),
+    }),
+  );
+
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(uniqueEmail("locked"));
+  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(formAlert(page)).toContainText("Try again in 15 minutes");
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeDisabled();
 });

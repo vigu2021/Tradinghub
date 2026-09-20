@@ -30,7 +30,7 @@ export function RegisterForm() {
 
   const submit = handleSubmit((values) => {
     registerMutation.mutate(values, {
-      onSuccess: () => router.push("/dashboard"),
+      onSuccess: () => router.replace("/dashboard"),
     });
   });
 

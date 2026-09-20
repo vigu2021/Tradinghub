@@ -34,3 +34,9 @@ export interface User {
   id: number;
   email: string;
 }
+
+export type Session =
+  | { status: "unknown" }
+  | { status: "anonymous" }
+  | { status: "unreachable"; retry: () => void }
+  | { status: "authenticated"; user: User };
