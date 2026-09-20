@@ -9,7 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-from tradinghub.core.logging import request_id
+from tradinghub.core.logging import UNSET, request_id, user_id
 
 REQUEST_ID_HEADER = "X-Request-ID"
 
@@ -56,6 +56,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             raise
         else:
             level = logging.DEBUG if request.url.path in QUIET_PATHS else logging.INFO
+            user_token = user_id.set(getattr(request.state, "user_id", UNSET))
             logger.log(
                 level,
                 "%s %s %s",
@@ -68,6 +69,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                     "duration_ms": _elapsed_ms(started),
                 },
             )
+            user_id.reset(user_token)
             response.headers[REQUEST_ID_HEADER] = request_id.get()
             return response
         finally:

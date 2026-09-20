@@ -70,8 +70,9 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=[settings.frontend_origin],  # "*" with credentials is refused by browsers
         allow_credentials=True,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type"],
+        expose_headers=["Retry-After", "X-Request-ID"],
     )
     app.include_router(router)
     app.include_router(auth_router)

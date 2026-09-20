@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from redis.asyncio import Redis
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.auth.crud.session import (
@@ -67,11 +68,20 @@ async def start_session(db: AsyncSession, user_id: int) -> TokenPair:
 async def register_user(
     db: AsyncSession, *, email: str, raw_password: str
 ) -> tuple[User, TokenPair]:
-    """Create an account and sign it in. Raises EmailTakenError when the email already has one."""
+    """Create an account and sign it in. Raises EmailTakenError when the email already has one.
+
+    The lookup is the fast path, not the guarantee: two registrations for one address can both
+    pass it before either inserts. The unique constraint is what actually decides, so losing that
+    race is reported as the same EmailTakenError rather than escaping as a 500.
+    """
     if await get_user_by_email(db, email) is not None:
         raise EmailTakenError
 
-    user = await create_user(db, email, hash_password(raw_password))
+    password_hash = hash_password(raw_password)
+    try:
+        user = await create_user(db, email, password_hash)
+    except IntegrityError as error:
+        raise EmailTakenError from error
     return user, await start_session(db, user.id)
 
 

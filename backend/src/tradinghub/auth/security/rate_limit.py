@@ -61,7 +61,7 @@ async def forgive_login_attempt(redis: Redis, email: str, ip: str) -> None:
     on it. Together with count_login_attempt this means only failures accumulate. A Redis outage
     is logged; the counters expire on their own.
     """
-    # ponytail: if the IP key expired between the INCR and this DECR it is recreated at -1 with
+    # Known edge: if the IP key expired between the INCR and this DECR it is recreated at -1 with
     # no TTL. Harmless: negative never refuses, and the next INCR's EXPIRE NX gives it a window.
     try:
         async with redis.pipeline() as pipeline:

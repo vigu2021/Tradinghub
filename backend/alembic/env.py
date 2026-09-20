@@ -20,7 +20,8 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Every feature package with models needs an import above, or autogenerate cannot see it.
-config.set_main_option("sqlalchemy.url", get_settings().database_url)
+# configparser reads "%" as interpolation, so a percent-encoded password needs it doubled.
+config.set_main_option("sqlalchemy.url", get_settings().database_url.replace("%", "%%"))
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

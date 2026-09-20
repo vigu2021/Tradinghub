@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.auth.crud.session import get_session_by_token_hash
 from tradinghub.auth.crud.user import create_user
-from tradinghub.auth.errors import InvalidCredentialsError, InvalidSessionError
+from tradinghub.auth.errors import EmailTakenError, InvalidCredentialsError, InvalidSessionError
 from tradinghub.auth.models import Session, User
 from tradinghub.auth.security.passwords import hash_password
 from tradinghub.auth.security.tokens import hash_refresh_token
@@ -16,6 +16,7 @@ from tradinghub.auth.services.auth import (
     login_user,
     logout_user,
     refresh_session,
+    register_user,
     start_session,
 )
 
@@ -43,6 +44,21 @@ async def _expire(db_session: AsyncSession, raw_refresh_token: str) -> None:
     assert session is not None
     session.expires_at = datetime.now(UTC) - timedelta(seconds=1)
     await db_session.flush()
+
+
+async def test_losing_the_registration_race_is_an_email_taken_error(
+    db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Two registrations can both pass the lookup; the unique constraint settles it."""
+    await _account(db_session, "raced@example.com")
+
+    async def lookup_that_ran_before_the_other_insert(*_: object) -> None:
+        return None
+
+    monkeypatch.setattr(auth, "get_user_by_email", lookup_that_ran_before_the_other_insert)
+
+    with pytest.raises(EmailTakenError):
+        await register_user(db_session, email="raced@example.com", raw_password=PASSWORD)
 
 
 async def test_login_returns_the_user_and_a_pair(

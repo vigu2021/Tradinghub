@@ -42,14 +42,19 @@ def encode_access_token(user_id: int) -> str:
 
 
 def decode_access_token(access_token: str) -> AccessTokenClaims | None:
-    """Verify the signature and expiry, returning the claims. None for any invalid token.
+    """Verify the signature, expiry, and shape, returning the claims. None for any invalid token.
 
-    The caller cannot tell expired from forged, and should not: both are a 401.
+    The caller cannot tell expired from forged from malformed, and should not: all are a 401.
+    The claims are required explicitly because PyJWT only checks "exp" when it is present, so a
+    correctly signed token without one would otherwise never expire.
     """
     try:
         access_token_claims = jwt.decode(
-            access_token, get_settings().jwt_secret, algorithms=[JWT_ALGORITHM]
+            access_token,
+            get_settings().jwt_secret,
+            algorithms=[JWT_ALGORITHM],
+            options={"require": ["exp", "iat", "sub"]},
         )
-    except jwt.InvalidTokenError:
+        return AccessTokenClaims(user_id=int(access_token_claims["sub"]))
+    except (jwt.InvalidTokenError, ValueError):
         return None
-    return AccessTokenClaims(user_id=int(access_token_claims["sub"]))

@@ -1,9 +1,12 @@
-.PHONY: db api web migrate test e2e check check-api check-web
+.PHONY: db redis api web migrate test e2e check check-api check-web
 
 db:
 	docker compose up -d db
 
-api: db
+redis:
+	docker compose up -d redis
+
+api: db redis
 	cd backend && uv run uvicorn tradinghub.main:create_app --factory --reload
 
 web:

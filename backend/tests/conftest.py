@@ -62,9 +62,17 @@ async def client(db_session: AsyncSession, redis_client: Redis) -> AsyncIterator
     """An HTTP client wired straight to the ASGI app, sharing the test's transaction."""
 
     async def override_get_db() -> AsyncIterator[AsyncSession]:
-        """Mirror get_db, so a route that relies on the request-scoped commit is really tested."""
-        yield db_session
-        await db_session.commit()
+        """Mirror get_db exactly: commit on success, roll back on any exception.
+
+        Without the rollback a failed request keeps its pending writes, and no test can tell a
+        deliberate mid-request commit from no commit at all.
+        """
+        try:
+            yield db_session
+            await db_session.commit()
+        except Exception:
+            await db_session.rollback()
+            raise
 
     async def override_get_redis() -> AsyncIterator[Redis]:
         yield redis_client

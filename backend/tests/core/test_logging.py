@@ -49,11 +49,15 @@ def test_console_is_the_default_locally() -> None:
 
 
 def test_json_is_the_default_in_production() -> None:
-    assert resolve_log_format(_settings(environment=Environment.PRODUCTION)) is LogFormat.JSON
+    production = _settings(environment=Environment.PRODUCTION, cookie_secure=True)
+
+    assert resolve_log_format(production) is LogFormat.JSON
 
 
 def test_an_explicit_format_overrides_the_environment() -> None:
-    settings = _settings(environment=Environment.PRODUCTION, log_format=LogFormat.CONSOLE)
+    settings = _settings(
+        environment=Environment.PRODUCTION, cookie_secure=True, log_format=LogFormat.CONSOLE
+    )
 
     assert resolve_log_format(settings) is LogFormat.CONSOLE
 
@@ -177,3 +181,23 @@ async def test_query_strings_are_never_logged(
         await client.get("/does-not-exist?token=super-secret")
 
     assert "super-secret" not in caplog.text
+
+
+async def test_the_access_line_names_the_signed_in_user(
+    client: AsyncClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    """The user is resolved inside the endpoint's task; the access line is written outside it."""
+    signed_up = await client.post(
+        "/auth/register",
+        json={"email": "logged@example.com", "password": "correct horse battery"},
+    )
+    caplog.handler.addFilter(ContextFilter())
+    caplog.clear()  # the registration above already wrote an access line
+
+    with caplog.at_level(logging.INFO, logger=ACCESS_LOGGER):
+        await client.get("/auth/me")
+        await client.get("/does-not-exist")
+
+    signed_in_line, anonymous_line = caplog.records
+    assert signed_in_line.__dict__["user_id"] == str(signed_up.json()["id"])
+    assert anonymous_line.__dict__["user_id"] == UNSET

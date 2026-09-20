@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 from http.cookies import Morsel, SimpleCookie
 
 import jwt
+import pytest
 from httpx import AsyncClient, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +11,7 @@ from tradinghub.auth.dependencies import ACCESS_COOKIE, REFRESH_COOKIE, REFRESH_
 from tradinghub.auth.models import Session
 from tradinghub.auth.security.rate_limit import MAX_FAILURES_PER_EMAIL, RATE_WINDOW_SECONDS
 from tradinghub.auth.security.tokens import ACCESS_TOKEN_LIFETIME, JWT_ALGORITHM
+from tradinghub.core.config import get_settings
 
 PASSWORD = "correct horse battery"
 
@@ -49,10 +51,14 @@ async def _fail_login(client: AsyncClient, email: str, times: int) -> None:
 
 
 async def test_login_returns_the_account(client: AsyncClient) -> None:
-    response = await _log_in(client, "account@example.com")
+    signed_up = await _sign_up(client, "account@example.com")
+
+    response = await client.post(
+        "/auth/login", json={"email": "account@example.com", "password": PASSWORD}
+    )
 
     assert response.status_code == 200
-    assert response.json() == {"id": response.json()["id"], "email": "account@example.com"}
+    assert response.json() == {"id": signed_up.json()["id"], "email": "account@example.com"}
 
 
 async def test_login_sets_both_cookies_httponly(client: AsyncClient) -> None:
@@ -60,6 +66,24 @@ async def test_login_sets_both_cookies_httponly(client: AsyncClient) -> None:
 
     assert _cookie(response, ACCESS_COOKIE)["httponly"]
     assert _cookie(response, REFRESH_COOKIE)["httponly"]
+
+
+async def test_both_cookies_are_samesite_lax(client: AsyncClient) -> None:
+    response = await _log_in(client, "samesite@example.com")
+
+    assert _cookie(response, ACCESS_COOKIE)["samesite"] == "lax"
+    assert _cookie(response, REFRESH_COOKIE)["samesite"] == "lax"
+
+
+async def test_cookies_are_secure_when_the_setting_says_so(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(get_settings(), "cookie_secure", True)
+
+    response = await _log_in(client, "secure@example.com")
+
+    assert _cookie(response, ACCESS_COOKIE)["secure"]
+    assert _cookie(response, REFRESH_COOKIE)["secure"]
 
 
 async def test_the_refresh_cookie_is_scoped_to_the_auth_routes(client: AsyncClient) -> None:
@@ -123,8 +147,6 @@ async def test_me_rejects_a_token_signed_with_another_secret(client: AsyncClient
 
 
 async def test_me_rejects_an_expired_token(client: AsyncClient) -> None:
-    from tradinghub.core.config import get_settings
-
     issued_at = datetime.now(UTC) - ACCESS_TOKEN_LIFETIME - timedelta(minutes=1)
     expired = jwt.encode(
         {"sub": "1", "iat": issued_at, "exp": issued_at + ACCESS_TOKEN_LIFETIME},
@@ -286,3 +308,27 @@ async def test_an_unknown_email_is_rate_limited_too(client: AsyncClient) -> None
     )
 
     assert response.status_code == 429
+
+
+async def test_replaying_a_refresh_token_revokes_the_family_for_good(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Over HTTP on purpose: the revocation has to survive the 401 that reports it.
+
+    The replay raises, and a request that raises is rolled back. Only the deliberate commit in
+    refresh_session keeps the DELETE, so removing that commit must fail this test. The
+    service-level tests cannot see it: they share one session, where a pending DELETE already
+    looks done.
+    """
+    user_id = (await _sign_up(client, "replayed@example.com")).json()["id"]
+    spent_refresh_token = client.cookies[REFRESH_COOKIE]
+    await client.post("/auth/refresh")
+    assert await _count_sessions(db_session, user_id) == 2
+
+    client.cookies.clear()
+    replay = await client.post(
+        "/auth/refresh", headers={"Cookie": f"{REFRESH_COOKIE}={spent_refresh_token}"}
+    )
+
+    assert replay.status_code == 401
+    assert await _count_sessions(db_session, user_id) == 0

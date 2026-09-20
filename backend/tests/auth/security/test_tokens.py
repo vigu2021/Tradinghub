@@ -28,9 +28,13 @@ def _payload(access_token: str) -> dict[str, Any]:
     return json.loads(base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)))
 
 
-def _token_expiring(delta: timedelta, secret: str | None = None) -> str:
-    claims = {"sub": str(USER_ID), "exp": datetime.now(UTC) + delta}
+def _signed(claims: dict[str, Any], secret: str | None = None) -> str:
     return jwt.encode(claims, secret or get_settings().jwt_secret, algorithm=JWT_ALGORITHM)
+
+
+def _token_expiring(delta: timedelta, secret: str | None = None) -> str:
+    issued_at = datetime.now(UTC)
+    return _signed({"sub": str(USER_ID), "iat": issued_at, "exp": issued_at + delta}, secret)
 
 
 def test_refresh_tokens_are_unique() -> None:
@@ -104,3 +108,26 @@ def test_an_empty_token_is_rejected() -> None:
 
 def test_the_access_token_never_contains_the_secret() -> None:
     assert get_settings().jwt_secret not in encode_access_token(USER_ID)
+
+
+def test_a_token_that_never_expires_is_rejected() -> None:
+    """Correctly signed, but PyJWT only checks "exp" when it is there."""
+    immortal = _signed({"sub": str(USER_ID), "iat": datetime.now(UTC)})
+
+    assert decode_access_token(immortal) is None
+
+
+def test_a_token_without_a_subject_is_rejected() -> None:
+    issued_at = datetime.now(UTC)
+    anonymous = _signed({"iat": issued_at, "exp": issued_at + timedelta(minutes=5)})
+
+    assert decode_access_token(anonymous) is None
+
+
+def test_a_token_whose_subject_is_not_a_user_id_is_rejected() -> None:
+    issued_at = datetime.now(UTC)
+    malformed = _signed(
+        {"sub": "not-a-number", "iat": issued_at, "exp": issued_at + timedelta(minutes=5)}
+    )
+
+    assert decode_access_token(malformed) is None

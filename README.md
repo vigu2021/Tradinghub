@@ -21,7 +21,7 @@ Docker, [uv](https://docs.astral.sh/uv/), Python 3.13, and Node 22.
 ## Getting started
 
 ```bash
-docker compose up -d                    # Postgres on 127.0.0.1:5433
+docker compose up -d                    # Postgres on 127.0.0.1:5433, Redis on 127.0.0.1:6380
 
 cp backend/.env.example backend/.env
 python -c "import secrets; print(secrets.token_urlsafe(32))"   # paste into JWT_SECRET
@@ -90,7 +90,9 @@ plans/<date>/<feature>/    # spec.md and plan.md, both written before any code
 
 ## Known gaps
 
-- No rate limiting on login. Required before this is reachable from the internet.
+- Login is rate limited per email and per IP; registration is not yet.
+- The IP limit reads the socket peer. Behind a load balancer it needs uvicorn's
+  `--proxy-headers`, or every caller shares one counter.
 - No password strength or breach check; `12345678` is accepted.
 - An access token stays valid for up to 15 minutes after logout. Deliberate, and asserted by
   `test_an_access_token_outlives_logout`.
