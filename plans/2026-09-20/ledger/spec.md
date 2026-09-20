@@ -29,7 +29,10 @@ Three questions it answers, all arithmetic over one table:
 | Not double-entry | One row per movement against one account, not balanced debit and credit pairs | Double-entry is more correct and is what real accounting software does. It is also months of work and hard to make pleasant to use. This model can grow into it later without discarding anything |
 | Accounts | A table. Named pots, each with one currency | "Total balance" is meaningless without knowing what is on the exchange versus in the bank. Adding it later would mean a migration on every transaction |
 | `kind` on a transaction | `income`, `expense`, `transfer` | Without it, expenses would have to mean "negative amounts", which counts moving money to an exchange as money spent. It is not |
-| Transfers | Two linked rows sharing a group id, written by one endpoint | A transfer is two movements. Linking them means deleting one cannot orphan the other |
+| Transfers | Two equal and opposite rows sharing a group id, written by one endpoint | A transfer is two movements. The shared id means deleting one cannot orphan the other |
+| Transfer fees | A third row, an expense, sharing the same group id | Making the two transfer rows uneven would hide the fee. Fees are spending and belong in the category breakdown |
+| Account `type` | `cash`, `crypto`, or `stock`, a fixed set | Purely cosmetic, for grouping and icons. No balance depends on it |
+| The amount sign | Applied by the service, not enforced by the database | The API takes a positive amount and a kind, so nobody types a minus sign to record rent. One function owns the convention, and one test holds it up |
 | Categories | Free text, normalised, offered from ones already used | One table instead of two. Renaming becomes an `UPDATE`, which is rare. A table earns its place when budgets per category arrive |
 | Multi-currency | Balances are reported per currency and never summed across them | Adding USD to GBP needs exchange rates, a rate source, and a date for each rate. That is its own feature, not a column |
 | Money | `NUMERIC(20, 8)` in Postgres, `Decimal` in Python, strings in JSON and in the browser | A float cannot represent 0.1, and this is money |
@@ -66,44 +69,55 @@ Two tables. One Alembic revision.
 |---|---|---|
 | `id` | integer | primary key |
 | `user_id` | integer | foreign key to `users.id`, `ON DELETE CASCADE`, not null |
-| `name` | text | not null, 1 to 60 characters, trimmed |
+| `name` | citext | not null, 1 to 60 characters, trimmed |
 | `currency` | text | not null, 3 to 5 characters, uppercase |
+| `type` | text | not null, `cash`, `crypto`, or `stock` |
 | `created_at` | timestamptz | not null, set by the database |
 | `updated_at` | timestamptz | not null, set by the database on every update |
 
 - `UNIQUE (user_id, name)`: two accounts called Binance would be indistinguishable in a picker.
+  `name` is `CITEXT`, the case-insensitive type `users.email` already uses, so "Chase" and "chase"
+  collide in the database rather than relying on the application to lowercase them.
 - `UNIQUE (id, user_id)`: redundant on its own, and the target of the composite foreign key above.
+  Postgres will not create a foreign key over a pair of columns unless a constraint lists exactly
+  that pair.
+- `type` is checked against its three values. Stored as text rather than a Postgres enum type,
+  because adding a value to an enum is a migration with sharp edges and a check is one line.
+
+**There is no archiving.** An account is deleted or it is not. Deleting one that still has
+transactions is refused by the service, so the cascade below only fires when a user is deleted.
 
 ### `transactions`
 
 | Column | Type | Rule |
 |---|---|---|
 | `id` | integer | primary key |
-| `user_id` | integer | foreign key to `users.id`, `ON DELETE CASCADE`, not null |
-| `account_id` | integer | not null; with `user_id`, a composite foreign key to `accounts` |
-| `amount` | numeric(20, 8) | not null, never zero. Positive is money in, negative is money out |
+| `user_id` | integer | not null; with `account_id`, a composite foreign key to `accounts` |
+| `account_id` | integer | not null; see above |
+| `amount` | numeric(20, 8) | not null. Positive is money in, negative is money out |
 | `kind` | text | not null, `income`, `expense`, or `transfer` |
-| `category` | text | nullable, 1 to 40 characters, lowercase. Null on transfers |
+| `category` | text | nullable, 1 to 40 characters, lowercase |
 | `occurred_at` | timestamptz | not null, when it happened rather than when it was typed |
 | `note` | text | nullable, at most 1,000 characters |
-| `transfer_group` | uuid | null unless this row is half of a transfer |
+| `transfer_group_id` | uuid | null unless this row is part of a transfer |
 | `created_at` | timestamptz | not null, set by the database |
 | `updated_at` | timestamptz | not null, set by the database on every update |
 
-**Check constraints**, named through the existing convention so Alembic can alter them:
+**There is one foreign key, and it covers both columns:** `(account_id, user_id)` references
+`accounts (id, user_id)`, cascading on delete. Postgres therefore refuses any row whose account is
+not that user's, whatever wrote it. No separate key to `users` is needed, because deleting a user
+cascades to their accounts and from there to their transactions.
 
-- `kind` is one of the three values. A check rather than a Postgres enum type, because adding a
-  value to an enum is a migration with sharp edges and a check is one line.
-- the sign matches the kind: income is positive, expense is negative, a transfer is either.
-  This is what makes "sum of expenses" reliably negative without the application policing it.
-- `amount` is never zero.
-- `transfer_group` is set exactly when `kind` is `transfer`.
-- `category` is set exactly when `kind` is not `transfer`. A transfer between your own accounts is
-  not spending, so it has nothing to categorise.
+**One check constraint:** `kind` is one of the three values, generated from the enum. Deliberately
+nothing else. The sign rule, the non-zero rule, and the category rules all live in the schema
+layer, because a violation of any of them is either visible on screen or harmless to every total.
+The sign rule is the one worth watching: without a constraint, the test that posts an expense and
+asserts the stored amount is negative is the only thing holding it up.
 
-**Two indexes:** `(user_id, occurred_at DESC)` for the list, and `(user_id, account_id)` for
-per-account balances. Nothing on `category`: it is filtered inside one user's rows, which the
-first index already narrows to a few thousand. Add an index when a query plan asks for one.
+**One index:** `(user_id, occurred_at)`. Every query in this slice starts by filtering to one user,
+so `user_id` leads. Balances and category groupings run over the few thousand rows that index
+already narrows to. Add another when a query plan asks for one, which is cheap: an index is the
+only part of a schema that can be added later with no migration risk at all.
 
 In Python, `kind` is a `StrEnum` and amounts are `Mapped[Decimal]`.
 
@@ -139,6 +153,10 @@ the UI warns.
 | `PATCH /transactions/{id}` | change any subset | 200 | 404, 409 on a transfer row, 422 |
 | `DELETE /transactions/{id}` | remove; a transfer takes both halves | 204 | 404 |
 
+**The list order needs both columns.** `occurred_at` alone is not a total order, since recording
+two things on one day is normal. Paging over a non-deterministic order can show a row twice or skip
+one entirely, so `id` is the tiebreaker, not decoration.
+
 **`POST /transactions` refuses `kind = transfer`.** Transfers are created by their own endpoint, so
 a half-transfer with no partner cannot exist.
 
@@ -155,12 +173,22 @@ mistaken for an oversight.
 |---|---|---|---|
 | `POST /transfers` | move money between two of your accounts | 201, both rows | 404, 422 |
 
-The body is the source account, the destination account, a positive amount, when it happened, and
-an optional note. It writes two rows in one transaction, sharing a new `transfer_group`.
+The body is the source account, the destination account, the amount leaving, the amount arriving,
+an optional fee with its category, when it happened, and an optional note. It writes every row in
+one database transaction, sharing a new `transfer_group_id`.
+
+**A fee is its own expense row**, in the same group, against whichever account was charged. The
+two transfer rows stay equal and opposite so the fee cannot hide inside an uneven pair. Withdrawing
+1,000 from a bank into an exchange that charges 5 is three rows: -1000 transfer, +1000 transfer,
+-5 expense. The balances come to -1000 and +995, and the 5 appears in the spending breakdown.
 
 **Both accounts must be yours, and they must differ.** They may have different currencies, and
-nothing is converted: the same number leaves one and arrives in the other. The UI warns when the
-currencies differ, because that is usually a mistake.
+nothing is converted. The amounts leaving and arriving are given separately, so a GBP account
+sending 1,000 into a USDT account records -1000 and +1250. The exchange rate is not stored, because
+it is one amount divided by the other.
+
+**Equal and opposite is a same-currency rule only.** The service enforces it when both accounts
+share a currency and must not when they differ, or the first exchange you record is rejected.
 
 ### Summary
 
@@ -182,8 +210,12 @@ Python. Grouping and filtering aggregates in one pass is the Postgres lesson of 
 
 - `name`: trimmed, 1 to 60 characters.
 - `currency`: uppercased, 3 to 5 letters.
-- `category`: trimmed, lowercased, 1 to 40 characters. Required for income and expense, absent for transfers.
-- `amount`: at most 20 digits, 8 after the point, never zero. Accepted as a string or a number, returned as a string.
+- `category`: trimmed, lowercased, 1 to 40 characters. Optional, so a purchase can be recorded
+  before it is categorised. The breakdown groups those under "uncategorised".
+- `amount`: sent as a positive number with a `kind`; the service applies the sign. At most 20
+  digits, 8 after the point, never zero. Accepted as a string or a number, returned signed as a
+  string.
+- `type`: one of `cash`, `crypto`, `stock`.
 - `occurred_at`: ISO 8601 with an offset. A naive timestamp is a 422, never a guess at the timezone.
 - `note`: at most 1,000 characters.
 
@@ -263,14 +295,23 @@ These waited for the first feature with lists, and this is it.
 
 - ownership, for all twelve endpoints, with two users
 - the composite foreign key: a transaction aimed at a stranger's account is refused by the database
-- the check constraints, by writing bad rows past the application: a positive expense, a zero
-  amount, a transfer with no group, an unknown kind
+- the sign convention, which nothing in the database enforces: post an expense, read the row back,
+  assert the stored amount is negative. Same for income. These two tests are the whole guarantee
+- the `kind` check, by writing an unknown kind past the application
+- account names collide case-insensitively: "Chase" and "chase" cannot both exist for one user,
+  but another user may have their own "Chase"
 - balances: empty account is zero, mixed signs, per currency, unaffected by another user's rows
-- transfers: both rows written, group shared, deleting either removes both, patching one is refused,
-  same-account and cross-user transfers rejected
+- transfers: both rows written, group shared, deleting any row removes the whole group, patching
+  one is refused, same-account and cross-user transfers rejected
+- a transfer with a fee: three rows, the balances land at -1000 and +995, and the fee shows in the
+  expense total while the two transfer rows do not
+- a cross-currency transfer with different amounts on each side is accepted, and the equal-and-
+  opposite rule does not fire
 - the summary: category grouping, date boundaries inclusive at both ends, transfers excluded from
   income and expense totals but present in balances, currencies kept apart
-- list: ordering, each filter, filters combined, `total` against a page, `limit` bounds
+- list: each filter, filters combined, `total` against a page, `limit` bounds
+- paging is stable when several rows share one `occurred_at`: walk every page and assert no row is
+  seen twice or missed. This fails without `id` in the order
 - account deletion refused while transactions exist, allowed once they are gone
 - a failed create leaves no row, using the fixture that now rolls back like production
 
