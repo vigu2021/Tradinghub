@@ -5,8 +5,10 @@ from tradinghub.auth.errors import RateLimitedError
 from tradinghub.auth.security.rate_limit import (
     MAX_FAILURES_PER_EMAIL,
     MAX_FAILURES_PER_IP,
+    MAX_REGISTRATIONS_PER_IP,
     RATE_WINDOW_SECONDS,
     count_login_attempt,
+    count_registration_attempt,
     forgive_login_attempt,
 )
 
@@ -84,10 +86,27 @@ async def test_a_burst_cannot_exceed_the_limit(redis_client: Redis) -> None:
     assert allowed == MAX_FAILURES_PER_EMAIL
 
 
+async def test_registrations_are_limited_per_ip_and_never_forgiven(redis_client: Redis) -> None:
+    for _ in range(MAX_REGISTRATIONS_PER_IP):
+        await count_registration_attempt(redis_client, IP)
+
+    with pytest.raises(RateLimitedError):
+        await count_registration_attempt(redis_client, IP)
+    await count_registration_attempt(redis_client, "198.51.100.9")
+
+
+async def test_registrations_and_logins_do_not_share_a_counter(redis_client: Redis) -> None:
+    for _ in range(MAX_REGISTRATIONS_PER_IP):
+        await count_registration_attempt(redis_client, IP)
+
+    await count_login_attempt(redis_client, EMAIL, IP)
+
+
 async def test_every_call_fails_open_when_redis_is_unreachable() -> None:
     dead = Redis.from_url("redis://localhost:1", socket_connect_timeout=0.2)
     try:
         await count_login_attempt(dead, EMAIL, IP)
+        await count_registration_attempt(dead, IP)
         await forgive_login_attempt(dead, EMAIL, IP)
     finally:
         await dead.aclose()

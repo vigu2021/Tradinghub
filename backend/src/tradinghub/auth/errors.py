@@ -48,7 +48,7 @@ class EmailTakenError(AppError):
 
 
 class RateLimitedError(AppError):
-    """Too many failed logins for this email or from this IP inside the window.
+    """Too many login failures or registrations for this email or IP inside the window.
 
     Retry-After is the full window rather than the time until release: the exact remaining time
     buys a user nothing and would tell an attacker precisely when to resume. The window lives
@@ -59,6 +59,6 @@ class RateLimitedError(AppError):
     retry_after_seconds = 15 * 60
 
     code = "rate_limited"
-    message = "Too many failed login attempts. Please try again later."
+    message = "Too many attempts. Please try again later."
     status_code = HTTPStatus.TOO_MANY_REQUESTS
     headers: ClassVar[Mapping[str, str]] = {"Retry-After": str(retry_after_seconds)}

@@ -16,7 +16,9 @@ async def get_session_by_token_hash(db: AsyncSession, hashed_refresh_token: str)
     be told the token is unknown.
     """
     return await db.scalar(
-        select(Session).where(Session.hashed_refresh_token == hashed_refresh_token)
+        select(Session)
+        .where(Session.hashed_refresh_token == hashed_refresh_token)
+        .with_for_update()
     )
 
 

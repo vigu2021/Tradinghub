@@ -66,6 +66,11 @@ What actually matters:
 Around 40 lines, stop and look. Usually there is a genuine seam. Sometimes there isn't, and forcing
 one makes the code worse.
 
+**A module reads like a newspaper.** Public functions and classes come first, private helpers
+below them, and a helper sits below the function that calls it. A reader opening the file meets
+what it offers before how it does it. Test files are the exception: their helpers and constants
+stay at the top, since a test is read with its setup in mind.
+
 ## Types
 
 - Every parameter and return value is annotated. No exceptions.
@@ -115,8 +120,10 @@ Alembic cannot reliably drop or alter a constraint whose name the database inven
 
 Table names are plural snake_case (`users`, `login_attempts`); column names are singular
 snake_case. Timestamps are always `TIMESTAMP WITH TIME ZONE` — a naive column silently drops the
-offset and the bug only appears outside UTC. Primary keys are UUIDs, not serial integers, since
-sequential ids leak row counts and invite enumeration once they appear in URLs.
+offset and the bug only appears outside UTC. Primary keys are integers. A sequential id reveals
+roughly how many rows exist, which is accepted: every row is owned by a user and every query is
+scoped to that owner, so knowing an id grants nothing. Ownership checks are what protect a row, not
+an unguessable key.
 
 Foreign keys state their delete behavior explicitly (`ondelete="CASCADE"` for rows that cannot
 outlive their parent). Relying on the application to clean up is how orphans accumulate.

@@ -1,8 +1,10 @@
 from httpx import AsyncClient
+from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.auth.models import User
+from tradinghub.auth.security.rate_limit import MAX_REGISTRATIONS_PER_IP, RATE_WINDOW_SECONDS
 
 PASSWORD = "correct horse battery"
 
@@ -130,3 +132,18 @@ async def test_register_rejects_an_overlong_email(client: AsyncClient) -> None:
     response = await client.post("/auth/register", json=_payload(overlong))
 
     assert response.status_code == 422
+
+
+async def test_an_ip_that_registered_too_often_is_refused(
+    client: AsyncClient, redis_client: Redis, db_session: AsyncSession
+) -> None:
+    """The counter is seeded rather than earned: thirty real registrations is thirty hashes."""
+    await redis_client.set("register:ip:127.0.0.1", MAX_REGISTRATIONS_PER_IP)
+
+    response = await client.post("/auth/register", json=_payload("flooded@example.com"))
+
+    assert response.status_code == 429
+    assert response.json()["error"]["code"] == "rate_limited"
+    assert response.headers["Retry-After"] == str(RATE_WINDOW_SECONDS)
+    created = await db_session.scalar(select(User).where(User.email == "flooded@example.com"))
+    assert created is None

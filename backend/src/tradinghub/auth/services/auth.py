@@ -23,8 +23,12 @@ from tradinghub.auth.errors import (
     InvalidSessionError,
 )
 from tradinghub.auth.models.user import User
-from tradinghub.auth.security.passwords import hash_password, verify_password
-from tradinghub.auth.security.rate_limit import count_login_attempt, forgive_login_attempt
+from tradinghub.auth.security.passwords import PASSWORD_HASHER, hash_password, verify_password
+from tradinghub.auth.security.rate_limit import (
+    count_login_attempt,
+    count_registration_attempt,
+    forgive_login_attempt,
+)
 from tradinghub.auth.security.tokens import (
     REFRESH_TOKEN_LIFETIME,
     encode_access_token,
@@ -36,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 # Verified against when the email is unknown, so both failures cost one Argon2 verify. Random,
 # so nothing can match it.
-DUMMY_PASSWORD_HASH = hash_password(secrets.token_urlsafe(32))
+DUMMY_PASSWORD_HASH = PASSWORD_HASHER.hash(secrets.token_urlsafe(32))
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,37 +51,28 @@ class TokenPair:
     refresh_token: str
 
 
-async def _issue_token_pair(db: AsyncSession, *, user_id: int, family_id: uuid.UUID) -> TokenPair:
-    """Mint a pair and record the session. Only the refresh token's hash is stored."""
-    refresh_token = generate_refresh_token()
-    await create_session(
-        db,
-        user_id=user_id,
-        family_id=family_id,
-        hashed_refresh_token=hash_refresh_token(refresh_token),
-        expires_at=datetime.now(UTC) + REFRESH_TOKEN_LIFETIME,
-    )
-    return TokenPair(access_token=encode_access_token(user_id), refresh_token=refresh_token)
-
-
 async def start_session(db: AsyncSession, user_id: int) -> TokenPair:
     """Begin a new login family for a user who has already been authenticated."""
     return await _issue_token_pair(db, user_id=user_id, family_id=uuid.uuid4())
 
 
 async def register_user(
-    db: AsyncSession, *, email: str, raw_password: str
+    db: AsyncSession, redis: Redis, *, email: str, raw_password: str, ip: str
 ) -> tuple[User, TokenPair]:
     """Create an account and sign it in. Raises EmailTakenError when the email already has one.
+
+    Raises RateLimitedError first when the IP has registered too often: every registration costs
+    an Argon2 hash and a permanent row, and the endpoint is open to anyone.
 
     The lookup is the fast path, not the guarantee: two registrations for one address can both
     pass it before either inserts. The unique constraint is what actually decides, so losing that
     race is reported as the same EmailTakenError rather than escaping as a 500.
     """
+    await count_registration_attempt(redis, ip)
     if await get_user_by_email(db, email) is not None:
         raise EmailTakenError
 
-    password_hash = hash_password(raw_password)
+    password_hash = await hash_password(raw_password)
     try:
         user = await create_user(db, email, password_hash)
     except IntegrityError as error:
@@ -104,7 +99,7 @@ async def login_user(
 
     # Kept out of the if: short-circuiting would skip the verify for an unknown email, and the
     # faster reply tells an attacker which addresses are registered.
-    password_matches = verify_password(raw_password=raw_password, password_hash=password_hash)
+    password_matches = await verify_password(raw_password=raw_password, password_hash=password_hash)
     if user is None or not password_matches:
         raise InvalidCredentialsError
 
@@ -158,3 +153,16 @@ async def logout_user(db: AsyncSession, raw_refresh_token: str) -> None:
     current_session = await get_session_by_token_hash(db, hash_refresh_token(raw_refresh_token))
     if current_session is not None:
         await revoke_family(db, current_session.family_id)
+
+
+async def _issue_token_pair(db: AsyncSession, *, user_id: int, family_id: uuid.UUID) -> TokenPair:
+    """Mint a pair and record the session. Only the refresh token's hash is stored."""
+    refresh_token = generate_refresh_token()
+    await create_session(
+        db,
+        user_id=user_id,
+        family_id=family_id,
+        hashed_refresh_token=hash_refresh_token(refresh_token),
+        expires_at=datetime.now(UTC) + REFRESH_TOKEN_LIFETIME,
+    )
+    return TokenPair(access_token=encode_access_token(user_id), refresh_token=refresh_token)

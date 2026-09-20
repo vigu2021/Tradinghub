@@ -4,11 +4,13 @@ import logging
 import time
 import uuid
 from collections.abc import Awaitable, Callable
+from http import HTTPStatus
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
+from tradinghub.core.errors import error_response
 from tradinghub.core.logging import UNSET, request_id, user_id
 
 REQUEST_ID_HEADER = "X-Request-ID"
@@ -19,13 +21,12 @@ QUIET_PATHS = frozenset({"/health"})
 logger = logging.getLogger("tradinghub.access")
 
 
-def _elapsed_ms(started: float) -> float:
-    """Milliseconds since a perf_counter reading, rounded for readability."""
-    return round((time.perf_counter() - started) * 1000, 2)
-
-
 class RequestContextMiddleware(BaseHTTPMiddleware):
-    """Assign a request id, then log one line per request.
+    """Assign a request id, log one line per request, and render any unexpected failure.
+
+    An unhandled exception becomes a 500 carrying a reference the user can quote, never a
+    traceback. It is rendered here rather than by an exception handler because this middleware
+    sits inside CORS: the browser can read the response, and it carries the request id.
 
     The path is logged without its query string: query parameters are a common place for
     tokens and reset codes to appear, and access logs are widely readable.
@@ -53,7 +54,13 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                 request.url.path,
                 extra={**context, "duration_ms": _elapsed_ms(started)},
             )
-            raise
+            response = error_response(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "internal_error",
+                f"Internal error. Reference: {current_id}",
+            )
+            response.headers[REQUEST_ID_HEADER] = current_id
+            return response
         else:
             level = logging.DEBUG if request.url.path in QUIET_PATHS else logging.INFO
             user_token = user_id.set(getattr(request.state, "user_id", UNSET))
@@ -75,3 +82,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         finally:
             # Reset in finally: a failed request must not leak its id into the next one.
             request_id.reset(token)
+
+
+def _elapsed_ms(started: float) -> float:
+    """Milliseconds since a perf_counter reading, rounded for readability."""
+    return round((time.perf_counter() - started) * 1000, 2)

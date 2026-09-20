@@ -38,43 +38,22 @@ ACCESS_MAX_AGE = int(ACCESS_TOKEN_LIFETIME.total_seconds())
 REFRESH_MAX_AGE = int(REFRESH_TOKEN_LIFETIME.total_seconds())
 
 
-def _set_cookie(response: Response, name: str, value: str, max_age: int, path: str) -> None:
-    """Write one auth cookie. The flags live here so setting and clearing cannot disagree."""
-    settings = get_settings()
-    response.set_cookie(
-        name,
-        value,
-        max_age=max_age,
-        path=path,
-        domain=settings.cookie_domain,
-        secure=settings.cookie_secure,
-        httponly=True,
-        samesite="lax",
-    )
-
-
-def _set_auth_cookies(response: Response, token_pair: TokenPair) -> None:
-    """Send both tokens back. The refresh cookie is scoped so the browser sends it nowhere else."""
-    _set_cookie(response, ACCESS_COOKIE, token_pair.access_token, ACCESS_MAX_AGE, "/")
-    _set_cookie(response, REFRESH_COOKIE, token_pair.refresh_token, REFRESH_MAX_AGE, REFRESH_PATH)
-
-
-def _clear_auth_cookies(response: Response) -> None:
-    """Expire both cookies.
-
-    An empty value with max_age 0 through the same helper, because a cookie is only replaced by
-    one carrying the identical name, path, and domain. A mismatch leaves the original in place.
-    """
-    _set_cookie(response, ACCESS_COOKIE, "", 0, "/")
-    _set_cookie(response, REFRESH_COOKIE, "", 0, REFRESH_PATH)
-
-
 @router.post("/register", status_code=HTTPStatus.CREATED)
 async def register(
-    payload: RegisterRequest, db: Annotated[AsyncSession, Depends(get_db)], response: Response
+    payload: RegisterRequest,
+    request: Request,
+    response: Response,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    redis: Annotated[Redis, Depends(get_redis)],
 ) -> UserResponse:
-    """Register an account and sign in. Raises EmailTakenError if the email already has one."""
-    user, token_pair = await register_user(db, email=payload.email, raw_password=payload.password)
+    """Register an account and sign in.
+
+    Raises RateLimitedError when the IP has registered too often, and EmailTakenError if the
+    email already has an account.
+    """
+    user, token_pair = await register_user(
+        db, redis, email=payload.email, raw_password=payload.password, ip=_client_ip(request)
+    )
     _set_auth_cookies(response, token_pair)
     return UserResponse(id=user.id, email=user.email)
 
@@ -90,13 +69,10 @@ async def login(
     """Start a session and set both cookies.
 
     Raises RateLimitedError when the caller is locked out and InvalidCredentialsError on a failed
-    login. Raises RuntimeError if the request carries no client address, which only happens
-    when serving over a unix socket: the IP limiter needs a peer.
+    login.
     """
-    if request.client is None:
-        raise RuntimeError("no client address on the request")
     user, token_pair = await login_user(
-        db, redis, email=payload.email, raw_password=payload.password, ip=request.client.host
+        db, redis, email=payload.email, raw_password=payload.password, ip=_client_ip(request)
     )
     _set_auth_cookies(response, token_pair)
     return UserResponse(id=user.id, email=user.email)
@@ -145,3 +121,42 @@ async def me(
     if user is None:
         raise InvalidSessionError
     return UserResponse(id=user.id, email=user.email)
+
+
+def _set_auth_cookies(response: Response, token_pair: TokenPair) -> None:
+    """Send both tokens back. The refresh cookie is scoped so the browser sends it nowhere else."""
+    _set_cookie(response, ACCESS_COOKIE, token_pair.access_token, ACCESS_MAX_AGE, "/")
+    _set_cookie(response, REFRESH_COOKIE, token_pair.refresh_token, REFRESH_MAX_AGE, REFRESH_PATH)
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    """Expire both cookies.
+
+    An empty value with max_age 0 through the same helper, because a cookie is only replaced by
+    one carrying the identical name, path, and domain. A mismatch leaves the original in place.
+    """
+    _set_cookie(response, ACCESS_COOKIE, "", 0, "/")
+    _set_cookie(response, REFRESH_COOKIE, "", 0, REFRESH_PATH)
+
+
+def _client_ip(request: Request) -> str:
+    """Return the caller's address. Raises RuntimeError when there is none, which only happens
+    when serving over a unix socket: the IP limiters need a peer."""
+    if request.client is None:
+        raise RuntimeError("no client address on the request")
+    return request.client.host
+
+
+def _set_cookie(response: Response, name: str, value: str, max_age: int, path: str) -> None:
+    """Write one auth cookie. The flags live here so setting and clearing cannot disagree."""
+    settings = get_settings()
+    response.set_cookie(
+        name,
+        value,
+        max_age=max_age,
+        path=path,
+        domain=settings.cookie_domain,
+        secure=settings.cookie_secure,
+        httponly=True,
+        samesite="lax",
+    )
