@@ -40,6 +40,7 @@ test("the dashboard is closed to a visitor without a session", async ({
   await expect(
     page.getByRole("heading", { name: "Welcome back." }),
   ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out" })).toHaveCount(0);
 });
 
 test("the sign-in screen moves a signed-in visitor along", async ({ page }) => {
@@ -127,12 +128,31 @@ test("a duplicate email is rejected with a way out", async ({ page }) => {
   await expect(page).toHaveURL(/\/login$/);
 });
 
+test("the right password signs a returning account back in", async ({
+  page,
+}) => {
+  const email = uniqueEmail("signin");
+  await register(page, email);
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  await page.context().clearCookies();
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("heading", { name: email })).toBeVisible();
+});
+
 test("a wrong password is refused without saying which field was wrong", async ({
   page,
 }) => {
   const email = uniqueEmail("wrongpass");
   await register(page, email);
+  await expect(page).toHaveURL(/\/dashboard$/);
 
+  await page.context().clearCookies();
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill("not the password");
@@ -154,6 +174,16 @@ test("an unknown email is refused identically", async ({ page }) => {
 test("the form rejects a short password before reaching the server", async ({
   page,
 }) => {
+  const registerRequests: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      request.url().includes("/auth/register")
+    ) {
+      registerRequests.push(request.url());
+    }
+  });
+
   await page.goto("/register");
   await page.getByLabel("Email").fill(uniqueEmail("short"));
   await page.getByLabel("Password").fill("short");
@@ -161,10 +191,12 @@ test("the form rejects a short password before reaching the server", async ({
 
   await expect(formAlert(page)).toContainText("at least 8 characters");
   await expect(page).toHaveURL(/\/register$/);
+  expect(registerRequests).toEqual([]);
 });
 
 test("signing out clears the session", async ({ page, context }) => {
-  await register(page, uniqueEmail("signout"));
+  const email = uniqueEmail("signout");
+  await register(page, email);
   await expect(page).toHaveURL(/\/dashboard$/);
 
   await page.getByRole("button", { name: "Sign out" }).click();
@@ -177,4 +209,9 @@ test("signing out clears the session", async ({ page, context }) => {
     )
     .toBe(false);
   await expect(page).toHaveURL(/\/login$/);
+
+  await page.goto("/dashboard");
+
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("heading", { name: email })).toHaveCount(0);
 });

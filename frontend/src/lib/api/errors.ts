@@ -9,10 +9,19 @@ export const API_CODES = {
   INTERNAL: "internal_error",
 } as const;
 
+/** The codes this frontend knows how to branch on. */
+export type KnownApiCode = (typeof API_CODES)[keyof typeof API_CODES];
+
+/**
+ * What an error can carry: a known code, or one the backend added since this file was written.
+ * `string & {}` keeps the known ones suggestable instead of collapsing the union to `string`.
+ */
+export type ApiCode = KnownApiCode | (string & {});
+
 export class ApiError extends Error {
   constructor(
     message: string,
-    readonly code: string,
+    readonly code: ApiCode,
     readonly status: number,
   ) {
     super(message);
@@ -25,6 +34,16 @@ export class NetworkError extends Error {
     super(message);
     this.name = "NetworkError";
   }
+}
+
+/** Narrow a failure to an ApiError, optionally one carrying `code`. A typo in `code` will not compile. */
+export function isApiError(
+  error: unknown,
+  code?: KnownApiCode,
+): error is ApiError {
+  return (
+    error instanceof ApiError && (code === undefined || error.code === code)
+  );
 }
 
 export function messageFor(error: unknown): string {

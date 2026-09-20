@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
-import { API_CODES, ApiError, messageFor } from "@/lib/api/errors";
+import { API_CODES, isApiError, messageFor } from "@/lib/api/errors";
 
 import { useRegister } from "../hooks";
 import {
@@ -34,9 +34,7 @@ export function RegisterForm() {
     });
   });
 
-  const emailTaken =
-    registerMutation.error instanceof ApiError &&
-    registerMutation.error.code === API_CODES.EMAIL_TAKEN;
+  const emailTaken = isApiError(registerMutation.error, API_CODES.EMAIL_TAKEN);
 
   return (
     <form onSubmit={submit} noValidate className="space-y-7">

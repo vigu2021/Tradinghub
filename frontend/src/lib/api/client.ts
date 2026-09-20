@@ -1,6 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
-import { API_CODES, ApiError, NetworkError } from "./errors";
+import { API_CODES, ApiError, isApiError, NetworkError } from "./errors";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
@@ -23,7 +23,7 @@ function toFailure(error: AxiosError): ApiError | NetworkError {
   }
 
   // A proxy or a gateway answers in its own shape: nothing here to render.
-  const envelope = (error.response.data as Envelope).error;
+  const envelope = (error.response.data as Envelope | null | undefined)?.error;
   if (!envelope?.code || !envelope.message) {
     return new NetworkError(error.message);
   }
@@ -53,8 +53,7 @@ function shouldRotateAndReplay(
   config: Retriable | undefined,
 ): config is Retriable {
   return (
-    failure instanceof ApiError &&
-    failure.code === API_CODES.INVALID_SESSION &&
+    isApiError(failure, API_CODES.INVALID_SESSION) &&
     config !== undefined &&
     config.url !== REFRESH_PATH &&
     !config.retried
