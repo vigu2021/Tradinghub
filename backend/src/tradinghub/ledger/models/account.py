@@ -3,7 +3,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import DateTime, Enum, ForeignKey, UniqueConstraint, func
+from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -25,6 +25,7 @@ class Account(Base):
         # Required by the transactions foreign key: Postgres only lets one reference a
         # combination of columns that is uniquely constrained. Forbids nothing on its own.
         UniqueConstraint("id", "user_id"),
+        CheckConstraint("type IN ('cash', 'crypto', 'stock')", name="accounttype"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -35,11 +36,11 @@ class Account(Base):
         Enum(
             AccountType,
             native_enum=False,
-            create_constraint=True,
             length=20,
             values_callable=lambda enum: [member.value for member in enum],
         )
     )
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

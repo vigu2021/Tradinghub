@@ -5,7 +5,15 @@ from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 
-from sqlalchemy import DateTime, Enum, ForeignKeyConstraint, Index, Numeric, func
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    Enum,
+    ForeignKeyConstraint,
+    Index,
+    Numeric,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from tradinghub.core.database import Base
@@ -32,6 +40,7 @@ class Transaction(Base):
             ondelete="CASCADE",
         ),
         Index("ix_transactions_user_id_occurred_at", "user_id", "occurred_at"),
+        CheckConstraint("kind IN ('income', 'expense', 'transfer')", name="transactionkind"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -42,7 +51,6 @@ class Transaction(Base):
         Enum(
             TransactionKind,
             native_enum=False,
-            create_constraint=True,
             length=20,
             values_callable=lambda enum: [member.value for member in enum],
         )

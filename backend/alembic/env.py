@@ -6,9 +6,10 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-from tradinghub.auth import models  # its __init__ imports every model, so autogenerate sees them
+from tradinghub.auth import models as auth_models  # each __init__ imports every model,
 from tradinghub.core.config import get_settings
 from tradinghub.core.database import Base
+from tradinghub.ledger import models as ledger_models  # so autogenerate can see them
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
