@@ -6,6 +6,8 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from tradinghub.auth.crud.user import create_user
+from tradinghub.auth.models import User
 from tradinghub.core.config import get_settings
 from tradinghub.core.database import get_db
 from tradinghub.core.redis import get_redis
@@ -39,6 +41,17 @@ async def db_session() -> AsyncIterator[AsyncSession]:
         await transaction.rollback()
         await connection.close()
         await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def alice(db_session: AsyncSession) -> User:
+    """An account owner. Paired with bob, these two prove the ownership rule."""
+    return await create_user(db_session, "alice@example.com", "not-a-real-hash")
+
+
+@pytest_asyncio.fixture
+async def bob(db_session: AsyncSession) -> User:
+    return await create_user(db_session, "bob@example.com", "not-a-real-hash")
 
 
 @pytest_asyncio.fixture
