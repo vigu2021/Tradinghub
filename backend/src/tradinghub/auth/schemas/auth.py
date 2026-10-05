@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, EmailStr, Field
 
+from tradinghub.core.schemas import RequestModel
+
 MIN_PASSWORD_LENGTH = 8
 
 # RFC 5321's limit on a full address.
@@ -11,14 +13,14 @@ MAX_EMAIL_LENGTH = 254
 MAX_PASSWORD_LENGTH = 128
 
 
-class RegisterRequest(BaseModel):
+class RegisterRequest(RequestModel):
     """A registration submission, rejected by the schema before any route code runs."""
 
     email: EmailStr = Field(max_length=MAX_EMAIL_LENGTH)
     password: str = Field(min_length=MIN_PASSWORD_LENGTH, max_length=MAX_PASSWORD_LENGTH)
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(RequestModel):
     """A login submission.
 
     No minimum on the password: a 422 would tell an attacker no real password is that short, which

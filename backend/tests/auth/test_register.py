@@ -147,3 +147,12 @@ async def test_an_ip_that_registered_too_often_is_refused(
     assert response.headers["Retry-After"] == str(RATE_WINDOW_SECONDS)
     created = await db_session.scalar(select(User).where(User.email == "flooded@example.com"))
     assert created is None
+
+
+async def test_an_unknown_field_is_rejected_rather_than_ignored(client: AsyncClient) -> None:
+    """Requests forbid extras, so a client cannot quietly send something the API will discard."""
+    response = await client.post(
+        "/auth/register", json={**_payload("extra@example.com"), "is_admin": True}
+    )
+
+    assert response.status_code == 422
