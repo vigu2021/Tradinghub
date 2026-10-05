@@ -4,7 +4,7 @@ A multi-user trading journal. Built in ordered slices, primarily as a way to lea
 Next.js, Postgres, and Terraform on AWS in depth.
 
 Slice 1 — hand-rolled authentication — is done. Slice 2 is the ledger: accounts, transactions,
-balances, and spending by period.
+balances, and spending by period. Slice 3 turns those per-unit balances into one estimated total.
 
 ## Stack
 

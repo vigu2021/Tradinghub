@@ -8,7 +8,7 @@ accounts have to exist first: building trades first would mean adding `account_i
 migration and a backfill. It is also the better order to learn in, because accounts and
 transactions are plain CRUD while trades carry P&L and a two-state lifecycle.
 
-**In one line:** two tables, twelve endpoints, three pages.
+**In one line:** two tables, eleven endpoints, three pages.
 
 ## What it is for
 
@@ -72,7 +72,8 @@ Two tables. One Alembic revision.
 | `user_id` | integer | foreign key to `users.id`, `ON DELETE CASCADE`, not null |
 | `name` | citext | not null, 1 to 60 characters, trimmed |
 | `unit` | text | not null, 2 to 10 characters, uppercase. `GBP`, `USDT`, `BTC`, `AAPL` |
-| `type` | text | not null, `cash`, `crypto`, or `stock` |
+| `type` | text | not null, `cash`, `crypto`, or `stock`. What kind of thing the unit is |
+| `archived_at` | timestamptz | null while the account is live |
 | `created_at` | timestamptz | not null, set by the database |
 | `updated_at` | timestamptz | not null, set by the database on every update |
 
@@ -85,8 +86,19 @@ Two tables. One Alembic revision.
 - `type` is checked against its three values. Stored as text rather than a Postgres enum type,
   because adding a value to an enum is a migration with sharp edges and a check is one line.
 
-**There is no archiving.** An account is deleted or it is not. Deleting one that still has
-transactions is refused by the service, so the cascade below only fires when a user is deleted.
+**Archiving replaces deleting.** There is no delete endpoint at all. Archiving an account hides it
+from the account picker on the transaction form, and does nothing else.
+
+Delete was considered and dropped. Rename already fixes a typo and a patch already fixes a wrong
+unit, which leaves only "created it and never used it" as a real reason to delete, and archiving
+covers that. Removing the endpoint also removes the `account_not_empty` error, its test and a
+confirm dialog, and makes it impossible for any code path to destroy financial history.
+
+`archived_at` is a timestamp rather than a boolean because "when did I close this" is worth knowing
+and costs the same. Archiving twice must not overwrite the first date.
+
+The cascade from `users` therefore only fires when a user is deleted, which is the one case where
+everything should go.
 
 ### `transactions`
 
@@ -124,7 +136,7 @@ In Python, `kind` is a `StrEnum` and amounts are `Mapped[Decimal]`.
 
 ## API
 
-All twelve require a session through the existing `get_current_user` dependency.
+All eleven require a session through the existing `get_current_user` dependency.
 
 ### Accounts
 
@@ -133,12 +145,20 @@ All twelve require a session through the existing `get_current_user` dependency.
 | `POST /accounts` | create | 201 | 409 `account_name_taken`, 422 |
 | `GET /accounts` | list own accounts with each balance, name ascending | 200 | |
 | `GET /accounts/{id}` | one account with its balance | 200 | 404 |
-| `PATCH /accounts/{id}` | rename, or change unit | 200 | 404, 409, 422 |
-| `DELETE /accounts/{id}` | remove | 204 | 404, 409 `account_not_empty` |
+| `PATCH /accounts/{id}` | rename, change unit or type, archive or restore | 200 | 404, 409, 422 |
 
-**Deleting an account with transactions is refused.** The foreign key could cascade, but silently
-destroying a year of records because a name was wrong is not a thing this app should do. Move or
-delete the transactions first.
+**Archiving is a field on `PATCH`, not its own endpoint.** `archived: true` archives, `false`
+restores, omitted leaves it alone. The request carries a boolean and the service decides the
+timestamp: the client says what it wants, the server records when. Idempotent, so archiving an
+already-archived account is not an error.
+
+**Restoring is not optional.** With no delete endpoint, a one-way archive would make archiving the
+wrong account permanent and unfixable.
+
+**No endpoint ever excludes archived accounts.** The money in one is still yours, so every balance
+and every total counts it. The only place they are hidden is the account picker on the transaction
+form, and the frontend filters that from the account list it already holds. One filter in the one
+place that wants it, and no default that could silently drop money from a total.
 
 **Changing an account's unit is allowed but does not convert anything.** The amounts already
 recorded keep their numbers and are simply now labelled differently. The API does not stop you, and
@@ -224,8 +244,8 @@ Python. Grouping and filtering aggregates in one pass is the Postgres lesson of 
 
 ### Errors
 
-Four new codes, declared like the auth errors: `account_not_found` and `transaction_not_found`
-(404), `account_name_taken` and `account_not_empty` (409), `transfer_not_editable` (409). Invalid
+Three new codes, declared like the auth errors: `account_not_found` and `transaction_not_found`
+(404), `account_name_taken` (409), `transfer_not_editable` (409). Invalid
 input keeps the existing `validation_error` (422), and the frontend form enforces the same rules
 first so a user sees field-level messages.
 
@@ -296,7 +316,7 @@ These waited for the first feature with lists, and this is it.
 
 **Backend**, against real Postgres in the rolled-back transaction fixture:
 
-- ownership, for all twelve endpoints, with two users
+- ownership, for all eleven endpoints, with two users
 - the composite foreign key: a transaction aimed at a stranger's account is refused by the database
 - the sign convention, which nothing in the database enforces: post an expense, read the row back,
   assert the stored amount is negative. Same for income. These two tests are the whole guarantee
@@ -315,7 +335,8 @@ These waited for the first feature with lists, and this is it.
 - list: each filter, filters combined, `total` against a page, `limit` bounds
 - paging is stable when several rows share one `occurred_at`: walk every page and assert no row is
   seen twice or missed. This fails without `id` in the order
-- account deletion refused while transactions exist, allowed once they are gone
+- archiving hides an account from nothing but the picker: its balance still appears in the totals
+- archiving twice keeps the first timestamp, and restoring brings the account back
 - a failed create leaves no row, using the fixture that now rolls back like production
 
 **Frontend**, Playwright against the live API:
@@ -324,7 +345,7 @@ These waited for the first feature with lists, and this is it.
 - a transfer between two accounts leaves the total unchanged and both accounts moved
 - the dashboard shows this month's expenses and the category breakdown
 - filter transactions by account and by date range
-- delete an account with transactions is refused with a readable message
+- archiving an account removes it from the transaction form's picker but not from the totals
 - the empty state, for a user with no accounts yet
 
 Each test must fail with its behaviour removed. Slice 1's review found tests that did not, and the
@@ -336,14 +357,16 @@ plan checks each new one the same way.
 
 | Left out | Where it goes |
 |---|---|
-| Trades and P&L | Slice 3. A trade belongs to an account, which is why this slice comes first |
+| Prices, a reporting unit, one estimated total | Slice 3. One new table and a column on `users`, with no change to these two tables. Pulled ahead of the Binance import because the price endpoint is public market data needing no API key |
+| Cost basis, realised gains, holdings valued | Slice 5. Recording a spot buy already works here: it is a transfer whose two sides have different units. What is missing is only the interpretation |
+| Trades, futures, margin, funding | Slice 6. A futures position is not a holding, so it needs its own table |
 | Binance import, stored API keys, real exchange balances | Slice 4. One encrypted row per user, and its own spec |
 | Budgets per category, and a categories table | When budgets are actually wanted. Free text carries it until then |
-| Currency conversion and a single grand total | Needs a rate source and a rate date per transaction. Its own feature |
+| Deleting an account | Deliberate, see above. Archiving covers every real case |
 | Recurring transactions, receipts, attachments, splitting one payment across categories | Not needed to answer the three questions above |
-| Charts, net worth over time, month-on-month comparisons | Slice 5, a read layer over this table |
+| Charts, net worth over time, month-on-month comparisons | Slice 7, a read layer over this table and the prices one |
 | Editing one half of a transfer | Deliberate. Delete and record it again |
-| Pruning spent session rows, the silent API URL fallback | Slice 6, with deployment |
+| Pruning spent session rows, the silent API URL fallback | Slice 8, with deployment |
 
 ## Done when
 

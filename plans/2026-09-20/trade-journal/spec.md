@@ -1,11 +1,22 @@
 # Trade journal
 
-Slice 3. A signed-in user can record, list, edit, close, and delete their own trades. Manual entry
-only.
+Slice 6. A signed-in user can record, list, edit, close, and delete their own trades.
 
-A trade belongs to an account, so this slice sits on top of slice 2's accounts and transactions. It
-was originally specced as slice 2 and reordered once money came first: building it earlier would
-have meant adding `account_id` later with a migration and a backfill.
+**This spec needs rewriting before it is built, and has been left as a record rather than deleted.**
+It was written as slice 2, moved to slice 3 when the ledger came first, and is now slice 6. Two
+things changed underneath it:
+
+- **Spot trading no longer belongs here.** Buying BTC with USDT is already a ledger transaction: a
+  transfer whose two sides have different units. Cost basis and realised gains over those rows are
+  slice 5, and need no trades table at all.
+- **What is left is futures**, and a futures position is not a round trip with an entry and an
+  exit. You own nothing. You post margin against an obligation, funding is charged over time, and
+  P&L accrues while you sleep. The fields below, built around entry price and exit price, do not
+  describe that.
+
+So read this for the decisions that still hold, the ownership rule, the decimal precision, the
+explicit currency, and rewrite the data model around positions, margin and funding when you get
+there.
 
 **In one line:** one table, five endpoints, three pages.
 

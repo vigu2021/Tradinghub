@@ -38,13 +38,26 @@ collaborators or a deployed environment appear.
 
 1. Auth + skeleton — hand-rolled sessions, no email or OAuth
 2. Ledger — accounts, transactions, balances, spending by period
-3. Trade journal CRUD — a trade belongs to a ledger account
-4. Binance read-only fill import
-5. Charting + dashboard
-6. Terraform on AWS
+3. Net worth — prices, a reporting unit, one estimated total
+4. Binance import — read-only API keys, fills recorded automatically
+5. Spot — cost basis, realised gains, holdings valued
+6. Trades — futures: positions, margin, funding
+7. Charting + dashboard
+8. Terraform on AWS
 
-Slices 2 and 3 were swapped after slice 1: a trade belongs to an account, so the ledger has to
-exist first or `account_id` arrives later as a migration and a backfill.
+The order has been revised twice, both times for the same reason: each slice has to sit on data
+the one before it already stores.
+
+- **Ledger before trades.** A trade belongs to an account, so building trades first would mean
+  adding `account_id` later as a migration and a backfill.
+- **Net worth before the Binance import.** Showing a total in one currency needs prices, and
+  Binance's price endpoint is public market data with no API key. So the thing most worth seeing
+  arrives without the credential storage and encryption the authenticated import requires.
+- **Spot after the import.** Recording a spot buy already works in slice 2: it is a transfer whose
+  two sides have different units. What spot adds is interpretation, cost basis and realised gain,
+  and that is far less tedious once fills import themselves.
+- **Futures separate from spot.** A futures position is not a holding. You own nothing; you have
+  margin behind an obligation, with funding charged over time. It needs its own table.
 
 Each slice gets its own `plans/` folder containing a `spec.md` and a `plan.md`, both written and
 approved before any code.
