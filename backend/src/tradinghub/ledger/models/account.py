@@ -1,4 +1,4 @@
-"""The accounts table: one pot of money, in one currency."""
+"""The accounts table: one pot of value, measured in one unit."""
 
 from datetime import datetime
 from enum import StrEnum
@@ -30,7 +30,7 @@ class Account(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(CITEXT)
-    currency: Mapped[str]
+    unit: Mapped[str]  # What the balance is counted in: GBP, USDT, BTC, AAPL
     type: Mapped[AccountType] = mapped_column(
         Enum(
             AccountType,

@@ -15,7 +15,7 @@ have meant adding `account_id` later with a migration and a backfill.
 |---|---|---|
 | What one row is | A round trip: one position from open to close | It is how a person reviews trading. Slice 3's raw fills get their own table with a foreign key to the trade they were folded into, so this table does not change when the import arrives |
 | Scaling in and out | Entered as an average price | Exact legs are slice 3's fills. Modelling them now would be building slice 3's data model a slice early |
-| Money | `NUMERIC(20, 8)` in Postgres, `Decimal` in Python, strings in JSON and in the browser | A float cannot represent 0.1. Eight places matches Binance's precision |
+| Money and quantities | `NUMERIC(36, 18)` in Postgres, `Decimal` in Python, strings in JSON and in the browser | A float cannot represent 0.1, and this is money. Matches slice 2's ledger so the two tables never disagree on precision |
 | P&L | Computed from the row, never stored | A stored copy goes stale the moment a trade is edited |
 | Symbol | One string, `BTCUSDT` or `AAPL` | Binance reports pairs that way, so slice 4 imports them unchanged, and the same column holds a stock ticker |
 | Currency | An explicit column, not inferred from the symbol | `BTCUSDT` encodes its quote currency; `AAPL` encodes nothing. Once one journal holds both, a P&L of `+312.40` is ambiguous without it |
@@ -52,12 +52,12 @@ One new table. One Alembic revision.
 | `symbol` | text | not null, stored uppercase |
 | `currency` | text | not null, 3 to 5 characters, uppercase. What the P&L is denominated in |
 | `side` | text | not null, `long` or `short` |
-| `quantity` | numeric(20, 8) | not null, greater than zero |
-| `entry_price` | numeric(20, 8) | not null, greater than zero |
+| `quantity` | numeric(36, 18) | not null, greater than zero |
+| `entry_price` | numeric(36, 18) | not null, greater than zero |
 | `entry_at` | timestamptz | not null |
-| `exit_price` | numeric(20, 8) | null while open, greater than zero when set |
+| `exit_price` | numeric(36, 18) | null while open, greater than zero when set |
 | `exit_at` | timestamptz | null while open |
-| `fees` | numeric(20, 8) | not null, default 0, not negative |
+| `fees` | numeric(36, 18) | not null, default 0, not negative |
 | `notes` | text | nullable |
 | `tags` | text[] | not null, default empty |
 | `created_at` | timestamptz | not null, set by the database |

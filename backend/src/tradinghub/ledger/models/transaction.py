@@ -37,7 +37,7 @@ class Transaction(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int]
     account_id: Mapped[int]
-    amount: Mapped[Decimal] = mapped_column(Numeric(20, 8))  # Signed: out is negative
+    amount: Mapped[Decimal] = mapped_column(Numeric(36, 18))  # Signed: out is negative
     kind: Mapped[TransactionKind] = mapped_column(
         Enum(
             TransactionKind,
