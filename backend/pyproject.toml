@@ -38,6 +38,9 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 pythonpath = ["src"]
+# Two test files sharing a basename in different directories collide under the default import
+# mode, because pytest derives the module name from the filename alone.
+addopts = ["--import-mode=importlib"]
 
 [tool.ruff]
 line-length = 100
