@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.ledger.models import Transaction
@@ -34,13 +34,7 @@ async def list_accounts_with_balances(
     not None, and is still listed. Archived accounts are included, because the money in one is
     still the user's.
     """
-    statement = (
-        select(Account, func.coalesce(func.sum(Transaction.amount), 0))
-        .outerjoin(Transaction, Transaction.account_id == Account.id)
-        .where(Account.user_id == user_id)
-        .group_by(Account.id)
-        .order_by(Account.name)
-    )
+    statement = _get_accounts_with_balances(user_id).order_by(Account.name)
     rows = (await db.execute(statement)).all()
     return [AccountWithBalance(account, balance) for (account, balance) in rows]
 
@@ -57,3 +51,24 @@ async def create_account(
     db.add(account)
     await db.flush()
     return account
+
+
+async def get_account_with_balance(
+    db: AsyncSession, *, account_id: int, user_id: int
+) -> AccountWithBalance | None:
+    """Return one account with its balance, or None on the same terms as get_account."""
+    statement = _get_accounts_with_balances(user_id).where(Account.id == account_id)
+    row = (await db.execute(statement)).one_or_none()
+    if row is None:
+        return None
+    account, balance = row
+    return AccountWithBalance(account, balance)
+
+
+def _get_accounts_with_balances(user_id: int) -> Select[tuple[Account, Decimal]]:
+    return (
+        select(Account, func.coalesce(func.sum(Transaction.amount), 0))
+        .outerjoin(Transaction, Transaction.account_id == Account.id)
+        .where(Account.user_id == user_id)
+        .group_by(Account.id)
+    )

@@ -9,6 +9,7 @@ from tradinghub.auth.models import User
 from tradinghub.ledger.crud.accounts import (
     create_account,
     get_account,
+    get_account_with_balance,
     list_accounts_with_balances,
 )
 from tradinghub.ledger.models import Account, AccountType, Transaction, TransactionKind
@@ -126,6 +127,42 @@ async def test_another_users_account_is_not_found(
 
 async def test_a_missing_account_is_not_found(db_session: AsyncSession, alice: User) -> None:
     assert await get_account(db_session, account_id=999_999, user_id=alice.id) is None
+
+
+async def test_one_account_comes_back_with_only_its_own_balance(
+    db_session: AsyncSession, alice: User
+) -> None:
+    chase = await _account(db_session, alice, "Chase")
+    cash = await _account(db_session, alice, "Cash")
+    await _spend(db_session, chase, "-900")
+    await _spend(db_session, cash, "-20")
+
+    found = await get_account_with_balance(db_session, account_id=chase.id, user_id=alice.id)
+
+    assert found is not None
+    assert (found.account.id, found.balance) == (chase.id, Decimal("-900"))
+
+
+async def test_one_account_with_no_transactions_has_a_zero_balance(
+    db_session: AsyncSession, alice: User
+) -> None:
+    """A filter on transactions in WHERE rather than ON would drop this row and return None."""
+    account = await _account(db_session, alice, "Chase")
+
+    found = await get_account_with_balance(db_session, account_id=account.id, user_id=alice.id)
+
+    assert found is not None
+    assert found.balance == Decimal(0)
+
+
+async def test_another_users_account_has_no_balance_to_read(
+    db_session: AsyncSession, alice: User, bob: User
+) -> None:
+    alice_account = await _account(db_session, alice, "Chase")
+
+    found = await get_account_with_balance(db_session, account_id=alice_account.id, user_id=bob.id)
+
+    assert found is None
 
 
 async def test_a_created_account_comes_back_with_its_id(
