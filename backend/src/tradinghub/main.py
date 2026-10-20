@@ -16,6 +16,7 @@ from tradinghub.core.errors import register_error_handlers
 from tradinghub.core.logging import configure_logging
 from tradinghub.core.middleware import RequestContextMiddleware
 from tradinghub.core.redis import redis_client
+from tradinghub.ledger.routes import router as ledger_router
 
 logger = logging.getLogger(__name__)
 
@@ -76,4 +77,5 @@ def create_app() -> FastAPI:
     )
     app.include_router(router)
     app.include_router(auth_router)
+    app.include_router(ledger_router)
     return app
