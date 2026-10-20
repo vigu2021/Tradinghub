@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tradinghub.auth.models import User
 from tradinghub.ledger.crud.accounts import (
     create_account,
-    get_account,
     get_account_with_balance,
     list_accounts_with_balances,
 )
@@ -107,28 +106,6 @@ async def test_another_users_transactions_never_reach_your_balance(
     assert balances[0].balance == Decimal("-900")
 
 
-async def test_an_account_is_found_by_its_owner(db_session: AsyncSession, alice: User) -> None:
-    account = await _account(db_session, alice, "Chase")
-
-    found = await get_account(db_session, account_id=account.id, user_id=alice.id)
-
-    assert found is not None
-    assert found.id == account.id
-
-
-async def test_another_users_account_is_not_found(
-    db_session: AsyncSession, alice: User, bob: User
-) -> None:
-    """The ownership rule. Not a 403: that would confirm the id is real."""
-    alice_account = await _account(db_session, alice, "Chase")
-
-    assert await get_account(db_session, account_id=alice_account.id, user_id=bob.id) is None
-
-
-async def test_a_missing_account_is_not_found(db_session: AsyncSession, alice: User) -> None:
-    assert await get_account(db_session, account_id=999_999, user_id=alice.id) is None
-
-
 async def test_one_account_comes_back_with_only_its_own_balance(
     db_session: AsyncSession, alice: User
 ) -> None:
@@ -155,14 +132,19 @@ async def test_one_account_with_no_transactions_has_a_zero_balance(
     assert found.balance == Decimal(0)
 
 
-async def test_another_users_account_has_no_balance_to_read(
+async def test_another_users_account_is_not_found(
     db_session: AsyncSession, alice: User, bob: User
 ) -> None:
+    """The ownership rule. Not a 403: that would confirm the id is real."""
     alice_account = await _account(db_session, alice, "Chase")
 
     found = await get_account_with_balance(db_session, account_id=alice_account.id, user_id=bob.id)
 
     assert found is None
+
+
+async def test_a_missing_account_is_not_found(db_session: AsyncSession, alice: User) -> None:
+    assert await get_account_with_balance(db_session, account_id=999_999, user_id=alice.id) is None
 
 
 async def test_a_created_account_comes_back_with_its_id(

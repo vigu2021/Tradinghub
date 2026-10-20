@@ -14,15 +14,17 @@ class AccountWithBalance:
     balance: Decimal
 
 
-async def get_account(db: AsyncSession, *, account_id: int, user_id: int) -> Account | None:
-    """Return the account, or None if it does not exist or belongs to someone else.
+async def get_account_with_balance(
+    db: AsyncSession, *, account_id: int, user_id: int
+) -> AccountWithBalance | None:
+    """Return one account with its balance, or None if it does not exist or belongs to someone else.
 
     The two cases are deliberately indistinguishable: telling them apart would confirm that an
     id is real.
     """
-    return await db.scalar(
-        select(Account).where(Account.id == account_id, Account.user_id == user_id)
-    )
+    statement = _get_accounts_with_balances(user_id).where(Account.id == account_id)
+    row = (await db.execute(statement)).one_or_none()
+    return AccountWithBalance(*row) if row else None
 
 
 async def list_accounts_with_balances(
@@ -51,18 +53,6 @@ async def create_account(
     db.add(account)
     await db.flush()
     return account
-
-
-async def get_account_with_balance(
-    db: AsyncSession, *, account_id: int, user_id: int
-) -> AccountWithBalance | None:
-    """Return one account with its balance, or None on the same terms as get_account."""
-    statement = _get_accounts_with_balances(user_id).where(Account.id == account_id)
-    row = (await db.execute(statement)).one_or_none()
-    if row is None:
-        return None
-    account, balance = row
-    return AccountWithBalance(account, balance)
 
 
 def _get_accounts_with_balances(user_id: int) -> Select[tuple[Account, Decimal]]:
