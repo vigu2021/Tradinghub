@@ -61,7 +61,7 @@ def test_an_update_knows_which_fields_were_sent() -> None:
     assert update.model_dump(exclude_unset=True) == {"note": None}
 
 
-@pytest.mark.parametrize("field", ["account_id", "amount", "kind", "occurred_at"])
+@pytest.mark.parametrize("field", ["amount", "kind", "occurred_at"])
 def test_an_update_cannot_null_a_required_field(field: str) -> None:
     """Without this the database refuses it at flush, and the request fails as a 500."""
     with pytest.raises(ValidationError):

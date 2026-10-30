@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tradinghub.auth.models import User
 from tradinghub.ledger.crud.accounts import (
     create_account,
+    get_account,
     get_account_with_balance,
     list_accounts_with_balances,
 )
@@ -141,6 +142,25 @@ async def test_another_users_account_is_not_found(
     found = await get_account_with_balance(db_session, account_id=alice_account.id, user_id=bob.id)
 
     assert found is None
+
+
+async def test_an_account_without_its_balance_is_found_by_its_owner(
+    db_session: AsyncSession, alice: User
+) -> None:
+    account = await _account(db_session, alice, "Chase")
+
+    found = await get_account(db_session, account_id=account.id, user_id=alice.id)
+
+    assert found is not None
+    assert found.id == account.id
+
+
+async def test_another_users_account_without_its_balance_is_not_found(
+    db_session: AsyncSession, alice: User, bob: User
+) -> None:
+    alice_account = await _account(db_session, alice, "Chase")
+
+    assert await get_account(db_session, account_id=alice_account.id, user_id=bob.id) is None
 
 
 async def test_a_missing_account_is_not_found(db_session: AsyncSession, alice: User) -> None:

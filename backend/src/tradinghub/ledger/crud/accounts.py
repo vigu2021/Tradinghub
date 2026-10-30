@@ -14,6 +14,16 @@ class AccountWithBalance:
     balance: Decimal
 
 
+async def get_account(db: AsyncSession, *, account_id: int, user_id: int) -> Account | None:
+    """Return the account without its balance, or None on the same terms as the one below.
+
+    For checks that need only the row, such as whose it is or what unit it counts in.
+    """
+    return await db.scalar(
+        select(Account).where(Account.id == account_id, Account.user_id == user_id)
+    )
+
+
 async def get_account_with_balance(
     db: AsyncSession, *, account_id: int, user_id: int
 ) -> AccountWithBalance | None:

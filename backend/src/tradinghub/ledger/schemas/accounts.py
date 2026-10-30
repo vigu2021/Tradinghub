@@ -1,12 +1,11 @@
 """Request and response bodies for the account endpoints."""
 
 from datetime import datetime
-from decimal import Decimal
 from typing import Annotated
 
 from pydantic import BaseModel, StringConstraints
 
-from tradinghub.core.schemas import RequestModel
+from tradinghub.core.schemas import DecimalString, RequestModel
 from tradinghub.ledger.models import AccountType
 
 AccountName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]
@@ -45,5 +44,5 @@ class AccountResponse(BaseModel):
     name: str
     unit: str
     type: AccountType
-    balance: Decimal
+    balance: DecimalString
     archived_at: datetime | None

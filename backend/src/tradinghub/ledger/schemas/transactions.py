@@ -1,13 +1,12 @@
 """Request and response bodies for the transaction endpoints."""
 
-import uuid
 from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Literal, Self
 
 from pydantic import AwareDatetime, BaseModel, Field, StringConstraints, model_validator
 
-from tradinghub.core.schemas import RequestModel
+from tradinghub.core.schemas import DecimalString, RequestModel
 from tradinghub.ledger.models import TransactionKind
 
 # Positive: the kind says which way the money went, and the service applies the sign. The
@@ -33,12 +32,12 @@ class TransactionCreate(RequestModel):
 class TransactionUpdate(RequestModel):
     """A partial update: an omitted field is left alone, and a null category or note clears it.
 
-    The service reads which fields were sent, not which are None, because here null means
-    something. It means nothing for the other four, which the database requires, so a null for
-    one of them is a 422.
+    The account is fixed once recorded: a transaction in the wrong account is deleted and recorded
+    again, so sending account_id is a 422. The service reads which fields were sent, not which are
+    None, because here null means something. It means nothing for the other three, which the
+    database requires, so a null for one of them is a 422.
     """
 
-    account_id: int | None = None
     amount: Amount | None = None
     kind: SpendingKind | None = None
     category: Category | None = None
@@ -47,7 +46,7 @@ class TransactionUpdate(RequestModel):
 
     @model_validator(mode="after")
     def _required_fields_are_not_null(self) -> Self:
-        for field in ("account_id", "amount", "kind", "occurred_at"):
+        for field in ("amount", "kind", "occurred_at"):
             if field in self.model_fields_set and getattr(self, field) is None:
                 raise ValueError(f"{field} cannot be null")
         return self
@@ -70,12 +69,11 @@ class TransactionResponse(BaseModel):
 
     id: int
     account_id: int
-    amount: Decimal
+    amount: DecimalString
     kind: TransactionKind
     category: str | None
     occurred_at: datetime
     note: str | None
-    transfer_group_id: uuid.UUID | None
 
 
 class TransactionPage(BaseModel):

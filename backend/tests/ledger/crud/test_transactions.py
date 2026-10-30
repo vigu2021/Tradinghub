@@ -1,11 +1,18 @@
 from datetime import UTC, datetime
 from decimal import Decimal
 
+import pytest
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.auth.models import User
 from tradinghub.ledger.crud.accounts import create_account
-from tradinghub.ledger.crud.transactions import list_transactions
+from tradinghub.ledger.crud.transactions import (
+    create_transaction,
+    delete_transaction,
+    get_transaction,
+    list_transactions,
+)
 from tradinghub.ledger.models import Account, AccountType, Transaction, TransactionKind
 from tradinghub.ledger.schemas.transactions import TransactionFilters
 
@@ -163,3 +170,96 @@ async def test_filters_combine(db_session: AsyncSession, alice: User) -> None:
     await _record(db_session, monzo, category="rent")
 
     assert await _ids(db_session, alice, account_id=chase.id, category="rent") == [match.id]
+
+
+async def test_a_transaction_is_found_by_its_owner(db_session: AsyncSession, alice: User) -> None:
+    recorded = await _record(db_session, await _account(db_session, alice))
+
+    found = await get_transaction(db_session, transaction_id=recorded.id, user_id=alice.id)
+
+    assert found is not None
+    assert found.id == recorded.id
+
+
+async def test_another_users_transaction_is_not_found(
+    db_session: AsyncSession, alice: User, bob: User
+) -> None:
+    """The ownership rule. Not a 403: that would confirm the id is real."""
+    recorded = await _record(db_session, await _account(db_session, alice))
+
+    assert await get_transaction(db_session, transaction_id=recorded.id, user_id=bob.id) is None
+
+
+async def test_a_missing_transaction_is_not_found(db_session: AsyncSession, alice: User) -> None:
+    assert await get_transaction(db_session, transaction_id=999_999, user_id=alice.id) is None
+
+
+async def test_a_created_transaction_is_stored_as_given(
+    db_session: AsyncSession, alice: User
+) -> None:
+    """The amount keeps the sign it was handed: applying it is the service's job."""
+    account = await _account(db_session, alice)
+
+    created = await create_transaction(
+        db_session,
+        user_id=alice.id,
+        account_id=account.id,
+        amount=Decimal("-900"),
+        kind=TransactionKind.EXPENSE,
+        category="rent",
+        occurred_at=OCTOBER,
+        note="October",
+    )
+
+    found = await get_transaction(db_session, transaction_id=created.id, user_id=alice.id)
+    assert found is not None
+    assert (found.amount, found.category, found.note) == (Decimal("-900"), "rent", "October")
+
+
+async def test_the_database_refuses_a_transaction_in_someone_elses_account(
+    db_session: AsyncSession, alice: User, bob: User
+) -> None:
+    """The composite foreign key: the backstop for a service that forgets to check."""
+    bobs_account = await _account(db_session, bob)
+
+    with pytest.raises(IntegrityError):
+        await create_transaction(
+            db_session,
+            user_id=alice.id,
+            account_id=bobs_account.id,
+            amount=Decimal("-900"),
+            kind=TransactionKind.EXPENSE,
+            category=None,
+            occurred_at=OCTOBER,
+            note=None,
+        )
+
+
+async def test_deleting_a_transaction_leaves_the_others(
+    db_session: AsyncSession, alice: User
+) -> None:
+    account = await _account(db_session, alice)
+    doomed = await _record(db_session, account)
+    kept = await _record(db_session, account)
+
+    deleted = await delete_transaction(db_session, transaction_id=doomed.id, user_id=alice.id)
+
+    assert deleted
+    assert await _ids(db_session, alice) == [kept.id]
+
+
+async def test_someone_elses_transaction_is_not_deleted(
+    db_session: AsyncSession, alice: User, bob: User
+) -> None:
+    bobs = await _record(db_session, await _account(db_session, bob))
+
+    deleted = await delete_transaction(db_session, transaction_id=bobs.id, user_id=alice.id)
+
+    assert not deleted
+    assert await _ids(db_session, bob) == [bobs.id]
+
+
+async def test_deleting_a_missing_transaction_reports_nothing_deleted(
+    db_session: AsyncSession, alice: User
+) -> None:
+    assert not await delete_transaction(db_session, transaction_id=999_999, user_id=alice.id)

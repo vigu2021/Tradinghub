@@ -1,6 +1,17 @@
-"""The base every request body inherits from."""
+"""The base every request body inherits from, and types shared by responses."""
 
-from pydantic import BaseModel, ConfigDict
+from decimal import Context, Decimal
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, PlainSerializer
+
+# A string in JSON, since a float would lose precision. Normalised, because NUMERIC(36, 18) hands
+# every value back with 18 decimal places, and -900 should not read as -900.000000000000000000.
+# The context is wide enough for all 36 digits: the default one rounds to 28.
+WIDE = Context(prec=38)
+DecimalString = Annotated[
+    Decimal, PlainSerializer(lambda value: format(value.normalize(WIDE), "f"), return_type=str)
+]
 
 
 class RequestModel(BaseModel):

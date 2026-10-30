@@ -19,3 +19,11 @@ class AccountNameTakenError(AppError):
     code = "account_name_taken"
     message = "You already have an account with that name."
     status_code = HTTPStatus.CONFLICT
+
+
+class TransactionNotFoundError(AppError):
+    """No such transaction, or someone else's. One answer for both, as with accounts."""
+
+    code = "transaction_not_found"
+    message = "Transaction not found."
+    status_code = HTTPStatus.NOT_FOUND
