@@ -8,15 +8,13 @@ from tradinghub.ledger.errors import AccountNotFoundError, TransactionNotFoundEr
 from tradinghub.ledger.models import Transaction, TransactionKind
 from tradinghub.ledger.schemas.transactions import TransactionCreate, TransactionUpdate
 
-# The one place the sign convention lives: the API takes a positive amount and a kind.
-DIRECTION: dict[TransactionKind, int] = {TransactionKind.INCOME: 1, TransactionKind.EXPENSE: -1}
-
 
 async def create_transaction(
     db: AsyncSession, *, user_id: int, details: TransactionCreate
 ) -> Transaction:
     """Record income or an expense. Raises AccountNotFoundError if the account is not the user's."""
-    await _require_account(db, account_id=details.account_id, user_id=user_id)
+    if await account_crud.get_account(db, account_id=details.account_id, user_id=user_id) is None:
+        raise AccountNotFoundError  # Before the composite foreign key can turn it into a 500
     return await transaction_crud.create_transaction(
         db,
         user_id=user_id,
@@ -70,12 +68,7 @@ async def delete_transaction(db: AsyncSession, *, transaction_id: int, user_id: 
         raise TransactionNotFoundError
 
 
-async def _require_account(db: AsyncSession, *, account_id: int, user_id: int) -> None:
-    """Raise AccountNotFoundError unless the account is the user's. The foreign key backs it."""
-    if await account_crud.get_account(db, account_id=account_id, user_id=user_id) is None:
-        raise AccountNotFoundError
-
-
 def _signed(amount: Decimal, kind: TransactionKind) -> Decimal:
+    """The one place the sign convention lives: the API takes a positive amount and a kind."""
     # copy_negate rather than * -1: arithmetic rounds to 28 digits, and an amount may have 36
-    return amount if DIRECTION[kind] > 0 else amount.copy_negate()
+    return amount.copy_negate() if kind is TransactionKind.EXPENSE else amount

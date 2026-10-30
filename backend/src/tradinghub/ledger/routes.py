@@ -12,7 +12,6 @@ from tradinghub.core.database import get_db
 from tradinghub.ledger.crud import accounts as account_crud
 from tradinghub.ledger.crud import transactions as transaction_crud
 from tradinghub.ledger.crud.accounts import AccountWithBalance
-from tradinghub.ledger.models import Transaction
 from tradinghub.ledger.schemas.accounts import AccountCreate, AccountResponse, AccountUpdate
 from tradinghub.ledger.schemas.transactions import (
     TransactionCreate,
@@ -91,7 +90,7 @@ async def create_transaction(
     transaction = await transaction_service.create_transaction(
         db, user_id=claims.user_id, details=payload
     )
-    return _transaction_response(transaction)
+    return TransactionResponse.model_validate(transaction)
 
 
 @router.get("/transactions")
@@ -105,7 +104,8 @@ async def list_transactions(
         db, user_id=claims.user_id, filters=filters
     )
     return TransactionPage(
-        items=[_transaction_response(transaction) for transaction in transactions], total=total
+        items=[TransactionResponse.model_validate(transaction) for transaction in transactions],
+        total=total,
     )
 
 
@@ -119,7 +119,7 @@ async def get_transaction(
     transaction = await transaction_service.get_transaction(
         db, transaction_id=transaction_id, user_id=claims.user_id
     )
-    return _transaction_response(transaction)
+    return TransactionResponse.model_validate(transaction)
 
 
 @router.patch("/transactions/{transaction_id}")
@@ -134,7 +134,7 @@ async def update_transaction(
     transaction = await transaction_service.update_transaction(
         db, transaction_id=transaction_id, user_id=claims.user_id, changes=payload
     )
-    return _transaction_response(transaction)
+    return TransactionResponse.model_validate(transaction)
 
 
 @router.delete("/transactions/{transaction_id}", status_code=HTTPStatus.NO_CONTENT)
@@ -158,16 +158,4 @@ def _account_response(account_with_balance: AccountWithBalance) -> AccountRespon
         type=account.type,
         balance=account_with_balance.balance,
         archived_at=account.archived_at,
-    )
-
-
-def _transaction_response(transaction: Transaction) -> TransactionResponse:
-    return TransactionResponse(
-        id=transaction.id,
-        account_id=transaction.account_id,
-        amount=transaction.amount,
-        kind=transaction.kind,
-        category=transaction.category,
-        occurred_at=transaction.occurred_at,
-        note=transaction.note,
     )

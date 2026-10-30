@@ -4,7 +4,14 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Literal, Self
 
-from pydantic import AwareDatetime, BaseModel, Field, StringConstraints, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    model_validator,
+)
 
 from tradinghub.core.schemas import DecimalString, RequestModel
 from tradinghub.ledger.models import TransactionKind
@@ -66,6 +73,8 @@ class TransactionFilters(RequestModel):
 
 class TransactionResponse(BaseModel):
     """One transaction. The amount is signed here: out is negative, as stored."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     account_id: int
