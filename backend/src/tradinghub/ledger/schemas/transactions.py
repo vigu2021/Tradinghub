@@ -1,5 +1,6 @@
 """Request and response bodies for the transaction endpoints."""
 
+import uuid
 from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Literal, Self
@@ -83,6 +84,7 @@ class TransactionResponse(BaseModel):
     category: str | None
     occurred_at: datetime
     note: str | None
+    transfer_group_id: uuid.UUID | None
 
 
 class TransactionPage(BaseModel):

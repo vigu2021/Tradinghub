@@ -212,6 +212,7 @@ async def test_an_expense_is_stored_negative_and_reaches_the_balance(
         "category": "rent",
         "occurred_at": "2026-10-01T09:00:00Z",
         "note": "October",
+        "transfer_group_id": None,
     }
     assert balance == "-900"
 
