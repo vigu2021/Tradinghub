@@ -40,6 +40,7 @@ class Transaction(Base):
             ondelete="CASCADE",
         ),
         Index("ix_transactions_user_id_occurred_at", "user_id", "occurred_at"),
+        Index("ix_transactions_account_id", "account_id"),  # Balances and the cascade
         CheckConstraint("kind IN ('income', 'expense', 'transfer')", name="transactionkind"),
     )
 
