@@ -1,0 +1,85 @@
+"""Request and response bodies for the transaction endpoints."""
+
+import uuid
+from datetime import datetime
+from decimal import Decimal
+from typing import Annotated, Literal, Self
+
+from pydantic import AwareDatetime, BaseModel, Field, StringConstraints, model_validator
+
+from tradinghub.core.schemas import RequestModel
+from tradinghub.ledger.models import TransactionKind
+
+# Positive: the kind says which way the money went, and the service applies the sign. The
+# digits match NUMERIC(36, 18), which would otherwise round extra decimals away without a word.
+Amount = Annotated[Decimal, Field(gt=0, max_digits=36, decimal_places=18)]
+# Transfers have their own endpoint, so a lone half of one cannot be created or patched in.
+SpendingKind = Literal[TransactionKind.INCOME, TransactionKind.EXPENSE]
+Category = Annotated[
+    str, StringConstraints(strip_whitespace=True, to_lower=True, min_length=1, max_length=40)
+]
+Note = Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)]
+
+
+class TransactionCreate(RequestModel):
+    account_id: int
+    amount: Amount
+    kind: SpendingKind
+    category: Category | None = None
+    occurred_at: AwareDatetime  # A naive time is a 422, never a guess at the timezone
+    note: Note | None = None
+
+
+class TransactionUpdate(RequestModel):
+    """A partial update: an omitted field is left alone, and a null category or note clears it.
+
+    The service reads which fields were sent, not which are None, because here null means
+    something. It means nothing for the other four, which the database requires, so a null for
+    one of them is a 422.
+    """
+
+    account_id: int | None = None
+    amount: Amount | None = None
+    kind: SpendingKind | None = None
+    category: Category | None = None
+    occurred_at: AwareDatetime | None = None
+    note: Note | None = None
+
+    @model_validator(mode="after")
+    def _required_fields_are_not_null(self) -> Self:
+        for field in ("account_id", "amount", "kind", "occurred_at"):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"{field} cannot be null")
+        return self
+
+
+class TransactionFilters(RequestModel):
+    """The query string of GET /transactions. Every filter is optional and they combine."""
+
+    account_id: int | None = None
+    kind: TransactionKind | None = None
+    category: Category | None = None
+    occurred_from: AwareDatetime | None = None
+    occurred_to: AwareDatetime | None = None
+    limit: int = Field(default=50, ge=1, le=200)
+    offset: int = Field(default=0, ge=0)
+
+
+class TransactionResponse(BaseModel):
+    """One transaction. The amount is signed here: out is negative, as stored."""
+
+    id: int
+    account_id: int
+    amount: Decimal
+    kind: TransactionKind
+    category: str | None
+    occurred_at: datetime
+    note: str | None
+    transfer_group_id: uuid.UUID | None
+
+
+class TransactionPage(BaseModel):
+    """One page of a list. total counts every match, so the UI can say how many pages there are."""
+
+    items: list[TransactionResponse]
+    total: int
