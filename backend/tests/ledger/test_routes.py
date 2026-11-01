@@ -598,11 +598,38 @@ async def test_the_same_account_twice_is_rejected(client: AsyncClient, alice: Us
     assert response.json()["error"]["code"] == "transfer_same_account"
 
 
-async def test_a_fee_on_an_uninvolved_account_is_rejected(client: AsyncClient, alice: User) -> None:
+async def test_a_fee_can_come_from_a_third_account(client: AsyncClient, alice: User) -> None:
+    """A Binance trade can pay its fee in BNB, from an account the trade itself never touches."""
+    _sign_in(client, alice)
+    usdt = await _open(client, name="USDT", unit="USDT")
+    btc = await _open(client, name="BTC", unit="BTC")
+    bnb = await _open(client, name="BNB", unit="BNB")
+
+    source, _, fee = await _transfer(
+        client,
+        usdt["id"],
+        btc["id"],
+        amount_sent="30000",
+        amount_received="0.5",
+        fee="0.01",
+        fee_account_id=bnb["id"],
+    )
+
+    assert fee["account_id"] == bnb["id"]
+    assert fee["kind"] == "expense"
+    assert fee["transfer_group_id"] == source["transfer_group_id"]
+    assert await _balance(client, usdt["id"]) == "-30000"
+    assert await _balance(client, bnb["id"]) == "-0.01"
+
+
+async def test_a_fee_on_someone_elses_account_is_not_found(
+    client: AsyncClient, alice: User, bob: User
+) -> None:
+    _sign_in(client, bob)
+    bobs_account = await _open(client)
     _sign_in(client, alice)
     chase = await _open(client)
     monzo = await _open(client, name="Monzo")
-    revolut = await _open(client, name="Revolut")
 
     response = await client.post(
         "/transfers",
@@ -611,12 +638,13 @@ async def test_a_fee_on_an_uninvolved_account_is_rejected(client: AsyncClient, a
             "from_account_id": chase["id"],
             "to_account_id": monzo["id"],
             "fee": "5",
-            "fee_account_id": revolut["id"],
+            "fee_account_id": bobs_account["id"],
         },
     )
 
-    assert response.status_code == 422
-    assert response.json()["error"]["code"] == "transfer_fee_account"
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "account_not_found"
+    assert await _balance(client, chase["id"]) == "0"
 
 
 async def test_half_a_fee_is_rejected(client: AsyncClient, alice: User) -> None:

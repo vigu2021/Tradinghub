@@ -55,11 +55,3 @@ class TransferSameAccountError(AppError):
     code = "transfer_same_account"
     message = "A transfer needs two different accounts."
     status_code = HTTPStatus.UNPROCESSABLE_ENTITY
-
-
-class TransferFeeAccountError(AppError):
-    """A fee charged to an account the transfer never touched."""
-
-    code = "transfer_fee_account"
-    message = "A fee must be charged to one of the two accounts in the transfer."
-    status_code = HTTPStatus.UNPROCESSABLE_ENTITY

@@ -165,8 +165,8 @@ async def create_transfer(
 ) -> list[TransactionResponse]:
     """Move money between two of the caller's accounts, returning every row written.
 
-    Raises AccountNotFoundError if either is not the caller's, and a 422 when the transfer breaks
-    a rule: the same account twice, a fee on another account, or unequal amounts in one unit.
+    Raises AccountNotFoundError if any account is not the caller's, and a 422 when the transfer
+    breaks a rule: the same account twice, or unequal amounts in one unit.
     """
     transactions = await transfer_service.create_transfer(
         db, user_id=claims.user_id, details=payload

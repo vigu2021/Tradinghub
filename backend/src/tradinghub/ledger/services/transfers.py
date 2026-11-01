@@ -8,7 +8,6 @@ from tradinghub.ledger.crud import transactions as transaction_crud
 from tradinghub.ledger.errors import (
     AccountNotFoundError,
     TransferAmountsDifferError,
-    TransferFeeAccountError,
     TransferSameAccountError,
 )
 from tradinghub.ledger.models import Transaction, TransactionKind
@@ -20,22 +19,18 @@ async def create_transfer(
 ) -> list[Transaction]:
     """Record both sides of a transfer, plus any fee as an expense, under one group id.
 
-    Raises TransferSameAccountError, TransferFeeAccountError, AccountNotFoundError or
-    TransferAmountsDifferError, all before a row is written.
+    The fee can come from a third account, as when a Binance trade pays its fee in BNB. Raises
+    TransferSameAccountError, AccountNotFoundError or TransferAmountsDifferError, all before a row
+    is written.
     """
     if details.from_account_id == details.to_account_id:
         raise TransferSameAccountError
-    if details.fee_account_id is not None and details.fee_account_id not in (
-        details.from_account_id,
-        details.to_account_id,
-    ):
-        raise TransferFeeAccountError
 
-    # Check if accounts exist, we enforce that 2 accounts must be returned
-    accounts = await account_crud.get_accounts(
-        db, account_ids=[details.from_account_id, details.to_account_id], user_id=user_id
-    )
-    if len(accounts) != 2:
+    account_ids = {details.from_account_id, details.to_account_id}
+    if details.fee_account_id is not None:
+        account_ids.add(details.fee_account_id)
+    accounts = await account_crud.get_accounts(db, account_ids=list(account_ids), user_id=user_id)
+    if len(accounts) != len(account_ids):
         raise AccountNotFoundError
 
     same_unit = accounts[details.from_account_id].unit == accounts[details.to_account_id].unit
