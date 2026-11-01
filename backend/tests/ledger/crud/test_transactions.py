@@ -157,7 +157,9 @@ async def test_a_date_range_includes_its_start_and_excludes_its_end(
     await _record(db_session, account, occurred_at=NOVEMBER)
     await _record(db_session, account, occurred_at=datetime(2026, 9, 30, 23, 59, tzinfo=UTC))
 
-    october = await _ids(db_session, alice, occurred_from=OCTOBER, occurred_to=NOVEMBER)
+    october = await _ids(
+        db_session, alice, occurred_from=OCTOBER.isoformat(), occurred_to=NOVEMBER.isoformat()
+    )
 
     assert october == [first_of_october.id]
 

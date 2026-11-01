@@ -2,9 +2,9 @@
 
 from typing import Self
 
-from pydantic import AwareDatetime, model_validator
+from pydantic import model_validator
 
-from tradinghub.core.schemas import RequestModel
+from tradinghub.core.schemas import RequestModel, RowId, UtcDatetime
 from tradinghub.ledger.schemas.transactions import Amount, Category, Note
 
 
@@ -16,14 +16,14 @@ class TransferCreate(RequestModel):
     checks that the fee fields make sense together.
     """
 
-    from_account_id: int
-    to_account_id: int
+    from_account_id: RowId
+    to_account_id: RowId
     amount_sent: Amount
     amount_received: Amount
     fee: Amount | None = None
-    fee_account_id: int | None = None
+    fee_account_id: RowId | None = None
     fee_category: Category | None = None
-    occurred_at: AwareDatetime
+    occurred_at: UtcDatetime
     note: Note | None = None
 
     @model_validator(mode="after")

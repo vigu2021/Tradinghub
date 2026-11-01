@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Query
 from tradinghub.auth.dependencies import get_current_user
 from tradinghub.auth.security.tokens import AccessTokenClaims
 from tradinghub.core.database import DbSession
+from tradinghub.core.schemas import RowId
 from tradinghub.ledger.crud import accounts as account_crud
 from tradinghub.ledger.crud import transactions as transaction_crud
 from tradinghub.ledger.crud.accounts import AccountWithBalance
@@ -52,7 +53,7 @@ async def list_accounts(
 
 @router.get("/accounts/{account_id}")
 async def get_account(
-    account_id: int,
+    account_id: RowId,
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
     db: DbSession,
 ) -> AccountResponse:
@@ -65,7 +66,7 @@ async def get_account(
 
 @router.patch("/accounts/{account_id}")
 async def update_account(
-    account_id: int,
+    account_id: RowId,
     payload: AccountUpdate,
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
     db: DbSession,
@@ -112,7 +113,7 @@ async def list_transactions(
 
 @router.get("/transactions/{transaction_id}")
 async def get_transaction(
-    transaction_id: int,
+    transaction_id: RowId,
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
     db: DbSession,
 ) -> TransactionResponse:
@@ -125,7 +126,7 @@ async def get_transaction(
 
 @router.patch("/transactions/{transaction_id}")
 async def update_transaction(
-    transaction_id: int,
+    transaction_id: RowId,
     payload: TransactionUpdate,
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
     db: DbSession,
@@ -143,7 +144,7 @@ async def update_transaction(
 
 @router.delete("/transactions/{transaction_id}", status_code=HTTPStatus.NO_CONTENT)
 async def delete_transaction(
-    transaction_id: int,
+    transaction_id: RowId,
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
     db: DbSession,
 ) -> None:

@@ -5,12 +5,18 @@ from typing import Annotated
 
 from pydantic import BaseModel, StringConstraints
 
-from tradinghub.core.schemas import DecimalString, RequestModel
+from tradinghub.core.schemas import NO_NUL_PATTERN, DecimalString, RequestModel
 from tradinghub.ledger.models import AccountType
 
-AccountName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]
+AccountName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=60, pattern=NO_NUL_PATTERN),
+]
 Unit = Annotated[
-    str, StringConstraints(strip_whitespace=True, to_upper=True, min_length=2, max_length=10)
+    str,
+    StringConstraints(
+        strip_whitespace=True, to_upper=True, min_length=2, max_length=10, pattern=NO_NUL_PATTERN
+    ),
 ]
 
 

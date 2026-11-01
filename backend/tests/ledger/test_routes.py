@@ -723,3 +723,118 @@ async def test_a_transfer_needs_a_session(client: AsyncClient) -> None:
     response = await client.post("/transfers", json={})
 
     assert response.status_code == 401
+
+
+TOO_BIG_ID = 2**31
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("GET", f"/accounts/{TOO_BIG_ID}"),
+        ("PATCH", f"/accounts/{TOO_BIG_ID}"),
+        ("GET", f"/transactions/{TOO_BIG_ID}"),
+        ("PATCH", f"/transactions/{TOO_BIG_ID}"),
+        ("DELETE", f"/transactions/{TOO_BIG_ID}"),
+        ("GET", f"/transactions?account_id={TOO_BIG_ID}"),
+        ("GET", f"/transactions?offset={2**63}"),
+    ],
+)
+async def test_a_number_the_database_cannot_hold_is_rejected_in_a_url(
+    client: AsyncClient, alice: User, method: str, path: str
+) -> None:
+    _sign_in(client, alice)
+
+    response = await client.request(method, path, json={})
+
+    assert response.status_code == 422
+
+
+async def test_an_id_the_database_cannot_hold_is_rejected_in_a_body(
+    client: AsyncClient, alice: User
+) -> None:
+    _sign_in(client, alice)
+    account = await _open(client)
+
+    transaction = await client.post("/transactions", json=RENT | {"account_id": TOO_BIG_ID})
+    transfer = await client.post(
+        "/transfers",
+        json=TUITION | {"from_account_id": account["id"], "to_account_id": TOO_BIG_ID},
+    )
+
+    assert transaction.status_code == 422
+    assert transfer.status_code == 422
+
+
+@pytest.mark.parametrize("field", ["note", "category"])
+async def test_a_nul_character_in_transaction_text_is_rejected(
+    client: AsyncClient, alice: User, field: str
+) -> None:
+    _sign_in(client, alice)
+    account = await _open(client)
+
+    response = await client.post(
+        "/transactions", json=RENT | {"account_id": account["id"], field: "a\u0000b"}
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize("field", ["name", "unit"])
+async def test_a_nul_character_in_account_text_is_rejected(
+    client: AsyncClient, alice: User, field: str
+) -> None:
+    _sign_in(client, alice)
+
+    response = await client.post("/accounts", json=CHASE | {field: "a\u0000b"})
+
+    assert response.status_code == 422
+
+
+async def test_a_nul_character_in_a_filter_is_rejected(client: AsyncClient, alice: User) -> None:
+    _sign_in(client, alice)
+
+    response = await client.get("/transactions", params={"category": "a\u0000b"})
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "occurred_at",
+    [
+        1700000000,
+        "1700000000",
+        1e11,
+        "0001-01-01T00:00:00+14:00",
+        "9999-12-31T23:59:59-14:00",
+        "1899-12-31T23:59:59Z",
+        "2100-01-01T00:00:00Z",
+    ],
+)
+async def test_a_time_that_is_not_a_sensible_iso_8601_value_is_rejected(
+    client: AsyncClient, alice: User, occurred_at: float | str
+) -> None:
+    _sign_in(client, alice)
+    account = await _open(client)
+
+    response = await client.post(
+        "/transactions",
+        json=RENT | {"account_id": account["id"], "occurred_at": occurred_at},
+    )
+
+    assert response.status_code == 422
+
+
+async def test_a_time_reads_the_same_when_recorded_and_when_read_back(
+    client: AsyncClient, db_session: AsyncSession, alice: User
+) -> None:
+    """Sent with an offset, it comes back in UTC both times, not as whatever the caller sent."""
+    _sign_in(client, alice)
+    account = await _open(client)
+
+    recorded = await _record(client, account["id"], occurred_at="2026-10-01T10:00:00+01:00")
+    db_session.expunge_all()
+    read = await client.get(f"/transactions/{recorded['id']}")
+
+    assert recorded["occurred_at"] == "2026-10-01T09:00:00Z"
+    assert read.json()["occurred_at"] == "2026-10-01T09:00:00Z"
