@@ -5,7 +5,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Depends, Request, Response
 from redis.asyncio import Redis
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.auth.crud.user import get_user_by_id
 from tradinghub.auth.dependencies import (
@@ -29,7 +28,7 @@ from tradinghub.auth.services.auth import (
     register_user,
 )
 from tradinghub.core.config import get_settings
-from tradinghub.core.database import get_db
+from tradinghub.core.database import DbSession
 from tradinghub.core.redis import get_redis
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -43,7 +42,7 @@ async def register(
     payload: RegisterRequest,
     request: Request,
     response: Response,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
     redis: Annotated[Redis, Depends(get_redis)],
 ) -> UserResponse:
     """Register an account and sign in.
@@ -63,7 +62,7 @@ async def login(
     payload: LoginRequest,
     request: Request,
     response: Response,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
     redis: Annotated[Redis, Depends(get_redis)],
 ) -> UserResponse:
     """Start a session and set both cookies.
@@ -80,7 +79,7 @@ async def login(
 
 @router.post("/refresh", status_code=HTTPStatus.NO_CONTENT)
 async def refresh(
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
     raw_refresh_token: Annotated[str | None, Cookie(alias=REFRESH_COOKIE)] = None,
 ) -> Response:
     """Rotate the session and set both cookies. Raises InvalidSessionError when it cannot.
@@ -97,7 +96,7 @@ async def refresh(
 
 @router.post("/logout", status_code=HTTPStatus.NO_CONTENT)
 async def logout(
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
     raw_refresh_token: Annotated[str | None, Cookie(alias=REFRESH_COOKIE)] = None,
 ) -> Response:
     """End the session and clear both cookies. Never an error, with or without a live session."""
@@ -111,7 +110,7 @@ async def logout(
 @router.get("/me")
 async def me(
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ) -> UserResponse:
     """Return the signed-in account. Raises InvalidSessionError without a usable access token.
 

@@ -4,11 +4,10 @@ from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.auth.dependencies import get_current_user
 from tradinghub.auth.security.tokens import AccessTokenClaims
-from tradinghub.core.database import get_db
+from tradinghub.core.database import DbSession
 from tradinghub.ledger.crud import accounts as account_crud
 from tradinghub.ledger.crud import transactions as transaction_crud
 from tradinghub.ledger.crud.accounts import AccountWithBalance
@@ -32,7 +31,7 @@ router = APIRouter(tags=["ledger"])
 async def create_account(
     payload: AccountCreate,
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ) -> AccountResponse:
     """Open an account. Raises AccountNameTakenError when the name is already used."""
     account_with_balance = await account_service.create_account(
@@ -44,7 +43,7 @@ async def create_account(
 @router.get("/accounts")
 async def list_accounts(
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ) -> list[AccountResponse]:
     """Every account the caller owns, archived ones included, name ascending."""
     accounts = await account_crud.list_accounts_with_balances(db, user_id=claims.user_id)
@@ -55,7 +54,7 @@ async def list_accounts(
 async def get_account(
     account_id: int,
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ) -> AccountResponse:
     """One account with its balance. Raises AccountNotFoundError if it is not the caller's."""
     account_with_balance = await account_service.get_account(
@@ -69,7 +68,7 @@ async def update_account(
     account_id: int,
     payload: AccountUpdate,
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ) -> AccountResponse:
     """Rename, change unit or type, archive or restore.
 
@@ -86,7 +85,7 @@ async def update_account(
 async def create_transaction(
     payload: TransactionCreate,
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ) -> TransactionResponse:
     """Record income or an expense. Raises AccountNotFoundError if the account is not yours."""
     transaction = await transaction_service.create_transaction(
@@ -99,7 +98,7 @@ async def create_transaction(
 async def list_transactions(
     filters: Annotated[TransactionFilters, Query()],
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ) -> TransactionPage:
     """One page of the caller's transactions, newest first, with the total that match."""
     transactions, total = await transaction_crud.list_transactions(
@@ -115,7 +114,7 @@ async def list_transactions(
 async def get_transaction(
     transaction_id: int,
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ) -> TransactionResponse:
     """One transaction. Raises TransactionNotFoundError if it is not the caller's."""
     transaction = await transaction_service.get_transaction(
@@ -129,7 +128,7 @@ async def update_transaction(
     transaction_id: int,
     payload: TransactionUpdate,
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ) -> TransactionResponse:
     """Change any subset of fields except the account.
 
@@ -146,7 +145,7 @@ async def update_transaction(
 async def delete_transaction(
     transaction_id: int,
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ) -> None:
     """Remove a transaction, or the whole transfer if it is part of one.
 
@@ -161,7 +160,7 @@ async def delete_transaction(
 async def create_transfer(
     payload: TransferCreate,
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ) -> list[TransactionResponse]:
     """Move money between two of the caller's accounts, returning every row written.
 

@@ -1,7 +1,9 @@
 """Database engine, session factory, and the per-request session dependency."""
 
 from collections.abc import AsyncIterator
+from typing import Annotated
 
+from fastapi import Depends
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
@@ -45,3 +47,8 @@ async def get_db() -> AsyncIterator[AsyncSession]:
         except Exception:
             await session.rollback()
             raise
+
+
+# Function scope commits before the response goes out. The default scope commits after it, so a
+# client could read stale data, or be told a write succeeded that then failed to commit.
+DbSession = Annotated[AsyncSession, Depends(get_db, scope="function")]
