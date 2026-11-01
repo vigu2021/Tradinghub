@@ -31,6 +31,8 @@ Slice 1 is the template, and following it is usually right:
 
 ## Task 1: Migration
 
+**Status:** Done.
+
 **Files:**
 - Modify: `backend/alembic/env.py`
 - Create: one revision under `backend/alembic/versions/`
@@ -62,6 +64,8 @@ downgrade that drops tables in the wrong order.
 ---
 
 ## Task 2: Accounts, end to end
+
+**Status:** Done.
 
 Five endpoints, with the ownership rule established here and reused by every task after.
 
@@ -141,6 +145,9 @@ stranger's id gives 404 and not 403.
 ---
 
 ## Task 3: Transactions, end to end
+
+**Status:** Done. A transaction's account cannot change once recorded: sending `account_id` to PATCH
+is a 422, and one in the wrong place is deleted and recorded again.
 
 **Files:**
 - Modify: `backend/src/tradinghub/ledger/{schemas,crud,services,errors,routes}.py`
@@ -223,6 +230,11 @@ page, and assert no row is seen twice or missed.
 
 ## Task 4: Transfers
 
+**Status:** Done. The route tests live in `tests/ledger/test_routes.py`, mirroring `routes.py`. Rules
+about what is allowed are in the service and well-formedness is in the schema. A fee may come from
+any of the caller's accounts, including a third one. A transfer row cannot be patched, and deleting
+any row deletes the whole transfer. The two tests about expense totals moved to Task 5.
+
 **Files:**
 - Modify: `backend/src/tradinghub/ledger/{schemas,services,routes}.py`
 - Create: `backend/tests/ledger/test_transfers.py`
@@ -262,8 +274,6 @@ class TransferCreate(BaseModel):
 test_a_transfer_writes_two_rows_sharing_a_group
 test_the_balances_move_by_the_amount
 test_a_fee_is_a_third_row_in_the_same_group             # -1000 and +995, fee in spending
-test_a_transfer_is_excluded_from_the_expense_total
-test_the_fee_is_included_in_the_expense_total
 test_different_units_may_have_different_amounts         # a purchase
 test_the_same_unit_must_be_equal_and_opposite
 test_a_transfer_to_the_same_account_is_refused
@@ -318,6 +328,8 @@ class SummaryResponse(BaseModel):
 test_balances_are_grouped_per_unit
 test_income_and_expenses_cover_only_the_period
 test_the_period_includes_its_start_and_excludes_its_end
+test_a_transfer_is_excluded_from_the_expense_total
+test_the_fee_is_included_in_the_expense_total
 test_transfers_are_absent_from_income_and_expenses
 test_transfers_are_present_in_balances
 test_categories_group_and_uncategorised_rows_come_back_as_null
