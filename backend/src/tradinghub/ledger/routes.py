@@ -5,7 +5,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from tradinghub.auth.dependencies import get_current_user
+from tradinghub.auth.dependencies import get_current_user_claims
 from tradinghub.auth.security.tokens import AccessTokenClaims
 from tradinghub.core.database import DbSession
 from tradinghub.core.schemas import RowId
@@ -31,7 +31,7 @@ router = APIRouter(tags=["ledger"])
 @router.post("/accounts", status_code=HTTPStatus.CREATED)
 async def create_account(
     payload: AccountCreate,
-    claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
     db: DbSession,
 ) -> AccountResponse:
     """Open an account. Raises AccountNameTakenError when the name is already used."""
@@ -43,7 +43,7 @@ async def create_account(
 
 @router.get("/accounts")
 async def list_accounts(
-    claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
     db: DbSession,
 ) -> list[AccountResponse]:
     """Every account the caller owns, archived ones included, name ascending."""
@@ -54,7 +54,7 @@ async def list_accounts(
 @router.get("/accounts/{account_id}")
 async def get_account(
     account_id: RowId,
-    claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
     db: DbSession,
 ) -> AccountResponse:
     """One account with its balance. Raises AccountNotFoundError if it is not the caller's."""
@@ -68,7 +68,7 @@ async def get_account(
 async def update_account(
     account_id: RowId,
     payload: AccountUpdate,
-    claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
     db: DbSession,
 ) -> AccountResponse:
     """Rename, change unit or type, archive or restore.
@@ -85,7 +85,7 @@ async def update_account(
 @router.post("/transactions", status_code=HTTPStatus.CREATED)
 async def create_transaction(
     payload: TransactionCreate,
-    claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
     db: DbSession,
 ) -> TransactionResponse:
     """Record income or an expense. Raises AccountNotFoundError if the account is not yours."""
@@ -98,7 +98,7 @@ async def create_transaction(
 @router.get("/transactions")
 async def list_transactions(
     filters: Annotated[TransactionFilters, Query()],
-    claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
     db: DbSession,
 ) -> TransactionPage:
     """One page of the caller's transactions, newest first, with the total that match."""
@@ -114,7 +114,7 @@ async def list_transactions(
 @router.get("/transactions/{transaction_id}")
 async def get_transaction(
     transaction_id: RowId,
-    claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
     db: DbSession,
 ) -> TransactionResponse:
     """One transaction. Raises TransactionNotFoundError if it is not the caller's."""
@@ -128,7 +128,7 @@ async def get_transaction(
 async def update_transaction(
     transaction_id: RowId,
     payload: TransactionUpdate,
-    claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
     db: DbSession,
 ) -> TransactionResponse:
     """Change any subset of fields except the account.
@@ -145,7 +145,7 @@ async def update_transaction(
 @router.delete("/transactions/{transaction_id}", status_code=HTTPStatus.NO_CONTENT)
 async def delete_transaction(
     transaction_id: RowId,
-    claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
     db: DbSession,
 ) -> None:
     """Remove a transaction, or the whole transfer if it is part of one.
@@ -160,7 +160,7 @@ async def delete_transaction(
 @router.post("/transfers", status_code=HTTPStatus.CREATED)
 async def create_transfer(
     payload: TransferCreate,
-    claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
     db: DbSession,
 ) -> list[TransactionResponse]:
     """Move money between two of the caller's accounts, returning every row written.

@@ -39,7 +39,7 @@ Amount = Annotated[
     Field(gt=0, max_digits=36, decimal_places=18),
 ]
 # Transfers have their own endpoint, so a lone half of one cannot be created or patched in.
-SpendingKind = Literal[TransactionKind.INCOME, TransactionKind.EXPENSE]
+NonTransferKind = Literal[TransactionKind.INCOME, TransactionKind.EXPENSE]
 Category = Annotated[
     str,
     StringConstraints(
@@ -58,7 +58,7 @@ Note = Annotated[
 class TransactionCreate(RequestModel):
     account_id: RowId
     amount: Amount
-    kind: SpendingKind
+    kind: NonTransferKind
     category: Category | None = None
     occurred_at: UtcDatetime
     note: Note | None = None
@@ -74,7 +74,7 @@ class TransactionUpdate(RequestModel):
     """
 
     amount: Amount | None = None
-    kind: SpendingKind | None = None
+    kind: NonTransferKind | None = None
     category: Category | None = None
     occurred_at: UtcDatetime | None = None
     note: Note | None = None

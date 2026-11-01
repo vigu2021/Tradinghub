@@ -11,7 +11,7 @@ REFRESH_COOKIE = "refresh_token"
 REFRESH_PATH = "/auth"
 
 
-async def get_current_user(request: Request) -> AccessTokenClaims:
+async def get_current_user_claims(request: Request) -> AccessTokenClaims:
     """Identify the caller from the access token cookie.
 
     Raises InvalidSessionError when the cookie is absent, expired, or forged; the three are

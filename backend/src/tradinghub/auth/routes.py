@@ -11,7 +11,7 @@ from tradinghub.auth.dependencies import (
     ACCESS_COOKIE,
     REFRESH_COOKIE,
     REFRESH_PATH,
-    get_current_user,
+    get_current_user_claims,
 )
 from tradinghub.auth.errors import InvalidSessionError
 from tradinghub.auth.schemas.auth import LoginRequest, RegisterRequest, UserResponse
@@ -109,7 +109,7 @@ async def logout(
 
 @router.get("/me")
 async def me(
-    claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
     db: DbSession,
 ) -> UserResponse:
     """Return the signed-in account. Raises InvalidSessionError without a usable access token.

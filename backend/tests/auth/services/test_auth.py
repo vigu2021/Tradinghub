@@ -8,7 +8,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from tradinghub.auth.crud.session import get_session_by_token_hash
+from tradinghub.auth.crud.session import lock_session_by_token_hash
 from tradinghub.auth.crud.user import create_user
 from tradinghub.auth.errors import EmailTakenError, InvalidCredentialsError, InvalidSessionError
 from tradinghub.auth.models import Session, User
@@ -45,7 +45,7 @@ async def _login(db_session: AsyncSession, email: str) -> str:
 
 
 async def _expire(db_session: AsyncSession, raw_refresh_token: str) -> None:
-    session = await get_session_by_token_hash(db_session, hash_refresh_token(raw_refresh_token))
+    session = await lock_session_by_token_hash(db_session, hash_refresh_token(raw_refresh_token))
     assert session is not None
     session.expires_at = datetime.now(UTC) - timedelta(seconds=1)
     await db_session.flush()
@@ -147,10 +147,10 @@ async def test_login_starts_a_new_family_each_time(
         db_session, redis_client, email="families@example.com", raw_password=PASSWORD, ip=IP
     )
 
-    first_session = await get_session_by_token_hash(
+    first_session = await lock_session_by_token_hash(
         db_session, hash_refresh_token(first_pair.refresh_token)
     )
-    second_session = await get_session_by_token_hash(
+    second_session = await lock_session_by_token_hash(
         db_session, hash_refresh_token(second_pair.refresh_token)
     )
     assert first_session is not None
@@ -168,12 +168,12 @@ async def test_refresh_issues_a_new_pair(db_session: AsyncSession) -> None:
 
 async def test_refresh_keeps_the_successor_in_the_family(db_session: AsyncSession) -> None:
     first_token = await _login(db_session, "chain@example.com")
-    first_session = await get_session_by_token_hash(db_session, hash_refresh_token(first_token))
+    first_session = await lock_session_by_token_hash(db_session, hash_refresh_token(first_token))
     assert first_session is not None
 
     token_pair = await refresh_session(db_session, first_token)
 
-    successor = await get_session_by_token_hash(
+    successor = await lock_session_by_token_hash(
         db_session, hash_refresh_token(token_pair.refresh_token)
     )
     assert successor is not None
@@ -201,7 +201,7 @@ async def test_replaying_a_used_token_kills_its_siblings(db_session: AsyncSessio
 
 async def test_replaying_a_used_token_empties_the_family(db_session: AsyncSession) -> None:
     stolen_token = await _login(db_session, "sweep@example.com")
-    stolen_session = await get_session_by_token_hash(db_session, hash_refresh_token(stolen_token))
+    stolen_session = await lock_session_by_token_hash(db_session, hash_refresh_token(stolen_token))
     assert stolen_session is not None
     family_id = stolen_session.family_id
     await refresh_session(db_session, stolen_token)
@@ -254,7 +254,7 @@ async def test_logout_ignores_an_unknown_token(db_session: AsyncSession) -> None
 
 
 async def test_two_requests_racing_one_token_cannot_both_rotate() -> None:
-    """The row lock in get_session_by_token_hash, proven with two real transactions.
+    """The row lock in lock_session_by_token_hash, proven with two real transactions.
 
     The shared db_session fixture cannot show this: it is one transaction, and a transaction
     never waits on its own lock. So this test commits for real and deletes its account after.

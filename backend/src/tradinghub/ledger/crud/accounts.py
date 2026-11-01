@@ -15,7 +15,7 @@ class AccountWithBalance:
 
 
 async def get_account(db: AsyncSession, *, account_id: int, user_id: int) -> Account | None:
-    """Return the account without its balance, or None on the same terms as the one below.
+    """Return the account without its balance, or None if it does not exist or is someone else's.
 
     For checks that need only the row, such as whose it is or what unit it counts in.
     """
@@ -41,7 +41,7 @@ async def get_account_with_balance(
     The two cases are deliberately indistinguishable: telling them apart would confirm that an
     id is real.
     """
-    statement = _get_accounts_with_balances(user_id).where(Account.id == account_id)
+    statement = _accounts_with_balances_statement(user_id).where(Account.id == account_id)
     row = (await db.execute(statement)).one_or_none()
     return AccountWithBalance(*row) if row else None
 
@@ -55,7 +55,7 @@ async def list_accounts_with_balances(
     not None, and is still listed. Archived accounts are included, because the money in one is
     still the user's.
     """
-    statement = _get_accounts_with_balances(user_id).order_by(Account.name)
+    statement = _accounts_with_balances_statement(user_id).order_by(Account.name)
     rows = (await db.execute(statement)).all()
     return [AccountWithBalance(account, balance) for (account, balance) in rows]
 
@@ -74,7 +74,7 @@ async def create_account(
     return account
 
 
-def _get_accounts_with_balances(user_id: int) -> Select[tuple[Account, Decimal]]:
+def _accounts_with_balances_statement(user_id: int) -> Select[tuple[Account, Decimal]]:
     return (
         select(Account, func.coalesce(func.sum(Transaction.amount), 0))
         .outerjoin(Transaction, Transaction.account_id == Account.id)

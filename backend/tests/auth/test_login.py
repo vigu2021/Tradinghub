@@ -228,7 +228,7 @@ async def test_an_access_token_outlives_logout(client: AsyncClient) -> None:
 
     Nothing can revoke an issued access token, so logout takes up to ACCESS_TOKEN_LIFETIME to
     bite. Shortening that lifetime is the only lever. If this test ever fails, someone added a
-    database lookup to get_current_user and the design changed.
+    database lookup to get_current_user_claims and the design changed.
     """
     await _sign_up(client, "gap@example.com")
     access_token = client.cookies[ACCESS_COOKIE]

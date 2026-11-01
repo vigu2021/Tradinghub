@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tradinghub.auth.models.session import Session
 
 
-async def get_session_by_token_hash(db: AsyncSession, hashed_refresh_token: str) -> Session | None:
-    """Return the session holding that token hash, or None.
+async def lock_session_by_token_hash(db: AsyncSession, hashed_refresh_token: str) -> Session | None:
+    """Lock and return the session holding that token hash, or None.
 
     Used and expired rows are returned too. Reuse detection needs to see a burnt row rather than
     be told the token is unknown.

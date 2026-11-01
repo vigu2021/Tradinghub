@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.auth.crud.session import (
     create_session,
-    get_session_by_token_hash,
+    lock_session_by_token_hash,
     mark_session_used,
     revoke_family,
 )
@@ -112,7 +112,7 @@ async def refresh_session(db: AsyncSession, raw_refresh_token: str) -> TokenPair
     Spending a token twice means it leaked: the thief and the real client both hold it, and
     nothing here can tell them apart. The whole family goes, so neither of them keeps a session.
     """
-    current_session = await get_session_by_token_hash(db, hash_refresh_token(raw_refresh_token))
+    current_session = await lock_session_by_token_hash(db, hash_refresh_token(raw_refresh_token))
     # Nothing to rotate: a revoked or logged-out token is deleted, so it looks like a fake one.
     if current_session is None:
         raise InvalidSessionError
@@ -148,7 +148,7 @@ async def logout_user(db: AsyncSession, raw_refresh_token: str) -> None:
     used token has been robbed: its successor is live in someone else's browser, and deleting
     only what was presented would leave that session running and destroy the evidence of it.
     """
-    current_session = await get_session_by_token_hash(db, hash_refresh_token(raw_refresh_token))
+    current_session = await lock_session_by_token_hash(db, hash_refresh_token(raw_refresh_token))
     if current_session is not None:
         await revoke_family(db, current_session.family_id)
 

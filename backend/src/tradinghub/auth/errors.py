@@ -48,7 +48,7 @@ class EmailTakenError(AppError):
 
 
 class RateLimitedError(AppError):
-    """Too many login failures or registrations for this email or IP inside the window.
+    """Too many login attempts or registrations for this email or IP inside the window.
 
     Retry-After is the full window rather than the time until release: the exact remaining time
     buys a user nothing and would tell an attacker precisely when to resume. The window lives

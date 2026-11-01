@@ -104,7 +104,7 @@ computes it.
 
 ## API
 
-All five require a session through the existing `get_current_user` dependency.
+All five require a session through the existing `get_current_user_claims` dependency.
 
 | Method and path | Does | Success | Failures |
 |---|---|---|---|

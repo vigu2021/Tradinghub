@@ -20,10 +20,11 @@ from tradinghub.core.database import Base
 
 
 class TransactionKind(StrEnum):
-    """Income and expense are spending; a transfer is the same money in a different pot.
+    """Income and expense change what the user has; a transfer is the same money in a different pot.
 
-    A transfer's two rows are equal and opposite. Any fee is a separate expense row sharing the
-    group, so it stays visible as spending instead of hiding inside an uneven transfer.
+    Between accounts of one unit, a transfer's two rows are equal and opposite. Any fee is a
+    separate expense row sharing the group, so it stays visible as spending instead of hiding inside
+    an uneven transfer.
     """
 
     INCOME = "income"

@@ -136,7 +136,7 @@ In Python, `kind` is a `StrEnum` and amounts are `Mapped[Decimal]`.
 
 ## API
 
-All eleven require a session through the existing `get_current_user` dependency.
+All eleven require a session through the existing `get_current_user_claims` dependency.
 
 ### Accounts
 

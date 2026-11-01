@@ -1,4 +1,5 @@
 """Queries against the ledger tables. These never commit; the caller owns the transaction.
 
-Every function takes user_id, so a caller cannot read another user's rows by forgetting to filter.
+Every read and delete takes user_id, and every insert writes rows that carry it, so a caller cannot
+reach another user's rows by forgetting to filter.
 """
