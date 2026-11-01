@@ -23,45 +23,7 @@ See `CONVENTIONS.md`.
 
 ## Code review
 
-What to check on each side is in `backend/REVIEW.md` and `frontend/REVIEW.md`.
-
-### Evidence
-
-- Report a finding only if you can quote the line that causes it and describe a concrete failure.
-- Check for a guard on the path, such as a filter, constraint or handler, before reporting a
-  missing one.
-- Mark each finding Verified (you ran it or traced every step) or Unverified (say what was not
-  run). Drop anything you disproved, and list it in one line.
-
-### Project assumptions
-
-- Solo project, nothing deployed. Rank a problem by what is true today, and name the scale or event
-  that would make it worse.
-- Do not suggest safeguards that have no effect on today's code paths.
-- Other users' rows return 404, never 403.
-- Login rate limiting is deliberately naive: every attempt counts for a fixed window.
-- Rules about what is allowed belong in services. Well-formedness belongs in schemas.
-
-A finding that contradicts one of these goes under Challenged assumptions and does not affect
-the verdict.
-
-### Severity
-
-| Severity | Test |
-|---|---|
-| Critical | Normal use can lose data or expose another user's data |
-| High | A plausible failure breaks a promise the system makes |
-| Medium | A user can trigger wrong behaviour, with no lasting damage |
-| Low | Real, but rare or cosmetic |
-
-### Report
-
-Start with a verdict: **Fix before commit** if there is a Verified Critical or High finding,
-otherwise **OK to commit**. Then report in this order: what was read and run, counts (candidates,
-verified, unverified, dropped), findings by severity, unverified questions, challenged assumptions,
-dropped.
-
-Leave formatting to ruff and CI. Migrations are auto-generated, so do not review their style.
+Follow `REVIEW.md`, plus `backend/REVIEW.md` or `frontend/REVIEW.md` for the side under review.
 
 ## Who writes the code
 

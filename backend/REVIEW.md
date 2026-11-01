@@ -1,6 +1,6 @@
 # Backend review
 
-Follow the Code review rules in `../CLAUDE.md`. This file lists what to check on this side.
+Follow the rules in `../REVIEW.md`. This file lists what to check on this side.
 
 Run from `backend/`: `uv run pytest -q`, `uv run ruff check src tests`,
 `uv run basedpyright src tests`.

@@ -1,6 +1,6 @@
 # Frontend review
 
-Follow the Code review rules in `../CLAUDE.md`. This file lists what to check on this side.
+Follow the rules in `../REVIEW.md`. This file lists what to check on this side.
 
 Run from `frontend/`: `npm run format:check`, `npm run typecheck`, `npm run lint`. Read the Playwright
 tests rather than running them, unless asked; they need the full stack up.
