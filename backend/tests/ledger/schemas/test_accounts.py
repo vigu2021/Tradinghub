@@ -8,6 +8,13 @@ from tradinghub.ledger.models import AccountType
 from tradinghub.ledger.schemas.accounts import AccountCreate, AccountResponse, AccountUpdate
 
 
+@pytest.mark.parametrize("unit", ["£ $", "U-S", "A B"])
+def test_a_unit_is_letters_and_digits_only(unit: str) -> None:
+    """The same-unit transfer rule and every per-unit total compare this value."""
+    with pytest.raises(ValidationError):
+        AccountCreate(name="Chase", unit=unit, type=AccountType.CASH)
+
+
 def test_a_name_is_trimmed_and_a_unit_is_uppercased() -> None:
     """The schema normalises, so no service has to remember to."""
     account = AccountCreate(name="  Chase  ", unit=" gbp ", type=AccountType.CASH)

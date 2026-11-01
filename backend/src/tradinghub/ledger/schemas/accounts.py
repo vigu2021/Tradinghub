@@ -15,7 +15,7 @@ AccountName = Annotated[
 Unit = Annotated[
     str,
     StringConstraints(
-        strip_whitespace=True, to_upper=True, min_length=2, max_length=10, pattern=NO_NUL_PATTERN
+        strip_whitespace=True, to_upper=True, min_length=2, max_length=10, pattern=r"^[A-Za-z0-9]+$"
     ),
 ]
 

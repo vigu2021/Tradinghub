@@ -308,8 +308,8 @@ class SummaryResponse(BaseModel):
    money is not spending. The `kind` filter does this; no special casing.
 3. **Units are never summed across each other.** Every total is per unit. Adding GBP to BTC needs
    prices and a price date, which is a later slice and its own table.
-4. Date boundaries are **inclusive at both ends**, and a test pins it, because off-by-one on a
-   month boundary is invisible and wrong.
+4. A date range **includes its start and excludes its end**, and a test pins it, so a row at exactly
+   midnight on the first of a month never counts in two months.
 5. A few aggregate queries, not one per account or per category. `GROUP BY` with `FILTER` does
    income and expenses in one pass, which is the thing worth learning here.
 
@@ -317,7 +317,7 @@ class SummaryResponse(BaseModel):
 ```python
 test_balances_are_grouped_per_unit
 test_income_and_expenses_cover_only_the_period
-test_the_period_boundaries_are_inclusive
+test_the_period_includes_its_start_and_excludes_its_end
 test_transfers_are_absent_from_income_and_expenses
 test_transfers_are_present_in_balances
 test_categories_group_and_uncategorised_rows_come_back_as_null

@@ -111,7 +111,7 @@ everything should go.
 | `kind` | text | not null, `income`, `expense`, or `transfer` |
 | `category` | text | nullable, 1 to 40 characters, lowercase |
 | `occurred_at` | timestamptz | not null, when it happened rather than when it was typed |
-| `note` | text | nullable, at most 1,000 characters |
+| `note` | text | nullable, at most 500 characters |
 | `transfer_group_id` | uuid | null unless this row is part of a transfer |
 | `created_at` | timestamptz | not null, set by the database |
 | `updated_at` | timestamptz | not null, set by the database on every update |
@@ -235,12 +235,12 @@ Python. Grouping and filtering aggregates in one pass is the Postgres lesson of 
 - `unit`: uppercased, 2 to 10 characters, letters and digits.
 - `category`: trimmed, lowercased, 1 to 40 characters. Optional, so a purchase can be recorded
   before it is categorised. The breakdown groups those under "uncategorised".
-- `amount`: sent as a positive string with a `kind`; the service applies the sign. At most 20
-  digits, 8 after the point, never zero. A JSON number is a 422, because it has already been rounded
+- `amount`: sent as a positive string with a `kind`; the service applies the sign. At most 36
+  digits, 18 after the point, never zero. A JSON number is a 422, because it has already been rounded
   to a float. Returned signed as a string.
 - `type`: one of `cash`, `crypto`, `stock`.
 - `occurred_at`: ISO 8601 with an offset. A naive timestamp is a 422, never a guess at the timezone.
-- `note`: at most 1,000 characters.
+- `note`: at most 500 characters.
 
 ### Errors
 
@@ -326,12 +326,12 @@ These waited for the first feature with lists, and this is it.
 - balances: empty account is zero, mixed signs, per unit, unaffected by another user's rows
 - transfers: both rows written, group shared, deleting any row removes the whole group, patching
   one is refused, same-account and cross-user transfers rejected
-- a transfer with a fee: three rows, the balances land at -1000 and +995, and the fee shows in the
-  expense total while the two transfer rows do not
+- a transfer with a fee on the destination: three rows, the balances land at -1000 and +995, and
+  the fee shows in the expense total while the two transfer rows do not
 - a transfer between accounts with different units, with different amounts on each side, is
   accepted and the equal-and-opposite rule does not fire. This is also how a purchase is recorded
-- the summary: category grouping, date boundaries inclusive at both ends, transfers excluded from
-  income and expense totals but present in balances, currencies kept apart
+- the summary: category grouping, a date range including its start and excluding its end,
+  transfers excluded from income and expense totals but present in balances, currencies kept apart
 - list: each filter, filters combined, `total` against a page, `limit` bounds
 - paging is stable when several rows share one `occurred_at`: walk every page and assert no row is
   seen twice or missed. This fails without `id` in the order
@@ -375,6 +375,6 @@ plan checks each new one the same way.
   category breakdown
 - no request can read or change another user's account or transaction, proven per endpoint
 - the database refuses a transaction pointed at an account that is not its owner's
-- balances and totals are exact to eight places, with currencies never summed together
+- balances and totals are exact to eighteen places, with currencies never summed together
 - the backend suite, the Playwright suite, ruff, basedpyright, tsc, eslint, and prettier all pass
 - `alembic upgrade head` builds the schema from scratch and `alembic check` reports no drift
