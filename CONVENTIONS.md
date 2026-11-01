@@ -71,6 +71,10 @@ below them, and a helper sits below the function that calls it. A reader opening
 what it offers before how it does it. Test files are the exception: their helpers and constants
 stay at the top, since a test is read with its setup in mind.
 
+**A helper is a private module-level function, not a function defined inside another.** Pass it
+what it needs, even if that makes the calls longer. Closures are for decorators and the like, which
+cannot work without one.
+
 ## Types
 
 - Every parameter and return value is annotated. No exceptions.

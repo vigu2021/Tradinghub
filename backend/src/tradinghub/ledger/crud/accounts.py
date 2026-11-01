@@ -24,6 +24,15 @@ async def get_account(db: AsyncSession, *, account_id: int, user_id: int) -> Acc
     )
 
 
+async def get_accounts(
+    db: AsyncSession, *, account_ids: list[int], user_id: int
+) -> dict[int, Account]:
+    """Return those of the accounts that are the user's, by id. Any others are simply absent."""
+    statement = select(Account).where(Account.id.in_(account_ids), Account.user_id == user_id)
+    rows = (await db.scalars(statement)).all()
+    return {row.id: row for row in rows}
+
+
 async def get_account_with_balance(
     db: AsyncSession, *, account_id: int, user_id: int
 ) -> AccountWithBalance | None:

@@ -4,7 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.ledger.crud import accounts as account_crud
 from tradinghub.ledger.crud import transactions as transaction_crud
-from tradinghub.ledger.errors import AccountNotFoundError, TransactionNotFoundError
+from tradinghub.ledger.errors import (
+    AccountNotFoundError,
+    TransactionNotFoundError,
+    TransferNotEditableError,
+)
 from tradinghub.ledger.models import Transaction, TransactionKind
 from tradinghub.ledger.schemas.transactions import TransactionCreate, TransactionUpdate
 
@@ -43,9 +47,12 @@ async def update_transaction(
     """Apply the fields the caller sent. A null category or note clears it.
 
     The sign is recomputed whenever the amount or the kind changes, so turning an expense into
-    income flips it. Raises TransactionNotFoundError if the transaction is not the user's.
+    income flips it. Raises TransactionNotFoundError if the transaction is not the user's, and
+    TransferNotEditableError if it is any row of a transfer.
     """
     transaction = await get_transaction(db, transaction_id=transaction_id, user_id=user_id)
+    if transaction.transfer_group_id is not None:
+        raise TransferNotEditableError
     sent = changes.model_dump(exclude_unset=True)
 
     if changes.amount is not None or changes.kind is not None:
@@ -60,7 +67,10 @@ async def update_transaction(
 
 
 async def delete_transaction(db: AsyncSession, *, transaction_id: int, user_id: int) -> None:
-    """Delete the transaction. Raises TransactionNotFoundError if it is not the user's."""
+    """Delete the transaction, or the whole transfer if it is part of one.
+
+    Raises TransactionNotFoundError if it is not the user's.
+    """
     deleted = await transaction_crud.delete_transaction(
         db, transaction_id=transaction_id, user_id=user_id
     )

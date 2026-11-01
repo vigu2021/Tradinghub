@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import ColumnElement, delete, func, select
+from sqlalchemy import ColumnElement, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.ledger.models import Transaction, TransactionKind
@@ -82,11 +82,31 @@ async def create_transaction(
     return transaction
 
 
+async def create_transactions(db: AsyncSession, *, transactions: list[Transaction]) -> None:
+    """Insert several transactions in one flush, so each given object carries its id afterwards.
+
+    Raises IntegrityError when an account is not this user's: the composite foreign key refuses it.
+    """
+    db.add_all(transactions)
+    await db.flush()
+
+
 async def delete_transaction(db: AsyncSession, *, transaction_id: int, user_id: int) -> bool:
-    """Delete the user's transaction. Return False if there was none, theirs or anyone's."""
-    deleted_id = await db.scalar(
-        delete(Transaction)
+    """Delete the user's transaction, with every row of its transfer if it is part of one.
+
+    Return False if there was nothing to delete, theirs or anyone's.
+    """
+    target_group = (
+        select(Transaction.transfer_group_id)
         .where(Transaction.id == transaction_id, Transaction.user_id == user_id)
+        .scalar_subquery()
+    )
+    deleted_ids = await db.scalars(
+        delete(Transaction)
+        .where(
+            Transaction.user_id == user_id,
+            or_(Transaction.id == transaction_id, Transaction.transfer_group_id == target_group),
+        )
         .returning(Transaction.id)
     )
-    return deleted_id is not None
+    return bool(deleted_ids.all())

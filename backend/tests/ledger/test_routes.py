@@ -440,3 +440,271 @@ async def test_every_transaction_endpoint_needs_a_session(
     response = await client.request(method, path, json={})
 
     assert response.status_code == 401
+
+
+TUITION = {
+    "amount_sent": "1000",
+    "amount_received": "1000",
+    "occurred_at": "2026-10-02T09:00:00Z",
+    "note": "Tuition",
+}
+
+
+async def _transfer(
+    client: AsyncClient, from_account_id: int, to_account_id: int, **overrides: str | int
+) -> list[dict[str, Any]]:
+    response = await client.post(
+        "/transfers",
+        json=TUITION
+        | {"from_account_id": from_account_id, "to_account_id": to_account_id}
+        | overrides,
+    )
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
+async def _balance(client: AsyncClient, account_id: int) -> str:
+    return (await client.get(f"/accounts/{account_id}")).json()["balance"]
+
+
+async def test_a_transfer_writes_two_rows_in_one_group_and_moves_both_balances(
+    client: AsyncClient, alice: User
+) -> None:
+    _sign_in(client, alice)
+    chase = await _open(client)
+    monzo = await _open(client, name="Monzo")
+
+    source, destination = await _transfer(client, chase["id"], monzo["id"])
+
+    assert source["amount"] == "-1000"
+    assert source["kind"] == "transfer"
+    assert destination["amount"] == "1000"
+    assert destination["kind"] == "transfer"
+    assert source["transfer_group_id"] is not None
+    assert source["transfer_group_id"] == destination["transfer_group_id"]
+    assert await _balance(client, chase["id"]) == "-1000"
+    assert await _balance(client, monzo["id"]) == "1000"
+
+
+async def test_a_fee_is_a_third_row_counted_as_an_expense(client: AsyncClient, alice: User) -> None:
+    _sign_in(client, alice)
+    chase = await _open(client)
+    monzo = await _open(client, name="Monzo")
+
+    source, _, fee = await _transfer(
+        client,
+        chase["id"],
+        monzo["id"],
+        fee="5",
+        fee_account_id=chase["id"],
+        fee_category="Fees",
+    )
+
+    assert fee["account_id"] == chase["id"]
+    assert fee["amount"] == "-5"
+    assert fee["kind"] == "expense"
+    assert fee["category"] == "fees"
+    assert fee["transfer_group_id"] == source["transfer_group_id"]
+    assert await _balance(client, chase["id"]) == "-1005"
+    assert await _balance(client, monzo["id"]) == "1000"
+
+
+async def test_a_fee_can_be_charged_to_the_destination(client: AsyncClient, alice: User) -> None:
+    _sign_in(client, alice)
+    chase = await _open(client)
+    monzo = await _open(client, name="Monzo")
+
+    await _transfer(client, chase["id"], monzo["id"], fee="5", fee_account_id=monzo["id"])
+
+    assert await _balance(client, monzo["id"]) == "995"
+
+
+async def test_different_units_can_move_different_amounts(client: AsyncClient, alice: User) -> None:
+    """How a purchase is recorded: nothing is converted, and the gap between them is the price."""
+    _sign_in(client, alice)
+    usdt = await _open(client, name="USDT", unit="USDT")
+    btc = await _open(client, name="BTC", unit="BTC")
+
+    source, destination = await _transfer(
+        client, usdt["id"], btc["id"], amount_sent="30000", amount_received="0.5"
+    )
+
+    assert source["amount"] == "-30000"
+    assert destination["amount"] == "0.5"
+
+
+async def test_every_digit_of_a_large_transfer_survives(client: AsyncClient, alice: User) -> None:
+    _sign_in(client, alice)
+    chase = await _open(client)
+    monzo = await _open(client, name="Monzo")
+    amount = "123456789012345678.123456789012345678"
+
+    source, destination = await _transfer(
+        client, chase["id"], monzo["id"], amount_sent=amount, amount_received=amount
+    )
+
+    assert source["amount"] == f"-{amount}"
+    assert destination["amount"] == amount
+
+
+async def test_one_unit_with_differing_amounts_is_rejected(
+    client: AsyncClient, alice: User
+) -> None:
+    """The gap would be a fee in disguise, hidden from every spending total."""
+    _sign_in(client, alice)
+    chase = await _open(client)
+    monzo = await _open(client, name="Monzo")
+
+    response = await client.post(
+        "/transfers",
+        json=TUITION
+        | {
+            "from_account_id": chase["id"],
+            "to_account_id": monzo["id"],
+            "amount_received": "995",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "transfer_amounts_differ"
+    assert await _balance(client, chase["id"]) == "0"
+
+
+async def test_the_same_account_twice_is_rejected(client: AsyncClient, alice: User) -> None:
+    _sign_in(client, alice)
+    chase = await _open(client)
+
+    response = await client.post(
+        "/transfers",
+        json=TUITION | {"from_account_id": chase["id"], "to_account_id": chase["id"]},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "transfer_same_account"
+
+
+async def test_a_fee_on_an_uninvolved_account_is_rejected(client: AsyncClient, alice: User) -> None:
+    _sign_in(client, alice)
+    chase = await _open(client)
+    monzo = await _open(client, name="Monzo")
+    revolut = await _open(client, name="Revolut")
+
+    response = await client.post(
+        "/transfers",
+        json=TUITION
+        | {
+            "from_account_id": chase["id"],
+            "to_account_id": monzo["id"],
+            "fee": "5",
+            "fee_account_id": revolut["id"],
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "transfer_fee_account"
+
+
+async def test_half_a_fee_is_rejected(client: AsyncClient, alice: User) -> None:
+    _sign_in(client, alice)
+    chase = await _open(client)
+    monzo = await _open(client, name="Monzo")
+
+    response = await client.post(
+        "/transfers",
+        json=TUITION | {"from_account_id": chase["id"], "to_account_id": monzo["id"], "fee": "5"},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize("bobs_side", ["from_account_id", "to_account_id"])
+async def test_a_transfer_touching_someone_elses_account_is_not_found(
+    client: AsyncClient, alice: User, bob: User, bobs_side: str
+) -> None:
+    _sign_in(client, bob)
+    bobs_account = await _open(client)
+    _sign_in(client, alice)
+    alices_account = await _open(client)
+    sides = {"from_account_id": alices_account["id"], "to_account_id": alices_account["id"]}
+
+    response = await client.post(
+        "/transfers", json=TUITION | sides | {bobs_side: bobs_account["id"]}
+    )
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "account_not_found"
+    assert await _balance(client, alices_account["id"]) == "0"
+
+
+@pytest.mark.parametrize("row", [0, 1, 2])
+async def test_no_row_of_a_transfer_can_be_edited(
+    client: AsyncClient, alice: User, row: int
+) -> None:
+    _sign_in(client, alice)
+    chase = await _open(client)
+    monzo = await _open(client, name="Monzo")
+    rows = await _transfer(client, chase["id"], monzo["id"], fee="5", fee_account_id=chase["id"])
+
+    response = await client.patch(f"/transactions/{rows[row]['id']}", json={"note": "Changed"})
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "transfer_not_editable"
+
+
+@pytest.mark.parametrize("row", [0, 1, 2])
+async def test_deleting_any_row_deletes_the_whole_transfer_and_nothing_else(
+    client: AsyncClient, alice: User, row: int
+) -> None:
+    _sign_in(client, alice)
+    chase = await _open(client)
+    monzo = await _open(client, name="Monzo")
+    rent = await _record(client, chase["id"])
+    rows = await _transfer(client, chase["id"], monzo["id"], fee="5", fee_account_id=chase["id"])
+    other_transfer = await _transfer(
+        client, chase["id"], monzo["id"], amount_sent="1", amount_received="1"
+    )
+
+    response = await client.delete(f"/transactions/{rows[row]['id']}")
+
+    assert response.status_code == 204
+    assert await _balance(client, chase["id"]) == "-901"
+    assert await _balance(client, monzo["id"]) == "1"
+    assert (await client.get(f"/transactions/{rent['id']}")).status_code == 200
+    assert (await client.get(f"/transactions/{other_transfer[0]['id']}")).status_code == 200
+
+
+async def test_deleting_a_plain_transaction_leaves_the_others(
+    client: AsyncClient, alice: User
+) -> None:
+    """Plain rows all have a null group, which must not count as sharing one."""
+    _sign_in(client, alice)
+    chase = await _open(client)
+    rent = await _record(client, chase["id"])
+    await _record(client, chase["id"], amount="50")
+
+    await client.delete(f"/transactions/{rent['id']}")
+
+    assert await _balance(client, chase["id"]) == "-50"
+
+
+async def test_deleting_someone_elses_transfer_row_is_not_found(
+    client: AsyncClient, alice: User, bob: User
+) -> None:
+    _sign_in(client, bob)
+    chase = await _open(client)
+    monzo = await _open(client, name="Monzo")
+    rows = await _transfer(client, chase["id"], monzo["id"])
+    bobs_cookie = client.cookies[ACCESS_COOKIE]
+    _sign_in(client, alice)
+
+    response = await client.delete(f"/transactions/{rows[0]['id']}")
+
+    assert response.status_code == 404
+    client.cookies.set(ACCESS_COOKIE, bobs_cookie)
+    assert await _balance(client, monzo["id"]) == "1000"
+
+
+async def test_a_transfer_needs_a_session(client: AsyncClient) -> None:
+    response = await client.post("/transfers", json={})
+
+    assert response.status_code == 401

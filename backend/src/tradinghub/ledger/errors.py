@@ -27,3 +27,39 @@ class TransactionNotFoundError(AppError):
     code = "transaction_not_found"
     message = "Transaction not found."
     status_code = HTTPStatus.NOT_FOUND
+
+
+class TransferNotEditableError(AppError):
+    """A row of a transfer was patched. Changing one side alone would unbalance the pair, so the
+    rule is to delete the transfer and record it again."""
+
+    code = "transfer_not_editable"
+    message = "A transfer cannot be edited. Delete it and record it again."
+    status_code = HTTPStatus.CONFLICT
+
+
+class TransferAmountsDifferError(AppError):
+    """A transfer between two accounts of the same unit, with different amounts on each side.
+
+    The difference would be a fee in disguise, hidden from every spending total.
+    """
+
+    code = "transfer_amounts_differ"
+    message = "Between accounts of the same unit, the amount sent must equal the amount received."
+    status_code = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+class TransferSameAccountError(AppError):
+    """A transfer whose source and destination are the same account."""
+
+    code = "transfer_same_account"
+    message = "A transfer needs two different accounts."
+    status_code = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+class TransferFeeAccountError(AppError):
+    """A fee charged to an account the transfer never touched."""
+
+    code = "transfer_fee_account"
+    message = "A fee must be charged to one of the two accounts in the transfer."
+    status_code = HTTPStatus.UNPROCESSABLE_ENTITY

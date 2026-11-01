@@ -20,8 +20,10 @@ from tradinghub.ledger.schemas.transactions import (
     TransactionResponse,
     TransactionUpdate,
 )
+from tradinghub.ledger.schemas.transfers import TransferCreate
 from tradinghub.ledger.services import accounts as account_service
 from tradinghub.ledger.services import transactions as transaction_service
+from tradinghub.ledger.services import transfers as transfer_service
 
 router = APIRouter(tags=["ledger"])
 
@@ -129,8 +131,11 @@ async def update_transaction(
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TransactionResponse:
-    """Change any subset of fields except the account. Raises TransactionNotFoundError if it is
-    not the caller's."""
+    """Change any subset of fields except the account.
+
+    Raises TransactionNotFoundError if it is not the caller's, and TransferNotEditableError if it
+    is any row of a transfer.
+    """
     transaction = await transaction_service.update_transaction(
         db, transaction_id=transaction_id, user_id=claims.user_id, changes=payload
     )
@@ -143,10 +148,30 @@ async def delete_transaction(
     claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
-    """Remove one transaction. Raises TransactionNotFoundError if it is not the caller's."""
+    """Remove a transaction, or the whole transfer if it is part of one.
+
+    Raises TransactionNotFoundError if it is not the caller's.
+    """
     await transaction_service.delete_transaction(
         db, transaction_id=transaction_id, user_id=claims.user_id
     )
+
+
+@router.post("/transfers", status_code=HTTPStatus.CREATED)
+async def create_transfer(
+    payload: TransferCreate,
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[TransactionResponse]:
+    """Move money between two of the caller's accounts, returning every row written.
+
+    Raises AccountNotFoundError if either is not the caller's, and a 422 when the transfer breaks
+    a rule: the same account twice, a fee on another account, or unequal amounts in one unit.
+    """
+    transactions = await transfer_service.create_transfer(
+        db, user_id=claims.user_id, details=payload
+    )
+    return [TransactionResponse.model_validate(transaction) for transaction in transactions]
 
 
 def _account_response(account_with_balance: AccountWithBalance) -> AccountResponse:
