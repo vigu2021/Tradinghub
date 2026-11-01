@@ -11,6 +11,7 @@ from typing import ClassVar
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException
 
 
 class AppError(Exception):
@@ -51,6 +52,12 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, error: AppError) -> JSONResponse:
         return error_response(error.status_code, error.code, error.message, error.headers)
+
+    @app.exception_handler(HTTPException)
+    async def handle_http_exception(request: Request, error: HTTPException) -> JSONResponse:
+        """The framework's own failures: an unknown path, a wrong method, an unreadable body."""
+        status = HTTPStatus(error.status_code)
+        return error_response(status, status.name.lower(), f"{status.phrase}.", error.headers)
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(
