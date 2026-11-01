@@ -49,8 +49,9 @@ function rotateSessionOnce(): Promise<boolean> {
     .request(REFRESH_LOCK, () => apiClient.post(REFRESH_PATH))
     .then(() => true)
     .catch((error: unknown) => {
-      // Only the API refusing means the session is gone. A refresh that never arrived says nothing.
-      if (isApiError(error)) {
+      // Only the API refusing the token means the session is gone. A refresh that never arrived or
+      // failed on the server says nothing.
+      if (isApiError(error, API_CODES.INVALID_SESSION)) {
         return false;
       }
       throw error;

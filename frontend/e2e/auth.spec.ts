@@ -337,6 +337,53 @@ test("a refresh that never arrives offers a retry instead of signing the visitor
   await expect(page).toHaveURL(/\/dashboard$/);
 });
 
+test("a refresh the server fails on offers a retry instead of signing the visitor out", async ({
+  page,
+  context,
+}) => {
+  await register(page, uniqueEmail("refreshfailed"));
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const cookiesWithoutAccessToken = (await context.cookies()).filter(
+    (cookie) => cookie.name !== "access_token",
+  );
+  await context.clearCookies();
+  await context.addCookies(cookiesWithoutAccessToken);
+  await page.route("**/auth/refresh", (route) =>
+    route.fulfill({
+      status: 500,
+      headers: {
+        "content-type": "application/json",
+        "access-control-allow-origin": BASE_URL,
+        "access-control-allow-credentials": "true",
+      },
+      body: JSON.stringify({
+        error: { code: "internal_error", message: "Internal error." },
+      }),
+    }),
+  );
+  await page.reload();
+
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(page).toHaveURL(/\/dashboard$/);
+});
+
+test("signing in with the network off says so instead of waiting forever", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(uniqueEmail("offline"));
+  await page.getByLabel("Password").fill(PASSWORD);
+  await context.setOffline(true);
+
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(formAlert(page)).toContainText("Could not reach the server");
+});
+
 test("a session that dies while the dashboard is open ends at the login screen", async ({
   page,
   context,

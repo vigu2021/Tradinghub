@@ -17,7 +17,10 @@ export function QueryProvider({ children }: { children: ReactNode }) {
             staleTime: STALE_TIME_MS,
             retry: (failureCount, error) =>
               !isApiError(error) && failureCount < MAX_NETWORK_RETRIES,
+            networkMode: "always",
           },
+          // The default pauses requests while offline, which leaves the screen waiting with no error.
+          mutations: { networkMode: "always" },
         },
       }),
   );
