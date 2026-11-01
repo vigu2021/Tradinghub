@@ -235,9 +235,9 @@ Python. Grouping and filtering aggregates in one pass is the Postgres lesson of 
 - `unit`: uppercased, 2 to 10 characters, letters and digits.
 - `category`: trimmed, lowercased, 1 to 40 characters. Optional, so a purchase can be recorded
   before it is categorised. The breakdown groups those under "uncategorised".
-- `amount`: sent as a positive number with a `kind`; the service applies the sign. At most 20
-  digits, 8 after the point, never zero. Accepted as a string or a number, returned signed as a
-  string.
+- `amount`: sent as a positive string with a `kind`; the service applies the sign. At most 20
+  digits, 8 after the point, never zero. A JSON number is a 422, because it has already been rounded
+  to a float. Returned signed as a string.
 - `type`: one of `cash`, `crypto`, `stock`.
 - `occurred_at`: ISO 8601 with an offset. A naive timestamp is a 422, never a guess at the timezone.
 - `note`: at most 1,000 characters.

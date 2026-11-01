@@ -36,6 +36,13 @@ def test_a_transfer_cannot_be_created_as_a_transaction() -> None:
         TransactionCreate.model_validate(RENT | {"kind": "transfer"})
 
 
+@pytest.mark.parametrize("amount", [900, 50.5])
+def test_an_amount_must_be_a_string(amount: float) -> None:
+    """A JSON number has already been rounded to a float, so its digits cannot be trusted."""
+    with pytest.raises(ValidationError):
+        TransactionCreate.model_validate(RENT | {"amount": amount})
+
+
 @pytest.mark.parametrize("amount", ["0", "-900"])
 def test_an_amount_must_be_positive(amount: str) -> None:
     """The kind carries the direction. A signed amount as well would let the two disagree."""

@@ -8,6 +8,7 @@ from typing import Annotated, Literal, Self
 from pydantic import (
     AwareDatetime,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     StringConstraints,
@@ -17,9 +18,21 @@ from pydantic import (
 from tradinghub.core.schemas import DecimalString, RequestModel
 from tradinghub.ledger.models import TransactionKind
 
+
+def _amount_must_be_a_string(amount: object) -> object:
+    # A JSON number is already a float by the time it gets here, with its digits rounded away.
+    if not isinstance(amount, str):
+        raise ValueError("amount must be a string")
+    return amount
+
+
 # Positive: the kind says which way the money went, and the service applies the sign. The
 # digits match NUMERIC(36, 18), which would otherwise round extra decimals away without a word.
-Amount = Annotated[Decimal, Field(gt=0, max_digits=36, decimal_places=18)]
+Amount = Annotated[
+    Decimal,
+    BeforeValidator(_amount_must_be_a_string),
+    Field(gt=0, max_digits=36, decimal_places=18),
+]
 # Transfers have their own endpoint, so a lone half of one cannot be created or patched in.
 SpendingKind = Literal[TransactionKind.INCOME, TransactionKind.EXPENSE]
 Category = Annotated[

@@ -283,6 +283,21 @@ async def test_every_digit_of_a_large_amount_survives(
     assert recorded["amount"] == read == balance == f"-{huge}"
 
 
+async def test_an_amount_sent_as_a_json_number_is_rejected_and_not_recorded(
+    client: AsyncClient, alice: User
+) -> None:
+    _sign_in(client, alice)
+    account = await _open(client)
+
+    response = await client.post(
+        "/transactions",
+        json=RENT | {"account_id": account["id"], "amount": 0.123456789012345678},
+    )
+
+    assert response.status_code == 422
+    assert await _balance(client, account["id"]) == "0"
+
+
 async def test_a_new_amount_and_kind_together_take_the_new_sign(
     client: AsyncClient, alice: User
 ) -> None:

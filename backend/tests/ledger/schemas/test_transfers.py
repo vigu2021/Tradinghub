@@ -41,9 +41,9 @@ def test_half_a_fee_is_rejected(fee_fields: dict[str, Any]) -> None:
 
 
 @pytest.mark.parametrize("field", ["amount_sent", "amount_received", "fee"])
-@pytest.mark.parametrize("amount", ["0", "-5"])
-def test_every_amount_must_be_positive(field: str, amount: str) -> None:
-    """The service applies the signs, so a signed amount here would come out backwards."""
+@pytest.mark.parametrize("amount", ["0", "-5", 5, 5.5])
+def test_every_amount_must_be_a_positive_string(field: str, amount: float | str) -> None:
+    """The service applies the signs, and a JSON number has already lost digits to a float."""
     with pytest.raises(ValidationError):
         TransferCreate.model_validate(MOVE | {"fee_account_id": 2, "fee": "5"} | {field: amount})
 
