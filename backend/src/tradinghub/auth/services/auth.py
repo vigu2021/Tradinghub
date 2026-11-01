@@ -27,7 +27,6 @@ from tradinghub.auth.security.passwords import PASSWORD_HASHER, hash_password, v
 from tradinghub.auth.security.rate_limit import (
     count_login_attempt,
     count_registration_attempt,
-    forgive_login_attempt,
 )
 from tradinghub.auth.security.tokens import (
     REFRESH_TOKEN_LIFETIME,
@@ -88,8 +87,8 @@ async def login_user(
     Raises RateLimitedError when the email or the IP is locked out, before any password work so
     a locked-out caller costs nothing. Raises InvalidCredentialsError for a bad email or a bad
     password: one exception for both, raised after the same work, so the two failures are
-    indistinguishable in content and in timing. Every attempt is counted up front and a success
-    is forgiven afterwards, so only failures accumulate. Returns the user because the route
+    indistinguishable in content and in timing. Every attempt is counted up front, a success
+    included. Returns the user because the route
     answers with it, saving a second lookup.
     """
     await count_login_attempt(redis, email, ip)
@@ -103,7 +102,6 @@ async def login_user(
     if user is None or not password_matches:
         raise InvalidCredentialsError
 
-    await forgive_login_attempt(redis, email, ip)
     token_pair = await start_session(db, user.id)
     return user, token_pair
 
