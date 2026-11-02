@@ -217,10 +217,11 @@ another. Two rows with the same unit are a move, not a trade.
 
 | Method and path | Does | Success |
 |---|---|---|
-| `GET /summary?from=&to=` | balances now, plus totals for the period | 200 |
+| `GET /summary?occurred_from=&occurred_to=` | balances now, plus totals for the period | 200 |
 
-`from` and `to` are required ISO timestamps. The frontend computes this week and this month, so
-the API stays a date range rather than a set of named periods, and slice 4 can ask it anything.
+`occurred_from` and `occurred_to` are required ISO timestamps, matching `GET /transactions`. The
+frontend computes this week and this month, so the API stays a date range rather than a set of
+named periods, and slice 4 can ask it anything.
 
 The response carries: each account with its balance, totals per unit, and for the period the
 income total, the expense total, and expenses grouped by category, each per unit. Transfers are

@@ -136,6 +136,11 @@ Every schema change is an Alembic migration, generated with `--autogenerate` and
 before running**. Autogenerate does not know about extensions, data backfills, or concurrent index
 creation, so those are added by hand.
 
+## Queries
+
+A query that joins names its starting table with `.select_from(...)`, even when the first selected
+column already implies it. In an outer join the starting table decides which rows are kept.
+
 ## Naming
 
 Full words. Code is read far more than written.

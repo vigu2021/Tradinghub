@@ -289,11 +289,16 @@ test_a_transfer_into_a_strangers_account_is_not_found
 The Postgres task of this slice. Everything is aggregated in SQL, not summed in Python.
 
 **Files:**
-- Create: `backend/src/tradinghub/ledger/summary.py`, `backend/tests/ledger/test_summary.py`
-- Modify: `backend/src/tradinghub/ledger/{schemas,routes}.py`
+- Create: `backend/src/tradinghub/ledger/schemas/summary.py` (done),
+  `backend/src/tradinghub/ledger/crud/summary.py`, `backend/tests/ledger/crud/test_summary.py`
+- Modify: `backend/src/tradinghub/ledger/routes.py`, `backend/tests/ledger/test_routes.py`
 
 **Interfaces produced:**
 ```python
+class SummaryPeriod(RequestModel):
+    occurred_from: UtcDatetime
+    occurred_to: UtcDatetime
+
 class UnitTotal(BaseModel):
     unit: str
     amount: Decimal
@@ -312,7 +317,8 @@ class SummaryResponse(BaseModel):
 ```
 
 **Requirements:**
-1. `GET /summary?from=&to=`, both required ISO timestamps. The frontend computes "this month" and
+1. `GET /summary?occurred_from=&occurred_to=`, both required ISO timestamps. The frontend computes
+   "this month" and
    "this week", so the API stays a date range and a later slice can ask it anything.
 2. **Transfers are excluded from income and expenses, and included in balances.** Moving your own
    money is not spending. The `kind` filter does this; no special casing.
