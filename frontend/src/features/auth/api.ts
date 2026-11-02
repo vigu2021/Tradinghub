@@ -2,7 +2,8 @@ import { apiClient } from "@/lib/api/client";
 import { LoginRequest, RegisterRequest, User } from "./types";
 
 export const authKeys = {
-  me: ["auth", "me"] as const,
+  all: ["auth"] as const,
+  me: () => [...authKeys.all, "me"] as const,
 };
 
 export async function login(body: LoginRequest): Promise<User> {

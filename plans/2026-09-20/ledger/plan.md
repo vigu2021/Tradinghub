@@ -355,7 +355,7 @@ test_another_users_rows_never_appear
   `frontend/src/features/transactions/{api,hooks,types}.ts` (the summary request and hook live
   here too, beside the transactions they total), `frontend/src/components/ui/ErrorBanner.tsx`
 - Modify: `frontend/tsconfig.json`, `frontend/eslint.config.mjs`, `frontend/package.json`,
-  `frontend/src/features/auth/{api,types}.ts`,
+  `frontend/src/features/auth/{api,hooks}.ts`,
   the three places the error banner is copy-pasted
 
 **Requirements:**
@@ -363,11 +363,9 @@ test_another_users_rows_never_appear
    summary keyed by its period. **Every ledger key starts with `"ledger"`**, so accounts,
    transactions and the summary share one root. Give `authKeys` the factory shape while you are
    there.
-2. **Each response shape is written once, as a zod schema in `types.ts`**, and its type comes from
-   `z.infer`. `api.ts` parses every response with that schema, not just a type parameter. These
-   rows carry decimals, nulls and timestamps, and a silent mismatch shows up as `undefined` on
-   screen rather than an error at the boundary. A hand-written interface beside a schema can drift
-   from it, so auth's `User` becomes a schema too.
+2. **Responses are typed, not parsed.** Each response shape is a plain interface in `types.ts`,
+   mirroring the backend schema, and `api.ts` passes it to axios as the type parameter. No zod or
+   other runtime check runs on a response; see Frontend in `CONVENTIONS.md`.
 3. Decimals stay **strings** the whole way through. The browser never does arithmetic on money.
 4. **Mutations invalidate, they do not patch the cache.** One transaction changes a balance, a
    category total and a list position at once, so every ledger mutation invalidates the `"ledger"`
@@ -534,8 +532,9 @@ the dashboard's first HTML already holds this month's expenses
    slice 1, verified with newman, and then lost before it was committed, so this writes it fresh.
    Auth is cookie-based, so Postman's cookie jar carries the session and there is no token to copy.
 3. `CONVENTIONS.md` gains its frontend section. It still says frontend conventions are not written,
-   and there is now a frontend to write them against: the query key factory, where zod schemas
-   live, response parsing, and error branching.
+   and there is now a frontend to write them against: the query key factory, where types and form
+   schemas live, and error branching. Its first rule, typed responses with no parsing, is already
+   there.
 
 **Verify:** `make check`, `uv run pytest`, `npm run e2e`, and `alembic downgrade base && alembic
 upgrade head` one final time.

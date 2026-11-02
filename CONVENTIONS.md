@@ -4,7 +4,8 @@ The standard for Python in this repo. It accounts for FastAPI, async SQLAlchemy,
 recorded in `plans/*/spec.md`, and it overrides any general Python style guidance that conflicts
 with it.
 
-Frontend conventions are not covered yet; they get added when Phase 2 starts.
+Frontend conventions are mostly not written yet. What is settled so far is under Frontend, at the
+end.
 
 ## Project structure
 
@@ -266,3 +267,10 @@ If that count ever exceeds two or three, the rule is being abused rather than ap
   is a liability.
 - Security-relevant behavior gets an explicit test. "Logout invalidates the session server-side" is
   a test, not an assumption.
+
+## Frontend
+
+API responses are typed, not parsed. `api.ts` passes the response type to axios
+(`apiClient.get<User>(...)`) and returns `data`. Never run a zod schema or any other check over a
+response: the backend is this repo's own, and each feature's `types.ts` mirrors its response shapes
+as plain interfaces. Zod is for form input only.

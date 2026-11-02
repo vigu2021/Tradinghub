@@ -15,7 +15,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: (body: LoginRequest) => login(body),
     onSuccess: (user) => {
-      queryClient.setQueryData(authKeys.me, user);
+      queryClient.setQueryData(authKeys.me(), user);
     },
   });
 }
@@ -26,7 +26,7 @@ export function useRegister() {
   return useMutation({
     mutationFn: (body: RegisterRequest) => register(body),
     onSuccess: (user) => {
-      queryClient.setQueryData(authKeys.me, user);
+      queryClient.setQueryData(authKeys.me(), user);
     },
   });
 }
@@ -46,7 +46,7 @@ export function useLogout() {
 
 export function useUser() {
   return useQuery({
-    queryKey: authKeys.me,
+    queryKey: authKeys.me(),
     queryFn: getCurrentUser,
   });
 }
