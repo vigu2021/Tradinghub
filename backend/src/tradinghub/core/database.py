@@ -31,6 +31,9 @@ class Base(DeclarativeBase):
 
 engine = create_async_engine(get_settings().database_url, pool_pre_ping=True)
 SessionFactory = async_sessionmaker(engine, expire_on_commit=False)
+SnapshotSessionFactory = async_sessionmaker(
+    engine.execution_options(isolation_level="REPEATABLE READ"), expire_on_commit=False
+)
 
 
 async def get_db() -> AsyncIterator[AsyncSession]:
@@ -49,6 +52,18 @@ async def get_db() -> AsyncIterator[AsyncSession]:
             raise
 
 
+async def get_snapshot_db() -> AsyncIterator[AsyncSession]:
+    """Yield a read-only session whose queries all see one snapshot, taken at the first.
+
+    For a route whose figures must agree with each other. Never for writes: two repeatable-read
+    transactions updating the same row make the second fail instead of wait. Nothing is committed,
+    so closing the session ends the transaction.
+    """
+    async with SnapshotSessionFactory() as session:
+        yield session
+
+
 # Function scope commits before the response goes out. The default scope commits after it, so a
 # client could read stale data, or be told a write succeeded that then failed to commit.
 DbSession = Annotated[AsyncSession, Depends(get_db, scope="function")]
+SnapshotDbSession = Annotated[AsyncSession, Depends(get_snapshot_db, scope="function")]

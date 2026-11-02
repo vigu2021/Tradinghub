@@ -9,7 +9,7 @@ from sqlalchemy.pool import NullPool
 from tradinghub.auth.crud.user import create_user
 from tradinghub.auth.models import User
 from tradinghub.core.config import get_settings
-from tradinghub.core.database import get_db
+from tradinghub.core.database import get_db, get_snapshot_db
 from tradinghub.core.redis import get_redis
 from tradinghub.main import create_app
 
@@ -87,11 +87,16 @@ async def client(db_session: AsyncSession, redis_client: Redis) -> AsyncIterator
             await db_session.rollback()
             raise
 
+    async def override_get_snapshot_db() -> AsyncIterator[AsyncSession]:
+        """The test's own session, so the route sees its rows. Its isolation is tested apart."""
+        yield db_session
+
     async def override_get_redis() -> AsyncIterator[Redis]:
         yield redis_client
 
     app = create_app()
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_snapshot_db] = override_get_snapshot_db
     app.dependency_overrides[get_redis] = override_get_redis
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as http_client:

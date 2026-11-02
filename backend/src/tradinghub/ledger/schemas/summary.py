@@ -5,7 +5,6 @@ from typing import Self
 from pydantic import BaseModel, model_validator
 
 from tradinghub.core.schemas import DecimalString, RequestModel, UtcDatetime
-from tradinghub.ledger.schemas.accounts import AccountResponse
 
 
 class SummaryPeriod(RequestModel):
@@ -39,7 +38,6 @@ class SummaryResponse(BaseModel):
     but not in income or expenses, and expense amounts are positive: what was spent.
     """
 
-    accounts: list[AccountResponse]
     totals: list[UnitTotal]
     income: list[UnitTotal]
     expenses: list[UnitTotal]

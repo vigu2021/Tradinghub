@@ -223,9 +223,14 @@ another. Two rows with the same unit are a move, not a trade.
 frontend computes this week and this month, so the API stays a date range rather than a set of
 named periods, and slice 4 can ask it anything.
 
-The response carries: each account with its balance, totals per unit, and for the period the
-income total, the expense total, and expenses grouped by category, each per unit. Transfers are
-excluded from the income and expense totals and included in balances.
+The response carries: totals per unit, and for the period the income total, the expense total, and
+expenses grouped by category, each per unit. Transfers are excluded from the income and expense
+totals and included in balances. Each account's own balance comes from `GET /accounts`, which the
+frontend already caches, rather than a second copy here.
+
+Its queries share one repeatable-read snapshot, so a write landing between them cannot make the
+expense total disagree with its categories. Only this read-only route uses it: under repeatable
+read, two transactions updating one row make the second fail rather than wait.
 
 **All of it is computed in SQL**, in a small number of aggregate queries rather than by summing in
 Python. Grouping and filtering aggregates in one pass is the Postgres lesson of this slice.

@@ -896,10 +896,6 @@ async def test_the_summary_holds_balances_now_and_the_periods_totals(
 
     assert response.status_code == 200
     summary = response.json()
-    assert [(account["name"], account["balance"]) for account in summary["accounts"]] == [
-        ("Chase", "-805"),
-        ("Wallet", "0.01"),
-    ]
     assert summary["totals"] == [
         {"unit": "BTC", "amount": "0.01"},
         {"unit": "GBP", "amount": "-805"},

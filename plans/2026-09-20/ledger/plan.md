@@ -309,7 +309,6 @@ class CategoryTotal(BaseModel):
     amount: Decimal
 
 class SummaryResponse(BaseModel):
-    accounts: list[AccountResponse]
     totals: list[UnitTotal]              # balance now, per unit
     income: list[UnitTotal]              # for the period
     expenses: list[UnitTotal]
@@ -434,6 +433,7 @@ test_another_users_rows_never_appear
 **Requirements:**
 1. Replace the placeholder. Total balance per unit, each account's balance, this month's income and
    expenses, expenses by category, this week's expenses, and the five most recent transactions.
+   Account balances come from the accounts query, not from `/summary`.
 2. **The frontend computes the date ranges** and passes them to `/summary`. The API knows nothing
    about "this month".
 3. Each total is labelled with its unit. A number with no unit is a lie once you hold two.

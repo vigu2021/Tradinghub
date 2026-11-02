@@ -3,6 +3,7 @@ from types import TracebackType
 from typing import Any, Self
 
 import pytest
+from sqlalchemy import text
 
 from tradinghub.core import database
 from tradinghub.main import create_app
@@ -82,3 +83,11 @@ async def test_a_failed_commit_is_reported_as_a_failure(monkeypatch: pytest.Monk
     await _log_out(events)
 
     assert events == ["commit", "rollback", "response 500"]
+
+
+async def test_a_snapshot_session_reads_at_repeatable_read() -> None:
+    async with database.SnapshotSessionFactory() as session:
+        isolation = await session.scalar(text("SHOW transaction_isolation"))
+    await database.engine.dispose()  # its pooled connection belongs to this test's event loop
+
+    assert isolation == "repeatable read"
