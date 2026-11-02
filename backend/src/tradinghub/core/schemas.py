@@ -14,14 +14,6 @@ from pydantic import (
     PlainSerializer,
 )
 
-# A string in JSON, since a float would lose precision. Normalised, because NUMERIC(36, 18) hands
-# every value back with 18 decimal places, and -900 should not read as -900.000000000000000000.
-# The context is wide enough for all 36 digits: the default one rounds to 28.
-WIDE = Context(prec=38)
-DecimalString = Annotated[
-    Decimal, PlainSerializer(lambda value: format(value.normalize(WIDE), "f"), return_type=str)
-]
-
 # What an INTEGER primary key can hold. Anything else cannot exist, and asyncpg refuses to send it.
 RowId = Annotated[int, Field(ge=1, le=2**31 - 1)]
 
@@ -34,6 +26,18 @@ def _parse_iso_8601(value: object) -> datetime:
     if not isinstance(value, str):
         raise ValueError("must be an ISO 8601 string")
     return datetime.fromisoformat(value)
+
+
+def _exact_string(value: Decimal) -> str:
+    # normalize() rounds to its context's precision. One as wide as the value keeps every digit,
+    # where a fixed one would round a sum of many large amounts.
+    exact = Context(prec=len(value.as_tuple().digits))
+    return format(value.normalize(exact), "f")
+
+
+# A string in JSON, since a float would lose precision. Normalised, because NUMERIC(36, 18) hands
+# every value back with 18 decimal places, and -900 should not read as -900.000000000000000000.
+DecimalString = Annotated[Decimal, PlainSerializer(_exact_string, return_type=str)]
 
 
 # A naive time is a 422, never a guess at the timezone.
