@@ -37,7 +37,7 @@ async def get_income_and_expenses_per_unit(
         )
         .select_from(Transaction)
         .join(Account, Account.id == Transaction.account_id)
-        .where(*_within_period(user_id, period))
+        .where(*_owned_and_within_period(user_id, period))
         .group_by(Account.unit)
         .order_by(Account.unit)
     )
@@ -57,7 +57,9 @@ async def get_expenses_by_category(
         select(Transaction.category, Account.unit, spent)
         .select_from(Transaction)
         .join(Account, Account.id == Transaction.account_id)
-        .where(*_within_period(user_id, period), Transaction.kind == TransactionKind.EXPENSE)
+        .where(
+            *_owned_and_within_period(user_id, period), Transaction.kind == TransactionKind.EXPENSE
+        )
         .group_by(Transaction.category, Account.unit)
         .order_by(Account.unit, spent.desc())
     )
@@ -68,7 +70,7 @@ async def get_expenses_by_category(
     ]
 
 
-def _within_period(user_id: int, period: SummaryPeriod) -> list[ColumnElement[bool]]:
+def _owned_and_within_period(user_id: int, period: SummaryPeriod) -> list[ColumnElement[bool]]:
     return [
         Transaction.user_id == user_id,
         Transaction.occurred_at >= period.occurred_from,

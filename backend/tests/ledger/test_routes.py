@@ -866,3 +866,73 @@ async def test_a_time_reads_the_same_when_recorded_and_when_read_back(
 
     assert recorded["occurred_at"] == "2026-10-01T09:00:00Z"
     assert read.json()["occurred_at"] == "2026-10-01T09:00:00Z"
+
+
+OCTOBER_QUERY = {"occurred_from": "2026-10-01T00:00:00Z", "occurred_to": "2026-11-01T00:00:00Z"}
+
+
+async def test_the_summary_holds_balances_now_and_the_periods_totals(
+    client: AsyncClient, alice: User, bob: User
+) -> None:
+    """Every amount is a string. Only the caller's money appears."""
+    _sign_in(client, bob)
+    await _record(client, (await _open(client))["id"])
+    _sign_in(client, alice)
+    chase = await _open(client)
+    wallet = await _open(client, name="Wallet", unit="btc")
+    await _record(client, chase["id"], amount="2000", kind="income", category="Salary")
+    await _record(client, chase["id"])
+    await _record(client, chase["id"], occurred_at="2026-11-01T00:00:00Z")
+    await _transfer(
+        client,
+        chase["id"],
+        wallet["id"],
+        amount_received="0.01",
+        fee="5",
+        fee_account_id=chase["id"],
+    )
+
+    response = await client.get("/summary", params=OCTOBER_QUERY)
+
+    assert response.status_code == 200
+    summary = response.json()
+    assert [(account["name"], account["balance"]) for account in summary["accounts"]] == [
+        ("Chase", "-805"),
+        ("Wallet", "0.01"),
+    ]
+    assert summary["totals"] == [
+        {"unit": "BTC", "amount": "0.01"},
+        {"unit": "GBP", "amount": "-805"},
+    ]
+    assert summary["income"] == [{"unit": "GBP", "amount": "2000"}]
+    assert summary["expenses"] == [{"unit": "GBP", "amount": "905"}]
+    assert summary["by_category"] == [
+        {"category": "rent", "unit": "GBP", "amount": "900"},
+        {"category": None, "unit": "GBP", "amount": "5"},
+    ]
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        {},
+        {"occurred_from": "2026-11-01T00:00:00Z", "occurred_to": "2026-10-01T00:00:00Z"},
+        {"from": "2026-10-01T00:00:00Z", "to": "2026-11-01T00:00:00Z"},
+        OCTOBER_QUERY | {"unit": "GBP"},
+    ],
+)
+async def test_a_summary_period_that_is_missing_or_wrong_is_rejected(
+    client: AsyncClient, alice: User, query: dict[str, str]
+) -> None:
+    _sign_in(client, alice)
+
+    response = await client.get("/summary", params=query)
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"
+
+
+async def test_the_summary_needs_a_session(client: AsyncClient) -> None:
+    response = await client.get("/summary", params=OCTOBER_QUERY)
+
+    assert response.status_code == 401
