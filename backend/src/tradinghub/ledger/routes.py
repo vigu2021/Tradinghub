@@ -10,9 +10,11 @@ from tradinghub.auth.security.tokens import AccessTokenClaims
 from tradinghub.core.database import DbSession
 from tradinghub.core.schemas import RowId
 from tradinghub.ledger.crud import accounts as account_crud
+from tradinghub.ledger.crud import summary as summary_crud
 from tradinghub.ledger.crud import transactions as transaction_crud
 from tradinghub.ledger.crud.accounts import AccountWithBalance
 from tradinghub.ledger.schemas.accounts import AccountCreate, AccountResponse, AccountUpdate
+from tradinghub.ledger.schemas.summary import SummaryPeriod, SummaryResponse
 from tradinghub.ledger.schemas.transactions import (
     TransactionCreate,
     TransactionFilters,
@@ -172,6 +174,30 @@ async def create_transfer(
         db, user_id=claims.user_id, details=payload
     )
     return [TransactionResponse.model_validate(transaction) for transaction in transactions]
+
+
+@router.get("/summary")
+async def get_summary(
+    period: Annotated[SummaryPeriod, Query()],
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
+    db: DbSession,
+) -> SummaryResponse:
+    """Every account and per-unit total as they stand now, and the period's income and spending."""
+    accounts = await account_crud.list_accounts_with_balances(db, user_id=claims.user_id)
+    totals = await summary_crud.get_balances_per_unit(db, user_id=claims.user_id)
+    income, expenses = await summary_crud.get_income_and_expenses_per_unit(
+        db, user_id=claims.user_id, period=period
+    )
+    by_category = await summary_crud.get_expenses_by_category(
+        db, user_id=claims.user_id, period=period
+    )
+    return SummaryResponse(
+        accounts=[_account_response(account_with_balance) for account_with_balance in accounts],
+        totals=totals,
+        income=income,
+        expenses=expenses,
+        by_category=by_category,
+    )
 
 
 def _account_response(account_with_balance: AccountWithBalance) -> AccountResponse:

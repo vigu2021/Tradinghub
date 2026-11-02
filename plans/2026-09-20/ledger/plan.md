@@ -417,6 +417,9 @@ test_another_users_rows_never_appear
    surprise.
 6. Categories offer the ones already used, from the transactions the page already has. No new
    endpoint for it.
+7. **A new transaction shows at once as a pending row**, drawn from the mutation's `variables`
+   while it saves. The cache is not touched: on success the invalidation brings the real row, and
+   on failure the pending row disappears and the error shows. Totals still come from the server.
 
 **Commit:** `Add the transactions page`
 
