@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/Button";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Field } from "@/components/ui/Field";
 import {
   API_CODES,
@@ -75,12 +76,9 @@ export function LoginForm() {
       {/* The server answers a wrong password and an unknown email identically. One message for
           both, deliberately: do not try to be more specific here. */}
       {loginMutation.error && (
-        <p
-          role="alert"
-          className="border-l-2 border-danger bg-danger/5 py-2 pl-3 text-sm text-danger"
-        >
+        <ErrorBanner>
           {lockout ? lockoutMessage(lockout) : messageFor(loginMutation.error)}
-        </p>
+        </ErrorBanner>
       )}
 
       <Button type="submit" disabled={loginMutation.isPending || lockedOut}>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/Button";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Field } from "@/components/ui/Field";
 import { API_CODES, isApiError, messageFor } from "@/lib/api/errors";
 
@@ -59,10 +60,7 @@ export function RegisterForm() {
       />
 
       {registerMutation.error && (
-        <p
-          role="alert"
-          className="border-l-2 border-danger bg-danger/5 py-2 pl-3 text-sm text-danger"
-        >
+        <ErrorBanner>
           {messageFor(registerMutation.error)}{" "}
           {emailTaken && (
             <Link
@@ -72,7 +70,7 @@ export function RegisterForm() {
               Sign in instead
             </Link>
           )}
-        </p>
+        </ErrorBanner>
       )}
 
       <Button type="submit" disabled={registerMutation.isPending}>

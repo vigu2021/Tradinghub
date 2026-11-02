@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/Button";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Logo } from "@/components/ui/Logo";
 import {
   AuthenticatedUserContext,
@@ -51,9 +52,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </header>
 
       {signOut.error && (
-        <p role="alert" className="mt-6 text-sm text-danger">
-          {messageFor(signOut.error)}
-        </p>
+        <div className="mt-6">
+          <ErrorBanner>{messageFor(signOut.error)}</ErrorBanner>
+        </div>
       )}
 
       <main className="rise flex-1 py-16 [animation-delay:80ms]">
