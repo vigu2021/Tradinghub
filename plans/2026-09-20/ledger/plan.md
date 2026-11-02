@@ -5,8 +5,8 @@ made. This file is the ordered work.
 
 ## How to use this plan
 
-Ten tasks, each ending in something that runs and can be committed. Build them in order: every task
-depends on the one before it. Mark a task done in this file when its **Verify** step passes.
+Eleven tasks, each ending in something that runs and can be committed. Build them in order: every
+task depends on the one before it. Mark a task done in this file when its **Verify** step passes.
 
 The models already exist and are committed (`backend/src/tradinghub/ledger/models/`). Task 1 turns
 them into real tables; nothing else is written yet.
@@ -286,6 +286,9 @@ test_a_transfer_into_a_strangers_account_is_not_found
 
 ## Task 5: Summary
 
+**Status:** Done. The response leaves out `accounts`, since `GET /accounts` already has them, and
+the route reads from one repeatable-read snapshot so its totals agree with each other.
+
 The Postgres task of this slice. Everything is aggregated in SQL, not summed in Python.
 
 **Files:**
@@ -349,25 +352,36 @@ test_another_users_rows_never_appear
 
 **Files:**
 - Create: `frontend/src/features/accounts/{api,hooks,types}.ts`,
-  `frontend/src/features/transactions/{api,hooks,types}.ts`,
-  `frontend/src/components/ui/ErrorBanner.tsx`
-- Modify: `frontend/tsconfig.json`, `frontend/src/features/auth/api.ts`,
+  `frontend/src/features/transactions/{api,hooks,types}.ts` (the summary request and hook live
+  here too, beside the transactions they total), `frontend/src/components/ui/ErrorBanner.tsx`
+- Modify: `frontend/tsconfig.json`, `frontend/eslint.config.mjs`, `frontend/package.json`,
+  `frontend/src/features/auth/{api,types}.ts`,
   the three places the error banner is copy-pasted
 
 **Requirements:**
-1. **Query keys as a factory** in each feature: `all`, `list(filters)`, `detail(id)`. One
-   invalidation then refreshes every list. Give `authKeys` the same shape while you are there.
-2. **Parse responses with zod in `api.ts`**, not just a type parameter. These rows carry decimals,
-   nulls and timestamps, and a silent mismatch shows up as `undefined` on screen rather than an
-   error at the boundary.
+1. **Query keys as a factory** in each feature: `all`, `list(filters)`, `detail(id)`, and the
+   summary keyed by its period. **Every ledger key starts with `"ledger"`**, so accounts,
+   transactions and the summary share one root. Give `authKeys` the factory shape while you are
+   there.
+2. **Each response shape is written once, as a zod schema in `types.ts`**, and its type comes from
+   `z.infer`. `api.ts` parses every response with that schema, not just a type parameter. These
+   rows carry decimals, nulls and timestamps, and a silent mismatch shows up as `undefined` on
+   screen rather than an error at the boundary. A hand-written interface beside a schema can drift
+   from it, so auth's `User` becomes a schema too.
 3. Decimals stay **strings** the whole way through. The browser never does arithmetic on money.
 4. **Mutations invalidate, they do not patch the cache.** One transaction changes a balance, a
-   category total and a list position at once, so working out which cached pages to edit is more
-   code than refetching.
-5. These queries set their own `staleTime`, shorter than the global two minutes.
-6. `noUncheckedIndexedAccess` goes on in `tsconfig.json` **before the first list is written**.
+   category total and a list position at once, so every ledger mutation invalidates the `"ledger"`
+   root in one call rather than listing the keys it might touch.
+5. `noUncheckedIndexedAccess` goes on in `tsconfig.json` **before the first list is written**.
    Turning it on later means fixing every array access at once.
-7. Extract the error banner. It is copy-pasted three times already and would be five.
+6. Extract the error banner. It is copy-pasted three times already and would be five.
+7. **`@tanstack/eslint-plugin-query`** goes in as a dev dependency, with its recommended config in
+   `eslint.config.mjs`. It catches a value used in a query function but missing from its key,
+   which would serve one filter's cached page for another.
+
+These queries keep the global two-minute `staleTime`. Your own changes refetch through
+invalidation, so a shorter one would only help edits made in another tab. Lower it if stale data
+ever shows.
 
 **Verify:** `npm run typecheck`, `npm run lint`, `npm run format:check`.
 
@@ -385,9 +399,11 @@ test_another_users_rows_never_appear
 **Requirements:**
 1. Under `(app)`, so the layout guards it and the page reads the user through
    `useAuthenticatedUser()`. No session checks in the page.
-2. Each account with its balance and unit. Add, rename, and delete with a confirm step.
-3. **A refused delete shows the readable reason**, not a generic failure. That is what
-   `account_not_empty` exists for.
+2. Each account with its balance and unit. Add, rename, change unit or type, archive and restore.
+   There is no delete: the spec dropped it so no path can destroy financial history.
+3. **Archived accounts stay listed, marked as archived**, with their balance, since the money in
+   one is still the user's. A name already taken shows the readable `409` reason, not a generic
+   failure.
 4. An empty state for a user with no accounts, since that is everyone on their first visit.
 5. The header gains links for Dashboard, Accounts and Transactions.
 6. Follow the existing visual language: the tokens already in `globals.css`, and the `Button` and
@@ -416,9 +432,15 @@ test_another_users_rows_never_appear
    surprise.
 6. Categories offer the ones already used, from the transactions the page already has. No new
    endpoint for it.
-7. **A new transaction shows at once as a pending row**, drawn from the mutation's `variables`
-   while it saves. The cache is not touched: on success the invalidation brings the real row, and
-   on failure the pending row disappears and the error shows. Totals still come from the server.
+7. **Creates and deletes show at once, without touching the cache.** While a create saves, a
+   pending row is drawn from the mutation's `variables`. While a delete runs, the rows it removes
+   are hidden by matching `variables`: for a transfer row that is every row in its group, since the
+   API deletes the whole transfer. On success the invalidation brings the real list; on failure the
+   pending row disappears or the hidden rows return, and the error shows. Totals still come from
+   the server, because working them out here would be arithmetic on money.
+8. **Paging never flashes empty.** The list uses `placeholderData: keepPreviousData`, so the
+   previous page stays on screen until the next arrives, and while one page is shown the next is
+   prefetched with `queryClient.prefetchQuery`, so Next is instant.
 
 **Commit:** `Add the transactions page`
 
@@ -444,7 +466,48 @@ test_another_users_rows_never_appear
 
 ---
 
-## Task 10: End-to-end tests and the loose ends
+## Task 10: Dashboard data from the server
+
+The dashboard arrives with its numbers already in the HTML, with no spinner on first load. This is
+the Next.js lesson of the slice: a server component prefetching for client components. Read the
+data-fetching and caching guides in `frontend/node_modules/next/dist/docs/` first; this Next.js
+version differs from what most examples show.
+
+**Files:**
+- Create: `frontend/src/lib/api/server.ts`, `frontend/src/lib/query-client.ts`
+- Modify: `frontend/src/app/(app)/dashboard/page.tsx`,
+  `frontend/src/features/transactions/components/SummaryTiles.tsx`,
+  `frontend/src/app/providers/query-provider.tsx`
+
+**Requirements:**
+1. **The page is a server component that prefetches and hands over.** It makes a new `QueryClient`
+   per request, prefetches the accounts, the recent transactions and both summaries, and passes
+   `dehydrate(queryClient)` to the client through `HydrationBoundary`. One shared client on the
+   server would leak one user's data into another's page.
+2. **Server requests forward the session cookie** read with `cookies()`. They go straight to the
+   API, not through the browser's axios client, which refreshes tokens with browser cookies.
+3. **An expired access token is the client's job.** A server component cannot set cookies, so it
+   cannot refresh. A prefetch that fails is left out of the dehydrated state, and the client fetches
+   that query itself, refreshing as it does today. Nothing breaks; the page only loses its head
+   start.
+4. **The server and client must build the same query keys**, or the client throws the prefetched
+   data away and fetches again. "This month" depends on the user's timezone, which the server does
+   not know: the client stores `Intl.DateTimeFormat().resolvedOptions().timeZone` in a cookie, and
+   the server reads it. With no cookie yet, the summaries are not prefetched.
+5. **Suspense for loading.** The dashboard's components use `useSuspenseQuery`, and each section
+   sits in its own `<Suspense>` with a skeleton fallback and an error boundary, so one failed
+   section does not blank the page.
+6. The query client's defaults live in one place, shared by the server's per-request client and
+   the browser's, so a default changed in one cannot drift from the other.
+
+**Verify:** with the API running and signed in, the dashboard's first HTML response already holds a
+total: check with view-source or by fetching the page with the session cookie.
+
+**Commit:** `Prefetch the dashboard on the server`
+
+---
+
+## Task 11: End-to-end tests and the loose ends
 
 **Files:**
 - Create: `frontend/e2e/ledger.spec.ts`
@@ -458,8 +521,9 @@ a transfer leaves the total unchanged and moves both accounts
 a transfer with a fee shows the fee in spending but not the transfer
 the dashboard shows this month's expenses and the category breakdown
 filtering transactions by account and by date range
-deleting an account with transactions is refused with a readable message
+an archived account keeps its balance and can be restored
 the empty state for a user with no accounts
+the dashboard's first HTML already holds this month's expenses
 ```
 
 **Requirements:**
@@ -482,7 +546,8 @@ upgrade head` one final time.
 
 ## Definition of done
 
-- [ ] a user can create accounts, record income, expenses and transfers, and edit and delete them
+- [ ] a user can create, rename and archive accounts, and record, edit and delete income, expenses
+      and transfers
 - [ ] the dashboard shows total balance per unit, this month's and this week's expenses, and a
       category breakdown
 - [ ] no request can read or change another user's account or transaction, proven per endpoint
