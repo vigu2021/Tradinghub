@@ -273,4 +273,6 @@ If that count ever exceeds two or three, the rule is being abused rather than ap
 API responses are typed, not parsed. `api.ts` passes the response type to axios
 (`apiClient.get<User>(...)`) and returns `data`. Never run a zod schema or any other check over a
 response: the backend is this repo's own, and each feature's `types.ts` mirrors its response shapes
-as plain interfaces. Zod is for form input only.
+as plain `type` aliases. Zod is for form input only.
+
+Use `type`, never `interface`, for every type. ESLint enforces it.

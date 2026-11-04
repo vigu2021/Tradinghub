@@ -6,7 +6,7 @@ import { createContext, useContext } from "react";
 
 import { API_CODES, isApiError } from "@/lib/api/errors";
 
-import { authKeys, getCurrentUser, login, logout, register } from "./api";
+import { authKeys, authQueries, login, logout, register } from "./api";
 import type { LoginRequest, RegisterRequest, Session, User } from "./types";
 
 export function useLogin() {
@@ -45,10 +45,7 @@ export function useLogout() {
 }
 
 export function useUser() {
-  return useQuery({
-    queryKey: authKeys.me(),
-    queryFn: getCurrentUser,
-  });
+  return useQuery(authQueries.me());
 }
 
 /** Derived from the query's status, never its data: a failed refetch keeps the last user around. */

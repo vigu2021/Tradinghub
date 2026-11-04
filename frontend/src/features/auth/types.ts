@@ -30,10 +30,10 @@ export type LoginRequest = z.infer<typeof loginSchema>;
 export type RegisterRequest = z.infer<typeof registerSchema>;
 
 /** Mirrors auth/schemas/auth.py: UserResponse. Nothing enforces the match. */
-export interface User {
+export type User = {
   id: number;
   email: string;
-}
+};
 
 export type Session =
   | { status: "unknown" }
