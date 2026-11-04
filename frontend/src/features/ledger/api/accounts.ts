@@ -26,11 +26,13 @@ export async function createAccount(body: AccountCreate): Promise<Account> {
   return data;
 }
 
+type UpdateAccountVariables = { id: number; changes: AccountUpdate };
+
 /** Sends only the fields that changed. Archive or restore with `{ archived: true | false }`. */
-export async function updateAccount(
-  id: number,
-  changes: AccountUpdate,
-): Promise<Account> {
+export async function updateAccount({
+  id,
+  changes,
+}: UpdateAccountVariables): Promise<Account> {
   const { data } = await apiClient.patch<Account>(`/accounts/${id}`, changes);
   return data;
 }

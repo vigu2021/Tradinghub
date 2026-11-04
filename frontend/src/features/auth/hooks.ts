@@ -6,16 +6,17 @@ import { createContext, useContext } from "react";
 
 import { API_CODES, isApiError } from "@/lib/api/errors";
 
-import { authKeys, authQueries, login, logout, register } from "./api";
-import type { LoginRequest, RegisterRequest, Session, User } from "./types";
+import { authQueries, login, logout, register } from "./api";
+import type { Session, User } from "./types";
 
 export function useLogin() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: LoginRequest) => login(body),
+    mutationFn: login,
     onSuccess: (user) => {
-      queryClient.setQueryData(authKeys.me(), user);
+      queryClient.clear();
+      queryClient.setQueryData(authQueries.me().queryKey, user);
     },
   });
 }
@@ -24,9 +25,10 @@ export function useRegister() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: RegisterRequest) => register(body),
+    mutationFn: register,
     onSuccess: (user) => {
-      queryClient.setQueryData(authKeys.me(), user);
+      queryClient.clear();
+      queryClient.setQueryData(authQueries.me().queryKey, user);
     },
   });
 }
