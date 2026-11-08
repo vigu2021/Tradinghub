@@ -290,11 +290,17 @@ The dashboard replaces today's placeholder. The header gains links for Dashboard
 Transactions. The post-login redirect does not change, so no existing test moves.
 
 ```
-frontend/src/features/accounts/      api.ts, hooks.ts, types.ts, components/
-frontend/src/features/transactions/  api.ts, hooks.ts, types.ts, components/
+frontend/src/features/ledger/
+├── types/         accounts.ts, transactions.ts, summary.ts
+├── api/           accounts.ts, transactions.ts, summary.ts, and keys.ts: ledgerKeys, the
+│                  "ledger" root every ledger query key starts with
+├── hooks/         accounts.ts, transactions.ts, summary.ts
+└── components/
 ```
 
-Transactions import the account type; accounts know nothing about transactions.
+One folder for the ledger, split by layer and then by entity, the way
+`backend/src/tradinghub/ledger` is. Transactions import the account type; accounts know nothing
+about transactions.
 
 **Forms** are React Hook Form with zod, carrying the same rules as the API. Amounts are entered as
 a positive number with the kind chosen separately, and the sign is applied on the way out, because

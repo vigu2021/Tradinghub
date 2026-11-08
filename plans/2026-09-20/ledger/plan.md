@@ -350,32 +350,43 @@ test_another_users_rows_never_appear
 
 ## Task 6: Frontend data layer
 
+**Status:** In progress. Done: requirements 5 to 8, `authKeys` and `authQueries`, `ledgerKeys`, and
+the types and api for accounts and the summary. Next: `hooks/accounts.ts`, `hooks/summary.ts`, then
+transactions.
+
 **Files:**
-- Create: `frontend/src/features/accounts/{api,hooks,types}.ts`,
-  `frontend/src/features/transactions/{api,hooks,types}.ts` (the summary request and hook live
-  here too, beside the transactions they total), `frontend/src/components/ui/ErrorBanner.tsx`
+- Create: `frontend/src/features/ledger/api/keys.ts`,
+  `frontend/src/features/ledger/{types,api,hooks}/{accounts,transactions,summary}.ts`,
+  `frontend/src/components/ui/ErrorBanner.tsx`
 - Modify: `frontend/tsconfig.json`, `frontend/eslint.config.mjs`, `frontend/package.json`,
   `frontend/src/features/auth/{api,hooks}.ts`,
   the three places the error banner is copy-pasted
 
 **Requirements:**
-1. **Query keys as a factory** in each feature: `all`, `list(filters)`, `detail(id)`, and the
-   summary keyed by its period. **Every ledger key starts with `"ledger"`**, so accounts,
+1. **Query keys as a factory** per entity: `all`, then `list(filters)`, and the summary keyed by its
+   period. `detail(id)` only once a page reads a single record; none does yet. **Every ledger key
+   starts with `"ledger"`**, from `ledgerKeys` in `features/ledger/api/keys.ts`, so accounts,
    transactions and the summary share one root. Give `authKeys` the factory shape while you are
    there.
-2. **Responses are typed, not parsed.** Each response shape is a plain interface in `types.ts`,
+   Each query's key and fetch function are paired once with `queryOptions` in the entity's
+   `api/` file (`accountQueries.list()`), and hooks call `useQuery` with that. Task 10's server
+   prefetch reuses the same definitions, so the keys cannot drift.
+2. **Responses are typed, not parsed.** Each response shape is a plain `type` in `types.ts`,
    mirroring the backend schema, and `api.ts` passes it to axios as the type parameter. No zod or
    other runtime check runs on a response; see Frontend in `CONVENTIONS.md`.
 3. Decimals stay **strings** the whole way through. The browser never does arithmetic on money.
 4. **Mutations invalidate, they do not patch the cache.** One transaction changes a balance, a
-   category total and a list position at once, so every ledger mutation invalidates the `"ledger"`
-   root in one call rather than listing the keys it might touch.
+   category total and a list position at once, and a new account adds a row to the summary's
+   totals, so every ledger mutation invalidates the `"ledger"` root in one call rather than listing
+   the keys it might touch. Only queries on screen refetch; the rest wait until they are used.
 5. `noUncheckedIndexedAccess` goes on in `tsconfig.json` **before the first list is written**.
    Turning it on later means fixing every array access at once.
 6. Extract the error banner. It is copy-pasted three times already and would be five.
 7. **`@tanstack/eslint-plugin-query`** goes in as a dev dependency, with its recommended config in
    `eslint.config.mjs`. It catches a value used in a query function but missing from its key,
    which would serve one filter's cached page for another.
+8. **Signing in clears the cache.** `useLogin` and `useRegister` call `queryClient.clear()` before
+   setting the new user, so a second user in the same tab never sees the first one's ledger.
 
 These queries keep the global two-minute `staleTime`. Your own changes refetch through
 invalidation, so a shorter one would only help edits made in another tab. Lower it if stale data
@@ -391,7 +402,7 @@ ever shows.
 
 **Files:**
 - Create: `frontend/src/app/(app)/accounts/page.tsx`,
-  `frontend/src/features/accounts/components/{AccountForm,AccountList}.tsx`
+  `frontend/src/features/ledger/components/{AccountForm,AccountList}.tsx`
 - Modify: `frontend/src/app/(app)/layout.tsx`
 
 **Requirements:**
@@ -415,7 +426,7 @@ ever shows.
 
 **Files:**
 - Create: `frontend/src/app/(app)/transactions/page.tsx`,
-  `frontend/src/features/transactions/components/{TransactionForm,TransactionTable,TransactionFilters,TransferForm}.tsx`
+  `frontend/src/features/ledger/components/{TransactionForm,TransactionTable,TransactionFilters,TransferForm}.tsx`
 
 **Requirements:**
 1. A table: date, account, kind, category, amount, note. Filters for account, kind, category and a
@@ -430,6 +441,8 @@ ever shows.
    surprise.
 6. Categories offer the ones already used, from the transactions the page already has. No new
    endpoint for it.
+   Account names likewise come from the `useAccounts()` list, looked up by `account_id`. Never a
+   request per row.
 7. **Creates and deletes show at once, without touching the cache.** While a create saves, a
    pending row is drawn from the mutation's `variables`. While a delete runs, the rows it removes
    are hidden by matching `variables`: for a transfer row that is every row in its group, since the
@@ -448,7 +461,7 @@ ever shows.
 
 **Files:**
 - Modify: `frontend/src/app/(app)/dashboard/page.tsx`
-- Create: `frontend/src/features/transactions/components/SummaryTiles.tsx`
+- Create: `frontend/src/features/ledger/components/SummaryTiles.tsx`
 
 **Requirements:**
 1. Replace the placeholder. Total balance per unit, each account's balance, this month's income and
@@ -474,7 +487,7 @@ version differs from what most examples show.
 **Files:**
 - Create: `frontend/src/lib/api/server.ts`, `frontend/src/lib/query-client.ts`
 - Modify: `frontend/src/app/(app)/dashboard/page.tsx`,
-  `frontend/src/features/transactions/components/SummaryTiles.tsx`,
+  `frontend/src/features/ledger/components/SummaryTiles.tsx`,
   `frontend/src/app/providers/query-provider.tsx`
 
 **Requirements:**
