@@ -1,5 +1,6 @@
 """Ledger endpoints. Every one acts as the signed-in user, taken from the access cookie."""
 
+import uuid
 from http import HTTPStatus
 from typing import Annotated
 
@@ -175,6 +176,21 @@ async def create_transfer(
         db, user_id=claims.user_id, details=payload
     )
     return [TransactionResponse.model_validate(transaction) for transaction in transactions]
+
+
+@router.delete("/transfers/{transfer_group_id}", status_code=HTTPStatus.NO_CONTENT)
+async def delete_transfer(
+    transfer_group_id: uuid.UUID,
+    claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
+    db: DbSession,
+) -> None:
+    """Remove every row of a transfer, fee included.
+
+    Raises TransferNotFoundError if no row of it is the caller's.
+    """
+    await transfer_service.delete_transfer(
+        db, transfer_group_id=transfer_group_id, user_id=claims.user_id
+    )
 
 
 @router.get("/summary")

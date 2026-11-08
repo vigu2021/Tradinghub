@@ -29,6 +29,14 @@ class TransactionNotFoundError(AppError):
     status_code = HTTPStatus.NOT_FOUND
 
 
+class TransferNotFoundError(AppError):
+    """No transfer with that group id, or someone else's. One answer for both."""
+
+    code = "transfer_not_found"
+    message = "Transfer not found."
+    status_code = HTTPStatus.NOT_FOUND
+
+
 class TransferNotEditableError(AppError):
     """A row of a transfer was patched or deleted on its own. Changing one side alone would
     unbalance the pair, so a transfer is only deleted whole, through /transfers."""

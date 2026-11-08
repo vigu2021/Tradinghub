@@ -8,6 +8,7 @@ from tradinghub.ledger.crud import transactions as transaction_crud
 from tradinghub.ledger.errors import (
     AccountNotFoundError,
     TransferAmountsDifferError,
+    TransferNotFoundError,
     TransferSameAccountError,
 )
 from tradinghub.ledger.models import Transaction, TransactionKind
@@ -61,6 +62,18 @@ async def create_transfer(
         )
     await transaction_crud.create_transactions(db, transactions=transactions)
     return transactions
+
+
+async def delete_transfer(db: AsyncSession, *, transfer_group_id: uuid.UUID, user_id: int) -> None:
+    """Delete every row of the transfer, fee included.
+
+    Raises TransferNotFoundError if no row of it is the user's.
+    """
+    deleted = await transaction_crud.delete_transfer_group(
+        db, transfer_group_id=transfer_group_id, user_id=user_id
+    )
+    if not deleted:
+        raise TransferNotFoundError
 
 
 def _transaction_row(

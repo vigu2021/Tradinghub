@@ -741,6 +741,47 @@ async def test_deleting_someone_elses_transfer_row_is_not_found(
     assert await _balance(client, monzo["id"]) == "1000"
 
 
+async def test_deleting_a_transfer_removes_every_row_in_its_group(
+    client: AsyncClient, alice: User
+) -> None:
+    _sign_in(client, alice)
+    chase = await _open(client)
+    monzo = await _open(client, name="Monzo")
+    rent = await _record(client, chase["id"])
+    rows = await _transfer(client, chase["id"], monzo["id"], fee="5", fee_account_id=chase["id"])
+    other_transfer = await _transfer(
+        client, chase["id"], monzo["id"], amount_sent="1", amount_received="1"
+    )
+
+    response = await client.delete(f"/transfers/{rows[0]['transfer_group_id']}")
+
+    assert response.status_code == 204
+    for transfer_row in rows:
+        assert (await client.get(f"/transactions/{transfer_row['id']}")).status_code == 404
+    assert await _balance(client, chase["id"]) == "-901"
+    assert await _balance(client, monzo["id"]) == "1"
+    assert (await client.get(f"/transactions/{rent['id']}")).status_code == 200
+    assert (await client.get(f"/transactions/{other_transfer[0]['id']}")).status_code == 200
+
+
+async def test_deleting_a_strangers_transfer_is_not_found(
+    client: AsyncClient, alice: User, bob: User
+) -> None:
+    _sign_in(client, bob)
+    chase = await _open(client)
+    monzo = await _open(client, name="Monzo")
+    rows = await _transfer(client, chase["id"], monzo["id"])
+    bobs_cookie = client.cookies[ACCESS_COOKIE]
+    _sign_in(client, alice)
+
+    response = await client.delete(f"/transfers/{rows[0]['transfer_group_id']}")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "transfer_not_found"
+    client.cookies.set(ACCESS_COOKIE, bobs_cookie)
+    assert await _balance(client, monzo["id"]) == "1000"
+
+
 async def test_a_transfer_needs_a_session(client: AsyncClient) -> None:
     response = await client.post("/transfers", json={})
 

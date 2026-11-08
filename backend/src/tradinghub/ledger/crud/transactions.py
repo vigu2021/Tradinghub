@@ -1,7 +1,8 @@
+import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import ColumnElement, func, select
+from sqlalchemy import ColumnElement, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.ledger.models import Transaction, TransactionKind
@@ -89,3 +90,16 @@ async def create_transactions(db: AsyncSession, *, transactions: list[Transactio
     """
     db.add_all(transactions)
     await db.flush()
+
+
+async def delete_transfer_group(
+    db: AsyncSession, *, transfer_group_id: uuid.UUID, user_id: int
+) -> bool:
+    """Delete every row of the user's transfer. Return False if none of it was theirs."""
+    statement = (
+        delete(Transaction)
+        .where(Transaction.user_id == user_id, Transaction.transfer_group_id == transfer_group_id)
+        .returning(Transaction.id)
+    )
+    rows = await db.scalars(statement)
+    return bool(rows.all())
