@@ -67,15 +67,15 @@ async def update_transaction(
 
 
 async def delete_transaction(db: AsyncSession, *, transaction_id: int, user_id: int) -> None:
-    """Delete the transaction, or the whole transfer if it is part of one.
+    """Delete one income or expense row.
 
-    Raises TransactionNotFoundError if it is not the user's.
+    Raises TransactionNotFoundError if it is not the user's, and TransferNotEditableError if it
+    is any row of a transfer.
     """
-    deleted = await transaction_crud.delete_transaction(
-        db, transaction_id=transaction_id, user_id=user_id
-    )
-    if not deleted:
-        raise TransactionNotFoundError
+    transaction = await get_transaction(db, transaction_id=transaction_id, user_id=user_id)
+    if transaction.transfer_group_id is not None:
+        raise TransferNotEditableError
+    await transaction_crud.delete_transaction(db, transaction_id=transaction_id, user_id=user_id)
 
 
 def _signed(amount: Decimal, kind: TransactionKind) -> Decimal:

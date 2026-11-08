@@ -695,31 +695,25 @@ async def test_no_row_of_a_transfer_can_be_edited(
 
 
 @pytest.mark.parametrize("row", [0, 1, 2])
-async def test_deleting_any_row_deletes_the_whole_transfer_and_nothing_else(
+async def test_deleting_a_transfer_row_through_transactions_is_refused(
     client: AsyncClient, alice: User, row: int
 ) -> None:
     _sign_in(client, alice)
     chase = await _open(client)
     monzo = await _open(client, name="Monzo")
-    rent = await _record(client, chase["id"])
     rows = await _transfer(client, chase["id"], monzo["id"], fee="5", fee_account_id=chase["id"])
-    other_transfer = await _transfer(
-        client, chase["id"], monzo["id"], amount_sent="1", amount_received="1"
-    )
 
     response = await client.delete(f"/transactions/{rows[row]['id']}")
 
-    assert response.status_code == 204
-    assert await _balance(client, chase["id"]) == "-901"
-    assert await _balance(client, monzo["id"]) == "1"
-    assert (await client.get(f"/transactions/{rent['id']}")).status_code == 200
-    assert (await client.get(f"/transactions/{other_transfer[0]['id']}")).status_code == 200
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "transfer_not_editable"
+    for transfer_row in rows:
+        assert (await client.get(f"/transactions/{transfer_row['id']}")).status_code == 200
 
 
 async def test_deleting_a_plain_transaction_leaves_the_others(
     client: AsyncClient, alice: User
 ) -> None:
-    """Plain rows all have a null group, which must not count as sharing one."""
     _sign_in(client, alice)
     chase = await _open(client)
     rent = await _record(client, chase["id"])

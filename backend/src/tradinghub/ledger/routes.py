@@ -150,9 +150,10 @@ async def delete_transaction(
     claims: Annotated[AccessTokenClaims, Depends(get_current_user_claims)],
     db: DbSession,
 ) -> None:
-    """Remove a transaction, or the whole transfer if it is part of one.
+    """Remove one income or expense row.
 
-    Raises TransactionNotFoundError if it is not the caller's.
+    Raises TransactionNotFoundError if it is not the caller's, and TransferNotEditableError if it
+    is any row of a transfer.
     """
     await transaction_service.delete_transaction(
         db, transaction_id=transaction_id, user_id=claims.user_id

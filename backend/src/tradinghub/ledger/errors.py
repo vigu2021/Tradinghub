@@ -30,11 +30,11 @@ class TransactionNotFoundError(AppError):
 
 
 class TransferNotEditableError(AppError):
-    """A row of a transfer was patched. Changing one side alone would unbalance the pair, so the
-    rule is to delete the transfer and record it again."""
+    """A row of a transfer was patched or deleted on its own. Changing one side alone would
+    unbalance the pair, so a transfer is only deleted whole, through /transfers."""
 
     code = "transfer_not_editable"
-    message = "A transfer cannot be edited. Delete it and record it again."
+    message = "A transfer cannot be changed row by row. Delete the transfer and record it again."
     status_code = HTTPStatus.CONFLICT
 
 
