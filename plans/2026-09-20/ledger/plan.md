@@ -284,6 +284,43 @@ test_a_transfer_into_a_strangers_account_is_not_found
 
 ---
 
+## Task 4b: A transfer is deleted as a transfer
+
+**Status:** To do, before the frontend reaches transfers. Today `DELETE /transactions/{id}` on a
+transfer row silently deletes its partners too, while `PATCH` on the same row is refused. This makes
+both refuse and gives the transfer its own delete.
+
+**Files:**
+- Modify: `backend/src/tradinghub/ledger/{routes,errors}.py`,
+  `backend/src/tradinghub/ledger/services/{transactions,transfers}.py`,
+  `backend/src/tradinghub/ledger/crud/transactions.py`, `backend/tests/ledger/test_routes.py`
+
+**Interfaces produced:**
+```python
+class TransferNotFoundError(AppError): ...    # 404 transfer_not_found
+DELETE /transfers/{transfer_group_id}         # uuid; 204
+```
+
+**Requirements:**
+1. **`DELETE /transfers/{transfer_group_id}`** deletes every row in the group, fee included, in one
+   statement. 404 `transfer_not_found` when no row of the caller's has that group id, theirs or
+   anyone's, so a stranger's id and a made-up one look the same.
+2. **`DELETE /transactions/{id}` on a transfer row answers 409 `transfer_not_editable`**, the same
+   as `PATCH`. The row-level delete goes back to deleting exactly one row.
+3. `POST /transfers` keeps returning the rows. Each carries `transfer_group_id`, which is what the
+   delete takes, so no new response shape is needed.
+
+**Tests:**
+```python
+test_deleting_a_transfer_removes_every_row_in_its_group
+test_deleting_a_strangers_transfer_is_not_found
+test_deleting_a_transfer_row_through_transactions_is_refused   # replaces the group-delete test
+```
+
+**Commit:** `Delete a transfer as a transfer`
+
+---
+
 ## Task 5: Summary
 
 **Status:** Done. The response leaves out `accounts`, since `GET /accounts` already has them, and
@@ -356,7 +393,7 @@ transactions.
 
 **Files:**
 - Create: `frontend/src/features/ledger/api/keys.ts`,
-  `frontend/src/features/ledger/{types,api,hooks}/{accounts,transactions,summary}.ts`,
+  `frontend/src/features/ledger/{types,api,hooks}/{accounts,transactions,transfers,summary}.ts`,
   `frontend/src/components/ui/ErrorBanner.tsx`
 - Modify: `frontend/tsconfig.json`, `frontend/eslint.config.mjs`, `frontend/package.json`,
   `frontend/src/features/auth/{api,hooks}.ts`,
@@ -445,8 +482,8 @@ ever shows.
    request per row.
 7. **Creates and deletes show at once, without touching the cache.** While a create saves, a
    pending row is drawn from the mutation's `variables`. While a delete runs, the rows it removes
-   are hidden by matching `variables`: for a transfer row that is every row in its group, since the
-   API deletes the whole transfer. On success the invalidation brings the real list; on failure the
+   are hidden by matching `variables`: deleting a transfer goes through `useDeleteTransfer` with the
+   row's `transfer_group_id`, and hides every row in that group. On success the invalidation brings the real list; on failure the
    pending row disappears or the hidden rows return, and the error shows. Totals still come from
    the server, because working them out here would be arithmetic on money.
 8. **Paging never flashes empty.** The list uses `placeholderData: keepPreviousData`, so the

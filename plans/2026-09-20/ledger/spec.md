@@ -172,7 +172,7 @@ the UI warns.
 | `GET /transactions` | list own, `occurred_at` descending then `id` descending | 200 | 422 |
 | `GET /transactions/{id}` | one | 200 | 404 |
 | `PATCH /transactions/{id}` | change any subset | 200 | 404, 409 on a transfer row, 422 |
-| `DELETE /transactions/{id}` | remove; a transfer takes both halves | 204 | 404 |
+| `DELETE /transactions/{id}` | remove an income or expense | 204 | 404, 409 on a transfer row |
 
 **The list order needs both columns.** `occurred_at` alone is not a total order, since recording
 two things on one day is normal. Paging over a non-deterministic order can show a row twice or skip
@@ -186,13 +186,16 @@ consistently means rules about which fields propagate to the other, and the hone
 one rule: delete it and record it again. This is a deliberate limit, written down so it is not
 mistaken for an oversight.
 
-**Deleting either half of a transfer deletes both.** They are one event.
+**A transfer row is changed only through `/transfers`.** Patching or deleting one through
+`/transactions` answers 409 `transfer_not_editable`. A transfer is one event, so the API acts on it
+as one, by its group id, rather than letting a row-level delete quietly take its partners with it.
 
 ### Transfers
 
 | Method and path | Does | Success | Failures |
 |---|---|---|---|
 | `POST /transfers` | move money between two of your accounts | 201, both rows | 404, 422 |
+| `DELETE /transfers/{transfer_group_id}` | remove the whole transfer, fee included | 204 | 404 |
 
 The body is the source account, the destination account, the amount leaving, the amount arriving,
 an optional fee with its category, when it happened, and an optional note. It writes every row in
@@ -250,8 +253,8 @@ Python. Grouping and filtering aggregates in one pass is the Postgres lesson of 
 
 ### Errors
 
-Three new codes, declared like the auth errors: `account_not_found` and `transaction_not_found`
-(404), `account_name_taken` (409), `transfer_not_editable` (409). Invalid
+New codes, declared like the auth errors: `account_not_found`, `transaction_not_found` and
+`transfer_not_found` (404), `account_name_taken` (409), `transfer_not_editable` (409). Invalid
 input keeps the existing `validation_error` (422), and the frontend form enforces the same rules
 first so a user sees field-level messages.
 
@@ -336,8 +339,9 @@ These waited for the first feature with lists, and this is it.
 - account names collide case-insensitively: "Chase" and "chase" cannot both exist for one user,
   but another user may have their own "Chase"
 - balances: empty account is zero, mixed signs, per unit, unaffected by another user's rows
-- transfers: both rows written, group shared, deleting any row removes the whole group, patching
-  one is refused, same-account and cross-user transfers rejected
+- transfers: both rows written, group shared, `DELETE /transfers/{id}` removes the whole group,
+  patching or deleting one row through `/transactions` is refused, same-account and cross-user
+  transfers rejected
 - a transfer with a fee on the destination: three rows, the balances land at -1000 and +995, and
   the fee shows in the expense total while the two transfer rows do not
 - a transfer between accounts with different units, with different amounts on each side, is
