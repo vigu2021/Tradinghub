@@ -75,7 +75,8 @@ async def delete_transaction(db: AsyncSession, *, transaction_id: int, user_id: 
     transaction = await get_transaction(db, transaction_id=transaction_id, user_id=user_id)
     if transaction.transfer_group_id is not None:
         raise TransferNotEditableError
-    await transaction_crud.delete_transaction(db, transaction_id=transaction_id, user_id=user_id)
+    await db.delete(transaction)
+    await db.flush()
 
 
 def _signed(amount: Decimal, kind: TransactionKind) -> Decimal:

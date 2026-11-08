@@ -9,7 +9,6 @@ from tradinghub.auth.models import User
 from tradinghub.ledger.crud.accounts import create_account
 from tradinghub.ledger.crud.transactions import (
     create_transaction,
-    delete_transaction,
     get_transaction,
     list_transactions,
 )
@@ -235,33 +234,3 @@ async def test_the_database_refuses_a_transaction_in_someone_elses_account(
             occurred_at=OCTOBER,
             note=None,
         )
-
-
-async def test_deleting_a_transaction_leaves_the_others(
-    db_session: AsyncSession, alice: User
-) -> None:
-    account = await _account(db_session, alice)
-    doomed = await _record(db_session, account)
-    kept = await _record(db_session, account)
-
-    deleted = await delete_transaction(db_session, transaction_id=doomed.id, user_id=alice.id)
-
-    assert deleted
-    assert await _ids(db_session, alice) == [kept.id]
-
-
-async def test_someone_elses_transaction_is_not_deleted(
-    db_session: AsyncSession, alice: User, bob: User
-) -> None:
-    bobs = await _record(db_session, await _account(db_session, bob))
-
-    deleted = await delete_transaction(db_session, transaction_id=bobs.id, user_id=alice.id)
-
-    assert not deleted
-    assert await _ids(db_session, bob) == [bobs.id]
-
-
-async def test_deleting_a_missing_transaction_reports_nothing_deleted(
-    db_session: AsyncSession, alice: User
-) -> None:
-    assert not await delete_transaction(db_session, transaction_id=999_999, user_id=alice.id)

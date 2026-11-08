@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import ColumnElement, delete, func, select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tradinghub.ledger.models import Transaction, TransactionKind
@@ -89,16 +89,3 @@ async def create_transactions(db: AsyncSession, *, transactions: list[Transactio
     """
     db.add_all(transactions)
     await db.flush()
-
-
-async def delete_transaction(db: AsyncSession, *, transaction_id: int, user_id: int) -> bool:
-    """Delete the user's transaction.
-
-    Return False if there was nothing to delete, theirs or anyone's.
-    """
-    deleted_ids = await db.scalars(
-        delete(Transaction)
-        .where(Transaction.user_id == user_id, Transaction.id == transaction_id)
-        .returning(Transaction.id)
-    )
-    return bool(deleted_ids.all())
