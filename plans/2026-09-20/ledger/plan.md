@@ -416,6 +416,12 @@ transactions.
    category total and a list position at once, and a new account adds a row to the summary's
    totals, so every ledger mutation invalidates the `"ledger"` root in one call rather than listing
    the keys it might touch. Only queries on screen refetch; the rest wait until they are used.
+   Each mutation is a `mutationOptions` factory in the entity's `api/` file
+   (`transactionMutations.create()`), declaring `meta: { invalidates: ledgerKeys.all }`. One
+   `MutationCache` `onSuccess` in the query provider does every invalidation and returns its
+   promise, so a mutation stays pending until the refetch lands. Hooks are one-line
+   `useMutation(...)` calls; a hook keeps its own `onSuccess` only for extra behaviour, as
+   `useLogin` and `useRegister` do.
 5. `noUncheckedIndexedAccess` goes on in `tsconfig.json` **before the first list is written**.
    Turning it on later means fixing every array access at once.
 6. Extract the error banner. It is copy-pasted three times already and would be five.

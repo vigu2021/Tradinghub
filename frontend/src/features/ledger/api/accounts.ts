@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { mutationOptions, queryOptions } from "@tanstack/react-query";
 
 import { apiClient } from "@/lib/api/client";
 
@@ -13,6 +13,19 @@ export const accountKeys = {
 export const accountQueries = {
   list: () =>
     queryOptions({ queryKey: accountKeys.list(), queryFn: listAccounts }),
+};
+
+export const accountMutations = {
+  create: () =>
+    mutationOptions({
+      mutationFn: createAccount,
+      meta: { invalidates: ledgerKeys.all },
+    }),
+  update: () =>
+    mutationOptions({
+      mutationFn: updateAccount,
+      meta: { invalidates: ledgerKeys.all },
+    }),
 };
 
 /** Every account, archived ones included, by name. */
