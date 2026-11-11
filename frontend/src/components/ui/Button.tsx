@@ -11,10 +11,15 @@ const VARIANTS = {
     "border border-rule-strong text-ink-dim hover:border-accent hover:text-accent disabled:opacity-50",
 } as const;
 
-export function Button({ variant = "solid", ...button }: ButtonProps) {
+/** Sizes to its text. A caller sets width or spacing with `className`, which is added last. */
+export function Button({
+  variant = "solid",
+  className = "",
+  ...button
+}: ButtonProps) {
   return (
     <button
-      className={`w-full px-4 py-3 text-[0.6875rem] uppercase tracking-[0.18em] transition-colors outline-none focus-visible:ring-1 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-ground disabled:cursor-not-allowed ${VARIANTS[variant]}`}
+      className={`px-4 py-3 text-[0.6875rem] uppercase tracking-[0.18em] transition-colors outline-none focus-visible:ring-1 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-ground disabled:cursor-not-allowed ${VARIANTS[variant]} ${className}`}
       {...button}
     />
   );

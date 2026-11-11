@@ -39,15 +39,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <header className="rise flex items-baseline justify-between gap-6 border-b border-rule pb-6">
         <Logo />
         {session.status === "authenticated" && (
-          <div className="w-32">
-            <Button
-              variant="ghost"
-              onClick={() => signOut.mutate()}
-              disabled={signOut.isPending}
-            >
-              {signOut.isPending ? "Signing out" : "Sign out"}
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            className="w-32"
+            onClick={() => signOut.mutate()}
+            disabled={signOut.isPending}
+          >
+            {signOut.isPending ? "Signing out" : "Sign out"}
+          </Button>
         )}
       </header>
 
@@ -65,11 +64,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {session.status === "unreachable" && (
           <div className="max-w-md">
             <p className="text-sm text-ink-dim">Could not reach the server.</p>
-            <div className="mt-6 w-32">
-              <Button variant="ghost" onClick={session.retry}>
-                Try again
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              className="mt-6 w-32"
+              onClick={session.retry}
+            >
+              Try again
+            </Button>
           </div>
         )}
 

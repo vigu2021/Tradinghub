@@ -73,7 +73,11 @@ export function RegisterForm() {
         </ErrorBanner>
       )}
 
-      <Button type="submit" disabled={registerMutation.isPending}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={registerMutation.isPending}
+      >
         {registerMutation.isPending ? "Creating account" : "Create account"}
       </Button>
     </form>

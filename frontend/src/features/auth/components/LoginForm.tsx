@@ -81,7 +81,11 @@ export function LoginForm() {
         </ErrorBanner>
       )}
 
-      <Button type="submit" disabled={loginMutation.isPending || lockedOut}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={loginMutation.isPending || lockedOut}
+      >
         {loginMutation.isPending ? "Signing in" : "Sign in"}
       </Button>
     </form>
