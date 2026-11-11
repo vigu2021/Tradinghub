@@ -294,10 +294,9 @@ Transactions. The post-login redirect does not change, so no existing test moves
 
 ```
 frontend/src/features/ledger/
-├── types/         accounts.ts, transactions.ts, summary.ts
-├── api/           accounts.ts, transactions.ts, summary.ts, and keys.ts: ledgerKeys, the
-│                  "ledger" root every ledger query key starts with
-├── hooks/         accounts.ts, transactions.ts, summary.ts
+├── types/         accounts.ts, transactions.ts, transfers.ts, summary.ts
+├── api/           the same four, each with its keys, queryOptions and mutationOptions, and
+│                  keys.ts: ledgerKeys, the "ledger" root every ledger query key starts with
 └── components/
 ```
 

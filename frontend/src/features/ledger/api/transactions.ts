@@ -1,4 +1,8 @@
-import { mutationOptions, queryOptions } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  mutationOptions,
+  queryOptions,
+} from "@tanstack/react-query";
 
 import { apiClient } from "@/lib/api/client";
 
@@ -22,6 +26,8 @@ export const transactionQueries = {
     queryOptions({
       queryKey: transactionKeys.list(filters),
       queryFn: () => listTransactions(filters),
+      // Keeps the previous page on screen while another page or filter loads.
+      placeholderData: keepPreviousData,
     }),
 };
 

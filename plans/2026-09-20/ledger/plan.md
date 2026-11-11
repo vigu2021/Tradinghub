@@ -286,9 +286,10 @@ test_a_transfer_into_a_strangers_account_is_not_found
 
 ## Task 4b: A transfer is deleted as a transfer
 
-**Status:** To do, before the frontend reaches transfers. Today `DELETE /transactions/{id}` on a
-transfer row silently deletes its partners too, while `PATCH` on the same row is refused. This makes
-both refuse and gives the transfer its own delete.
+**Status:** Done. `DELETE /transfers/{transfer_group_id}` deletes the whole group, and `PATCH` or
+`DELETE` on any transfer row through `/transactions` is a 409. The single-row delete runs on the row
+the service already loaded (`db.delete`), so there is no crud function for it; the group delete is
+one `DELETE ... WHERE` query in `crud/transactions.py`.
 
 **Files:**
 - Modify: `backend/src/tradinghub/ledger/{routes,errors}.py`,
@@ -387,13 +388,14 @@ test_another_users_rows_never_appear
 
 ## Task 6: Frontend data layer
 
-**Status:** In progress. Done: requirements 5 to 8, `authKeys` and `authQueries`, `ledgerKeys`, and
-the types and api for accounts and the summary. Next: `hooks/accounts.ts`, `hooks/summary.ts`, then
-transactions.
+**Status:** Done. Every entity's `api/` file holds its keys, `...Queries` and `...Mutations`;
+transfers have mutations only, since their rows are read through the transactions list.
+`transactionQueries.list` keeps the previous page on screen while the next one loads. There is no
+`hooks/` folder: components pass the options straight to `useQuery` and `useMutation`.
 
 **Files:**
 - Create: `frontend/src/features/ledger/api/keys.ts`,
-  `frontend/src/features/ledger/{types,api,hooks}/{accounts,transactions,transfers,summary}.ts`,
+  `frontend/src/features/ledger/{types,api}/{accounts,transactions,transfers,summary}.ts`,
   `frontend/src/components/ui/ErrorBanner.tsx`
 - Modify: `frontend/tsconfig.json`, `frontend/eslint.config.mjs`, `frontend/package.json`,
   `frontend/src/features/auth/{api,hooks}.ts`,
@@ -406,7 +408,7 @@ transactions.
    transactions and the summary share one root. Give `authKeys` the factory shape while you are
    there.
    Each query's key and fetch function are paired once with `queryOptions` in the entity's
-   `api/` file (`accountQueries.list()`), and hooks call `useQuery` with that. Task 10's server
+   `api/` file (`accountQueries.list()`), and components call `useQuery` with that. Task 10's server
    prefetch reuses the same definitions, so the keys cannot drift.
 2. **Responses are typed, not parsed.** Each response shape is a plain `type` in `types.ts`,
    mirroring the backend schema, and `api.ts` passes it to axios as the type parameter. No zod or
@@ -419,9 +421,9 @@ transactions.
    Each mutation is a `mutationOptions` factory in the entity's `api/` file
    (`transactionMutations.create()`), declaring `meta: { invalidates: ledgerKeys.all }`. One
    `MutationCache` `onSuccess` in the query provider does every invalidation and returns its
-   promise, so a mutation stays pending until the refetch lands. Hooks are one-line
-   `useMutation(...)` calls; a hook keeps its own `onSuccess` only for extra behaviour, as
-   `useLogin` and `useRegister` do.
+   promise, so a mutation stays pending until the refetch lands. Components call
+   `useMutation(transactionMutations.create())` directly. A custom hook is written only when it
+   adds behaviour, as `useLogin` and `useRegister` do with their own `onSuccess`.
 5. `noUncheckedIndexedAccess` goes on in `tsconfig.json` **before the first list is written**.
    Turning it on later means fixing every array access at once.
 6. Extract the error banner. It is copy-pasted three times already and would be five.
@@ -484,11 +486,11 @@ ever shows.
    surprise.
 6. Categories offer the ones already used, from the transactions the page already has. No new
    endpoint for it.
-   Account names likewise come from the `useAccounts()` list, looked up by `account_id`. Never a
+   Account names likewise come from the `accountQueries.list()` query, looked up by `account_id`. Never a
    request per row.
 7. **Creates and deletes show at once, without touching the cache.** While a create saves, a
    pending row is drawn from the mutation's `variables`. While a delete runs, the rows it removes
-   are hidden by matching `variables`: deleting a transfer goes through `useDeleteTransfer` with the
+   are hidden by matching `variables`: deleting a transfer goes through `transferMutations.delete()` with the
    row's `transfer_group_id`, and hides every row in that group. On success the invalidation brings the real list; on failure the
    pending row disappears or the hidden rows return, and the error shows. Totals still come from
    the server, because working them out here would be arithmetic on money.
