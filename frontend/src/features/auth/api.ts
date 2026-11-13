@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { apiClient } from "@/lib/api/client";
 
-import { LoginRequest, RegisterRequest, User } from "./types";
+import type { LoginRequest, RegisterRequest, User } from "./types";
 
 export const authKeys = {
   all: ["auth"] as const,

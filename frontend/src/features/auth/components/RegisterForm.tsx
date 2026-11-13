@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -12,10 +13,22 @@ import { API_CODES, isApiError, messageFor } from "@/lib/api/errors";
 
 import { useRegister } from "../hooks";
 import {
+  MAX_EMAIL_LENGTH,
+  MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
-  type RegisterRequest,
-  registerSchema,
 } from "../types";
+
+const registerSchema = z.object({
+  email: z
+    .email("Please enter a valid email.")
+    .max(MAX_EMAIL_LENGTH, "That email is too long."),
+  password: z
+    .string()
+    .min(MIN_PASSWORD_LENGTH, `Use at least ${MIN_PASSWORD_LENGTH} characters.`)
+    .max(MAX_PASSWORD_LENGTH, "That password is too long."),
+});
+
+type RegisterValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm() {
   const router = useRouter();
@@ -24,7 +37,7 @@ export function RegisterForm() {
     register: field,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegisterRequest>({
+  } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     mode: "onTouched",
   });

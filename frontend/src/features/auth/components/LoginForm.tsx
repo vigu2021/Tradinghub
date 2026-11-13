@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -16,7 +17,19 @@ import {
 } from "@/lib/api/errors";
 
 import { useLogin } from "../hooks";
-import { type LoginRequest, loginSchema } from "../types";
+import { MAX_EMAIL_LENGTH, MAX_PASSWORD_LENGTH } from "../types";
+
+const loginSchema = z.object({
+  email: z
+    .email("Please enter a valid email.")
+    .max(MAX_EMAIL_LENGTH, "That email is too long."),
+  password: z
+    .string()
+    .min(1, "Enter your password.")
+    .max(MAX_PASSWORD_LENGTH, "That password is too long."),
+});
+
+type LoginValues = z.infer<typeof loginSchema>;
 
 const SECONDS_PER_MINUTE = 60;
 
@@ -28,7 +41,7 @@ export function LoginForm() {
     register: field,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginRequest>({
+  } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     mode: "onTouched",
   });
