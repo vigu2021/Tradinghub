@@ -25,11 +25,11 @@ type SelectFieldProps = FrameProps &
   };
 
 const CONTROL =
-  "mt-2 w-full border bg-surface px-3 py-2.5 text-[0.9375rem] text-ink caret-accent outline-none transition-colors placeholder:text-ink-faint focus:border-accent";
+  "mt-2 w-full border bg-ground px-3 py-2.5 text-base text-ink caret-accent outline-none transition-colors placeholder:text-ink-faint focus:border-accent";
 
 /**
- * A labelled input on a filled surface, with no outline until it has focus or an error. The hint
- * stays visible rather than appearing only after a rejection.
+ * A labelled input with a visible outline at rest, rust on focus and red on error. The hint stays
+ * visible rather than appearing only after a rejection.
  */
 export function Field({
   id,
@@ -54,7 +54,7 @@ export function Field({
         ref={ref}
         aria-invalid={Boolean(error)}
         aria-describedby={described}
-        className={`${CONTROL} ${error ? "border-danger" : "border-transparent"}`}
+        className={`${CONTROL} ${error ? "border-danger" : "border-control"}`}
         {...input}
       />
     </FieldFrame>
@@ -86,7 +86,7 @@ export function SelectField({
         ref={ref}
         aria-invalid={Boolean(error)}
         aria-describedby={described}
-        className={`${CONTROL} ${error ? "border-danger" : "border-transparent"}`}
+        className={`${CONTROL} ${error ? "border-danger" : "border-control"}`}
         {...select}
       >
         {children}

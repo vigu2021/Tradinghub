@@ -39,7 +39,9 @@ export function RegisterForm() {
     formState: { errors },
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
-    mode: "onTouched",
+    // Not on blur: an error appearing under the pointer swallows a click on the links below.
+    mode: "onSubmit",
+    reValidateMode: "onChange",
   });
 
   const submit = handleSubmit((values) => {

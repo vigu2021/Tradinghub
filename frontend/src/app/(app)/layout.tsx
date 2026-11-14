@@ -43,16 +43,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col px-6 py-8 sm:px-10">
-      <header className="rise flex flex-wrap items-center justify-between gap-6">
+      <header className="rise flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
         <Logo />
         {session.status === "authenticated" && (
-          <nav className="flex gap-6 text-sm">
+          <nav className="order-last flex w-full gap-6 text-sm sm:order-none sm:w-auto">
             {NAV.map(({ href, label }) => (
               <Link
                 key={href}
                 href={href}
                 aria-current={pathname === href ? "page" : undefined}
-                className="py-1 text-ink-dim transition-colors hover:text-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink aria-[current=page]:shadow-[inset_0_-2px_0_var(--accent)]"
+                className="py-2.5 text-ink-dim transition-colors hover:text-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink aria-[current=page]:shadow-[inset_0_-2px_0_var(--accent)]"
               >
                 {label}
               </Link>

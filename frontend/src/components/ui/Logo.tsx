@@ -1,26 +1,11 @@
-type LogoProps = { size?: "md" | "lg" };
-
-const WORDMARK = {
-  md: "text-2xl",
-  lg: "text-[2rem]",
-} as const;
-
-const MARK = {
-  md: "h-7 w-7",
-  lg: "h-9 w-9",
-} as const;
-
-/**
- * Three candles, the last one closing higher. Drawn on the same 4-unit rhythm as the background
- * grid so the mark reads as part of the ledger rather than a badge dropped on top of it.
- */
-export function Logo({ size = "md" }: LogoProps) {
+/** Three candles, the last one closing higher, beside the wordmark. One size everywhere. */
+export function Logo() {
   return (
     <span className="inline-flex items-center gap-3">
       <svg
         viewBox="0 0 32 32"
         aria-hidden="true"
-        className={MARK[size]}
+        className="h-7 w-7"
         fill="none"
         strokeLinecap="square"
       >
@@ -39,9 +24,7 @@ export function Logo({ size = "md" }: LogoProps) {
         </g>
       </svg>
 
-      <span
-        className={`font-display leading-none font-semibold tracking-tight ${WORDMARK[size]}`}
-      >
+      <span className="font-display text-2xl leading-none font-semibold tracking-tight">
         Tradinghub
       </span>
     </span>

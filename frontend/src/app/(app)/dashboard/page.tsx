@@ -10,7 +10,7 @@ export default function DashboardPage() {
       <p className="text-xs font-medium tracking-[0.12em] text-ink-faint uppercase">
         Signed in as
       </p>
-      <h1 className="mt-3 max-w-3xl font-display text-[2.5rem] leading-[1.05] font-semibold tracking-tight break-words">
+      <h1 className="mt-3 max-w-3xl font-display text-[1.75rem] leading-[1.1] font-semibold sm:text-[2.5rem] sm:leading-[1.05] tracking-tight break-words">
         {user.email}
       </h1>
       <p className="mt-8 max-w-md text-sm text-ink-dim">

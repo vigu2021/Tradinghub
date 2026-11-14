@@ -13,7 +13,7 @@ export default function AccountsPage() {
     <>
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <h1 className="font-display text-[2.5rem] leading-none font-semibold tracking-tight">
+          <h1 className="font-display text-[2rem] leading-none font-semibold tracking-tight sm:text-[2.5rem]">
             Accounts
           </h1>
           <p className="mt-3 text-sm text-ink-dim">

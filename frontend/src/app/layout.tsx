@@ -1,8 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 import "./globals.css";
 import { mono, sans } from "./fonts";
 import { GlobalProviders } from "./providers";
+
+export const viewport: Viewport = {
+  themeColor: "#f5f5f1",
+};
 
 export const metadata: Metadata = {
   title: "Tradinghub",

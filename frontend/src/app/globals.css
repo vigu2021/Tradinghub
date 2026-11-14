@@ -11,10 +11,12 @@
   --ground: #f5f5f1;
   --surface: #ebece7;
   --ink: #202320;
-  --ink-dim: #626761;
-  --ink-faint: #7f847d;
+  --ink-dim: #4d524c;
+  --ink-faint: #676c65;
   --rule: #dde0d9;
   --rule-strong: #c9cdc5;
+  /* The outline of an input at rest: the lightest grey that keeps 3:1 against the ground. */
+  --control: #868b84;
   --accent: #9a4d28;
   --accent-ink: #ffffff;
   --accent-dim: rgba(154, 77, 40, 0.1);
@@ -31,6 +33,7 @@
   --color-ink-faint: var(--ink-faint);
   --color-rule: var(--rule);
   --color-rule-strong: var(--rule-strong);
+  --color-control: var(--control);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-accent-dim: var(--accent-dim);
@@ -47,13 +50,15 @@ body {
   color: var(--ink);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* Buttons draw their own pressed state; the grey flash on tap would cover it. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* One orchestrated entrance rather than scattered micro-animations. */
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(0.5rem);
+    transform: translateY(1rem);
   }
   to {
     opacity: 1;
@@ -61,8 +66,13 @@ body {
   }
 }
 
+/* Longhands, not the shorthand: `animation` would reset animation-delay and override the
+   per-element [animation-delay:…] classes that stagger the entrance. */
 .rise {
-  animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation-name: rise;
+  animation-duration: 0.7s;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+  animation-fill-mode: both;
 }
 
 @media (prefers-reduced-motion: reduce) {

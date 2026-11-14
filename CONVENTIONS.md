@@ -281,18 +281,7 @@ A form's zod schema lives in the form's own file, above the component. The API t
 `type` aliases mirroring the backend; the form's values are checked against them where `mutate`
 is called.
 
-### Visual design
+### Visual design and UI testing
 
-The theme is "Statement Swiss": light, typeset, square-cornered. Tokens live in `globals.css`.
-
-- **Hierarchy comes from size, weight and space, not lines.** No borders between rows or around
-  sections. Group with spacing and the `surface` tint (alternating table rows, panels); reach for
-  `rule` only when spacing alone is ambiguous.
-- **Numbers are the hero.** Amounts use `font-mono` (IBM Plex Mono) with `tabular-nums`, right
-  aligned, with the unit after them in `ink-faint`. Everything else is Archivo.
-- **One accent, for actions.** Rust (`accent`) marks the primary button and the current nav link.
-  `positive` and `negative` are for gain and loss only, never decoration.
-- **Labels:** small uppercase captions (`text-xs font-medium uppercase tracking-[0.12em]
-  text-ink-faint`) above figures and table columns; sentence case everywhere else.
-- **Avoid:** gradients, glass effects, coloured left-border cards, cards inside cards, rounded
-  corners, decorative lines or grids.
+See `frontend/DESIGN.md`: the theme, the layout and interaction rules, and how UI is checked in a
+browser.

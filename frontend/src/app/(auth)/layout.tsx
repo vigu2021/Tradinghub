@@ -27,9 +27,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <header className="rise">
         <Link
           href="/"
-          className="inline-block text-ink outline-none transition-colors hover:text-accent focus-visible:text-accent"
+          className="inline-flex min-h-11 items-center text-ink outline-none transition-colors hover:text-accent focus-visible:text-accent"
         >
-          <Logo size="lg" />
+          <Logo />
         </Link>
       </header>
 

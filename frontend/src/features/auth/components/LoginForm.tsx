@@ -43,7 +43,9 @@ export function LoginForm() {
     formState: { errors },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    mode: "onTouched",
+    // Not on blur: an error appearing under the pointer swallows a click on the links below.
+    mode: "onSubmit",
+    reValidateMode: "onChange",
   });
 
   const lockout = isApiError(loginMutation.error, API_CODES.RATE_LIMITED)
@@ -86,8 +88,7 @@ export function LoginForm() {
         {...field("password")}
       />
 
-      {/* The server answers a wrong password and an unknown email identically. One message for
-          both, deliberately: do not try to be more specific here. */}
+      {/* One message for a wrong password and an unknown email, on purpose. */}
       {loginMutation.error && (
         <ErrorBanner>
           {lockout ? lockoutMessage(lockout) : messageFor(loginMutation.error)}
