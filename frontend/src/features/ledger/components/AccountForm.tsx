@@ -70,7 +70,7 @@ export function CreateAccountForm() {
         {...field("type")}
       >
         {ACCOUNT_TYPES.map((type) => (
-          <option key={type} value={type} className="bg-ground">
+          <option key={type} value={type} className="bg-surface">
             {type}
           </option>
         ))}

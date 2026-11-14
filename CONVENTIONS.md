@@ -276,3 +276,23 @@ response: the backend is this repo's own, and each feature's `types.ts` mirrors 
 as plain `type` aliases. Zod is for form input only.
 
 Use `type`, never `interface`, for every type. ESLint enforces it.
+
+A form's zod schema lives in the form's own file, above the component. The API types stay plain
+`type` aliases mirroring the backend; the form's values are checked against them where `mutate`
+is called.
+
+### Visual design
+
+The theme is "Statement Swiss": light, typeset, square-cornered. Tokens live in `globals.css`.
+
+- **Hierarchy comes from size, weight and space, not lines.** No borders between rows or around
+  sections. Group with spacing and the `surface` tint (alternating table rows, panels); reach for
+  `rule` only when spacing alone is ambiguous.
+- **Numbers are the hero.** Amounts use `font-mono` (IBM Plex Mono) with `tabular-nums`, right
+  aligned, with the unit after them in `ink-faint`. Everything else is Archivo.
+- **One accent, for actions.** Rust (`accent`) marks the primary button and the current nav link.
+  `positive` and `negative` are for gain and loss only, never decoration.
+- **Labels:** small uppercase captions (`text-xs font-medium uppercase tracking-[0.12em]
+  text-ink-faint`) above figures and table columns; sentence case everywhere else.
+- **Avoid:** gradients, glass effects, coloured left-border cards, cards inside cards, rounded
+  corners, decorative lines or grids.

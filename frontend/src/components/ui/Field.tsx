@@ -25,11 +25,11 @@ type SelectFieldProps = FrameProps &
   };
 
 const CONTROL =
-  "mt-2 w-full border-0 border-b bg-transparent pb-2 text-[0.9375rem] text-ink caret-accent outline-none transition-colors placeholder:text-ink-faint focus:border-accent";
+  "mt-2 w-full border bg-surface px-3 py-2.5 text-[0.9375rem] text-ink caret-accent outline-none transition-colors placeholder:text-ink-faint focus:border-accent";
 
 /**
- * A labelled input drawn as a ledger line: no box, one hairline underneath that lights up on
- * focus. The hint stays visible rather than appearing only after a rejection.
+ * A labelled input on a filled surface, with no outline until it has focus or an error. The hint
+ * stays visible rather than appearing only after a rejection.
  */
 export function Field({
   id,
@@ -54,14 +54,14 @@ export function Field({
         ref={ref}
         aria-invalid={Boolean(error)}
         aria-describedby={described}
-        className={`${CONTROL} ${error ? "border-danger" : "border-rule-strong"}`}
+        className={`${CONTROL} ${error ? "border-danger" : "border-transparent"}`}
         {...input}
       />
     </FieldFrame>
   );
 }
 
-/** The same ledger line as `Field`, choosing from `<option>` children. */
+/** The same filled control as `Field`, choosing from `<option>` children. */
 export function SelectField({
   id,
   label,
@@ -86,7 +86,7 @@ export function SelectField({
         ref={ref}
         aria-invalid={Boolean(error)}
         aria-describedby={described}
-        className={`${CONTROL} ${error ? "border-danger" : "border-rule-strong"}`}
+        className={`${CONTROL} ${error ? "border-danger" : "border-transparent"}`}
         {...select}
       >
         {children}
@@ -107,10 +107,8 @@ function FieldFrame({
     <div className={`group ${className}`}>
       <label
         htmlFor={id}
-        className={`block text-[0.6875rem] uppercase tracking-[0.18em] transition-colors ${
-          error
-            ? "text-danger"
-            : "text-ink-faint group-focus-within:text-accent"
+        className={`block text-[0.8125rem] font-medium transition-colors ${
+          error ? "text-danger" : "text-ink-dim group-focus-within:text-ink"
         }`}
       >
         {label}

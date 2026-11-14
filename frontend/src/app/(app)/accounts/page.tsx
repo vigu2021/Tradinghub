@@ -13,7 +13,7 @@ export default function AccountsPage() {
     <>
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <h1 className="font-display text-[2.75rem] leading-none tracking-tight">
+          <h1 className="font-display text-[2.5rem] leading-none font-semibold tracking-tight">
             Accounts
           </h1>
           <p className="mt-3 text-sm text-ink-dim">
@@ -30,10 +30,13 @@ export default function AccountsPage() {
       </div>
 
       {creating && (
-        <section
-          aria-label="New account"
-          className="mt-10 max-w-xl border border-rule bg-ground-raised/60 p-6"
-        >
+        <section aria-labelledby="new-account" className="mt-10 max-w-md">
+          <h2
+            id="new-account"
+            className="mb-6 text-xs font-medium tracking-[0.12em] text-ink-faint uppercase"
+          >
+            New account
+          </h2>
           <CreateAccountForm />
         </section>
       )}

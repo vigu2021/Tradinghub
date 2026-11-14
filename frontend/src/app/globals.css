@@ -1,60 +1,51 @@
 @import "tailwindcss";
 
 /*
- * Tradinghub is a ledger you argue with yourself in. The surface should read as an instrument:
- * near-black ground, hairline rules, monospace for anything countable, one warm accent.
+ * Statement Swiss: a light, typeset record. Hierarchy comes from size, weight and space, not lines;
+ * rows are grouped by a faint surface tint, and a divider is the exception.
  *
- * The accent is amber, not green, on purpose. Green and red belong to profit and loss; spending
- * them on chrome would make every button look like a position.
+ * The accent is rust and does one job: the action you can take. Green and red belong to gain and
+ * loss only, so no chrome ever borrows them.
  */
 :root {
-  --ground: #0a0a0c;
-  --ground-raised: #101014;
-  --ink: #e8e6e1;
-  --ink-dim: #8f8d88;
-  --ink-faint: #5a5854;
-  --rule: rgba(232, 230, 225, 0.09);
-  --rule-strong: rgba(232, 230, 225, 0.18);
-  /* Dimmer than --rule: the ledger grid is texture, not a border, and it has to survive
-     sitting behind a table of trades without competing with its own row lines. */
-  --grid: rgba(232, 230, 225, 0.035);
-  --accent: #d8b45f;
-  --accent-dim: rgba(216, 180, 95, 0.14);
-  --danger: #f08a7a;
+  --ground: #f5f5f1;
+  --surface: #ebece7;
+  --ink: #202320;
+  --ink-dim: #626761;
+  --ink-faint: #7f847d;
+  --rule: #dde0d9;
+  --rule-strong: #c9cdc5;
+  --accent: #9a4d28;
+  --accent-ink: #ffffff;
+  --accent-dim: rgba(154, 77, 40, 0.1);
+  --positive: #26714a;
+  --negative: #b3453d;
+  --danger: #b3453d;
 }
 
 @theme inline {
   --color-ground: var(--ground);
-  --color-ground-raised: var(--ground-raised);
+  --color-surface: var(--surface);
   --color-ink: var(--ink);
   --color-ink-dim: var(--ink-dim);
   --color-ink-faint: var(--ink-faint);
   --color-rule: var(--rule);
   --color-rule-strong: var(--rule-strong);
   --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
   --color-accent-dim: var(--accent-dim);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
   --color-danger: var(--danger);
-  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-sans);
   --font-mono: var(--font-mono);
 }
 
 body {
   background-color: var(--ground);
   color: var(--ink);
-  font-family: var(--font-mono), ui-monospace, monospace;
-  /* A faint ledger grid, and a wash of warmth from the top left so the ground is not flat black. */
-  background-image:
-    radial-gradient(
-      110ch 70ch at 12% -10%,
-      rgba(216, 180, 95, 0.05),
-      transparent 70%
-    ),
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size:
-    100% 100%,
-    100% 5.5rem,
-    5.5rem 100%;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

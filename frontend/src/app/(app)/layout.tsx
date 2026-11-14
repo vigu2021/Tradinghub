@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/Button";
@@ -11,14 +13,19 @@ import {
   useSession,
 } from "@/features/auth/hooks";
 import { messageFor } from "@/lib/api/errors";
-import { useRouter } from "next/navigation";
+
+const NAV = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/accounts", label: "Accounts" },
+] as const;
 
 /**
- * The shell every signed-in screen sits in: the mark, the way out, and nothing else. Pages below
+ * The shell every signed-in screen sits in: the mark, the sections, and the way out. Pages below
  * render their own content only, so a second one does not have to redraw this header.
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const session = useSession();
   const signOut = useLogout();
 
@@ -35,13 +42,26 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col px-6 py-10 sm:px-10">
-      <header className="rise flex items-baseline justify-between gap-6 border-b border-rule pb-6">
+    <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col px-6 py-8 sm:px-10">
+      <header className="rise flex flex-wrap items-center justify-between gap-6">
         <Logo />
+        {session.status === "authenticated" && (
+          <nav className="flex gap-6 text-sm">
+            {NAV.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                aria-current={pathname === href ? "page" : undefined}
+                className="py-1 text-ink-dim transition-colors hover:text-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink aria-[current=page]:shadow-[inset_0_-2px_0_var(--accent)]"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        )}
         {session.status === "authenticated" && (
           <Button
             variant="ghost"
-            className="w-32"
             onClick={() => signOut.mutate()}
             disabled={signOut.isPending}
           >
@@ -64,11 +84,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {session.status === "unreachable" && (
           <div className="max-w-md">
             <p className="text-sm text-ink-dim">Could not reach the server.</p>
-            <Button
-              variant="ghost"
-              className="mt-6 w-32"
-              onClick={session.retry}
-            >
+            <Button variant="ghost" className="mt-6" onClick={session.retry}>
               Try again
             </Button>
           </div>

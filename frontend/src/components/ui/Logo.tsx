@@ -40,7 +40,7 @@ export function Logo({ size = "md" }: LogoProps) {
       </svg>
 
       <span
-        className={`font-display leading-none tracking-tight ${WORDMARK[size]}`}
+        className={`font-display leading-none font-semibold tracking-tight ${WORDMARK[size]}`}
       >
         Tradinghub
       </span>

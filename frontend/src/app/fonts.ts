@@ -1,13 +1,12 @@
-import { IBM_Plex_Mono, Instrument_Serif } from "next/font/google";
+import { Archivo, IBM_Plex_Mono } from "next/font/google";
 
-export const display = Instrument_Serif({
-  variable: "--font-display",
-  weight: "400",
+export const sans = Archivo({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
 export const mono = IBM_Plex_Mono({
   variable: "--font-mono",
-  weight: "400",
+  weight: ["400", "500"],
   subsets: ["latin"],
 });
