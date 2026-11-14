@@ -1,0 +1,4 @@
+/* Applied only while taking snapshots: Next's dev-mode badge is not part of the page. */
+nextjs-portal {
+  display: none !important;
+}

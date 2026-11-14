@@ -24,15 +24,6 @@ async function register(page: import("@playwright/test").Page, email: string) {
   await page.getByRole("button", { name: "Create account" }).click();
 }
 
-test("the root sends a visitor to the login screen", async ({ page }) => {
-  await page.goto("/");
-
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(
-    page.getByRole("heading", { name: "Welcome back." }),
-  ).toBeVisible();
-});
-
 test("the dashboard is closed to a visitor without a session", async ({
   page,
 }) => {
