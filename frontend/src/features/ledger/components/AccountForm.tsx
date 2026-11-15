@@ -1,5 +1,8 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/Button";
@@ -7,11 +10,8 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Field, SelectField } from "@/components/ui/Field";
 import { messageFor } from "@/lib/api/errors";
 
-import { ACCOUNT_TYPES } from "../types/accounts";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { accountMutations } from "../api/accounts";
+import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPES } from "../types/accounts";
 
 /** The rules of ledger/schemas/accounts.py: AccountCreate, checked before anything is sent. */
 const createAccountSchema = z.object({
@@ -36,15 +36,17 @@ export function CreateAccountForm() {
   const {
     register: field,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<CreateAccount>({
     resolver: zodResolver(createAccountSchema),
-    mode: "onTouched",
+    mode: "onSubmit",
+    reValidateMode: "onChange",
   });
 
   const submit = handleSubmit((values) => {
     createAccount.mutate(values, {
-      onSuccess: () => console.log("Created account"),
+      onSuccess: () => reset(),
     });
   });
 
@@ -53,6 +55,7 @@ export function CreateAccountForm() {
       <Field
         id="account-name"
         label="Name"
+        autoComplete="off"
         error={errors.name?.message}
         {...field("name")}
       />
@@ -60,6 +63,10 @@ export function CreateAccountForm() {
         id="account-unit"
         label="Unit"
         hint="A currency or ticker, like GBP or BTC"
+        autoComplete="off"
+        autoCapitalize="characters"
+        autoCorrect="off"
+        spellCheck={false}
         error={errors.unit?.message}
         {...field("unit")}
       />
@@ -71,7 +78,7 @@ export function CreateAccountForm() {
       >
         {ACCOUNT_TYPES.map((type) => (
           <option key={type} value={type} className="bg-surface">
-            {type}
+            {ACCOUNT_TYPE_LABELS[type]}
           </option>
         ))}
       </SelectField>

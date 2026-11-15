@@ -5,9 +5,17 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { CreateAccountForm } from "@/features/ledger/components/AccountForm";
 import { AccountList } from "@/features/ledger/components/AccountList";
+import type { Account } from "@/features/ledger/types/accounts";
+
+type Panel =
+  | { mode: "closed" }
+  | { mode: "creating" }
+  | { mode: "editing"; account: Account };
 
 export default function AccountsPage() {
-  const [creating, setCreating] = useState(false);
+  const [panel, setPanel] = useState<Panel>({ mode: "closed" });
+
+  const isOpen = panel.mode !== "closed";
 
   return (
     <>
@@ -21,28 +29,34 @@ export default function AccountsPage() {
           </p>
         </div>
         <Button
-          variant={creating ? "ghost" : "solid"}
-          aria-expanded={creating}
-          onClick={() => setCreating((open) => !open)}
+          variant={isOpen ? "ghost" : "solid"}
+          aria-expanded={isOpen}
+          onClick={() =>
+            setPanel(isOpen ? { mode: "closed" } : { mode: "creating" })
+          }
         >
-          {creating ? "Close" : "New account"}
+          {isOpen ? "Close" : "New account"}
         </Button>
       </div>
 
-      {creating && (
-        <section aria-labelledby="new-account" className="mt-10 max-w-md">
-          <h2
-            id="new-account"
-            className="mb-6 text-xs font-medium tracking-[0.12em] text-ink-faint uppercase"
-          >
-            New account
-          </h2>
-          <CreateAccountForm />
-        </section>
-      )}
+      <div
+        className={`mt-12 grid items-start gap-12 ${isOpen ? "lg:grid-cols-[minmax(0,1fr)_22rem]" : ""}`}
+      >
+        {isOpen && (
+          <section aria-labelledby="account-panel" className="lg:order-last">
+            <h2
+              id="account-panel"
+              className="mb-6 text-xs font-medium tracking-[0.12em] text-ink-faint uppercase"
+            >
+              {panel.mode === "editing" ? "Edit account" : "New account"}
+            </h2>
+            {panel.mode === "creating" && <CreateAccountForm />}
+          </section>
+        )}
 
-      <div className="mt-12">
-        <AccountList />
+        <AccountList
+          onAdd={isOpen ? undefined : () => setPanel({ mode: "creating" })}
+        />
       </div>
     </>
   );

@@ -51,6 +51,8 @@ text-ink-faint`) above figures and table columns; sentence case everywhere else.
 - **Entrance motion:** the `rise` class with a growing `[animation-delay:…ms]` per element, once
   per page load, on the shell rather than per page inside the app. `prefers-reduced-motion` turns
   it off. Never use the `animation` shorthand on `.rise`; it resets the delay.
+- **An empty state says what is missing, what it is for, and how to add one.** Never just "nothing
+  here".
 - **Loading:** a static page (the landing page) loads nothing. An app page shows a short text or
   skeleton only on its first load; later fetches keep the previous data on screen.
 

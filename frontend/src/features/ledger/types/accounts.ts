@@ -1,6 +1,12 @@
 export const ACCOUNT_TYPES = ["cash", "crypto", "stock"] as const;
 export type AccountType = (typeof ACCOUNT_TYPES)[number];
 
+export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
+  cash: "Cash",
+  crypto: "Crypto",
+  stock: "Stocks",
+};
+
 /** Mirrors ledger/schemas/accounts.py: AccountResponse. Nothing enforces the match. */
 export type Account = {
   id: number;
