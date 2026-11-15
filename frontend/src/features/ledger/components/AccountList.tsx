@@ -6,14 +6,16 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { messageFor } from "@/lib/api/errors";
 
 import { accountQueries } from "../api/accounts";
-import { ACCOUNT_TYPE_LABELS } from "../types/accounts";
+import { ACCOUNT_TYPE_LABELS, type Account } from "../types/accounts";
 
 type AccountListProps = {
-  /** Opens the new account form. Left out while it is already open. */
-  onAdd?: () => void;
+  /** Opens the new account form. */
+  onAdd: () => void;
+  /** Opens the edit form for the account whose Edit button was pressed. */
+  onEdit: (account: Account) => void;
 };
 
-export function AccountList({ onAdd }: AccountListProps) {
+export function AccountList({ onAdd, onEdit }: AccountListProps) {
   const { data: accounts, isPending, error } = useQuery(accountQueries.list());
 
   if (isPending) {
@@ -32,15 +34,13 @@ export function AccountList({ onAdd }: AccountListProps) {
           An account is anywhere money sits: a bank, an exchange, a broker. Add
           one and everything you record against it adds up here.
         </p>
-        {onAdd && (
-          <button
-            type="button"
-            onClick={onAdd}
-            className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-accent underline underline-offset-4 hover:text-ink active:text-ink"
-          >
-            Add your first account
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onAdd}
+          className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-accent underline underline-offset-4 hover:text-ink active:text-ink"
+        >
+          Add your first account
+        </button>
       </div>
     );
   }
@@ -56,6 +56,9 @@ export function AccountList({ onAdd }: AccountListProps) {
           <th className="px-4 pb-3 font-medium">Name</th>
           <th className="px-4 pb-3 font-medium">Type</th>
           <th className="px-4 pb-3 text-right font-medium">Balance</th>
+          <th className="pb-3">
+            <span className="sr-only">Actions</span>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -78,6 +81,16 @@ export function AccountList({ onAdd }: AccountListProps) {
             <td className="px-4 py-3.5 text-right font-mono tabular-nums">
               {account.balance}{" "}
               <span className="text-ink-faint">{account.unit}</span>
+            </td>
+            <td className="py-0.5 pr-2 text-right">
+              <button
+                type="button"
+                aria-label={`Edit ${account.name}`}
+                onClick={() => onEdit(account)}
+                className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-ink-dim underline-offset-4 hover:text-accent hover:underline active:text-accent"
+              >
+                Edit
+              </button>
             </td>
           </tr>
         ))}

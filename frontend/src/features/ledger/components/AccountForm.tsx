@@ -11,10 +11,10 @@ import { Field, SelectField } from "@/components/ui/Field";
 import { messageFor } from "@/lib/api/errors";
 
 import { accountMutations } from "../api/accounts";
-import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPES } from "../types/accounts";
+import { Account, ACCOUNT_TYPE_LABELS, ACCOUNT_TYPES } from "../types/accounts";
 
 /** The rules of ledger/schemas/accounts.py: AccountCreate, checked before anything is sent. */
-const createAccountSchema = z.object({
+const accountSchema = z.object({
   name: z
     .string()
     .trim()
@@ -29,25 +29,44 @@ const createAccountSchema = z.object({
   type: z.enum(ACCOUNT_TYPES),
 });
 
-type CreateAccount = z.infer<typeof createAccountSchema>;
+type AccountValues = z.infer<typeof accountSchema>;
 
-export function CreateAccountForm() {
+type AccountFormProps =
+  | { mode: "creating" }
+  | {
+      mode: "editing";
+      account: Account;
+      onDone: () => void;
+    };
+
+export function AccountForm(props: AccountFormProps) {
   const createAccount = useMutation(accountMutations.create());
+  const updateAccount = useMutation(accountMutations.update());
+
   const {
     register: field,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<CreateAccount>({
-    resolver: zodResolver(createAccountSchema),
+  } = useForm<AccountValues>({
+    resolver: zodResolver(accountSchema),
     mode: "onSubmit",
     reValidateMode: "onChange",
   });
 
   const submit = handleSubmit((values) => {
-    createAccount.mutate(values, {
-      onSuccess: () => reset(),
-    });
+    if (props.mode === "creating") {
+      createAccount.mutate(values, {
+        onSuccess: () => reset(),
+      });
+    } else {
+      updateAccount.mutate(
+        { id: props.account.id, changes: values },
+        {
+          onSuccess: () => props.onDone(),
+        },
+      );
+    }
   });
 
   return (

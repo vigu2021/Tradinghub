@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
-import { CreateAccountForm } from "@/features/ledger/components/AccountForm";
+import { AccountForm } from "@/features/ledger/components/AccountForm";
 import { AccountList } from "@/features/ledger/components/AccountList";
 import type { Account } from "@/features/ledger/types/accounts";
 
@@ -50,12 +50,21 @@ export default function AccountsPage() {
             >
               {panel.mode === "editing" ? "Edit account" : "New account"}
             </h2>
-            {panel.mode === "creating" && <CreateAccountForm />}
+            {panel.mode === "creating" && <AccountForm mode="creating" />}
+            {panel.mode === "editing" && (
+              <AccountForm
+                key={panel.account.id}
+                mode="editing"
+                account={panel.account}
+                onDone={() => setPanel({ mode: "closed" })}
+              />
+            )}
           </section>
         )}
 
         <AccountList
-          onAdd={isOpen ? undefined : () => setPanel({ mode: "creating" })}
+          onAdd={() => setPanel({ mode: "creating" })}
+          onEdit={(account) => setPanel({ mode: "editing", account })}
         />
       </div>
     </>
