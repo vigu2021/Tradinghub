@@ -39,9 +39,25 @@ type AccountFormProps =
       onDone: () => void;
     };
 
+const SUBMIT_LABELS = {
+  creating: { idle: "Add account", busy: "Adding" },
+  editing: { idle: "Save", busy: "Saving" },
+} as const;
+
 export function AccountForm(props: AccountFormProps) {
   const createAccount = useMutation(accountMutations.create());
   const updateAccount = useMutation(accountMutations.update());
+  const mutation = props.mode === "editing" ? updateAccount : createAccount;
+  const label = SUBMIT_LABELS[props.mode];
+
+  const defaultValues: AccountValues =
+    props.mode === "editing"
+      ? {
+          name: props.account.name,
+          unit: props.account.unit,
+          type: props.account.type,
+        }
+      : { name: "", unit: "", type: "cash" };
 
   const {
     register: field,
@@ -50,6 +66,7 @@ export function AccountForm(props: AccountFormProps) {
     formState: { errors },
   } = useForm<AccountValues>({
     resolver: zodResolver(accountSchema),
+    defaultValues,
     mode: "onSubmit",
     reValidateMode: "onChange",
   });
@@ -102,16 +119,12 @@ export function AccountForm(props: AccountFormProps) {
         ))}
       </SelectField>
 
-      {createAccount.error && (
-        <ErrorBanner>{messageFor(createAccount.error)}</ErrorBanner>
+      {mutation.error && (
+        <ErrorBanner>{messageFor(mutation.error)}</ErrorBanner>
       )}
 
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={createAccount.isPending}
-      >
-        {createAccount.isPending ? "Adding" : "Add account"}
+      <Button type="submit" className="w-full" disabled={mutation.isPending}>
+        {mutation.isPending ? label.busy : label.idle}
       </Button>
     </form>
   );
