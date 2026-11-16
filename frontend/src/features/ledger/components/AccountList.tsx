@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
 
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -12,11 +13,9 @@ import { ACCOUNT_TYPE_LABELS, type Account } from "../types/accounts";
 type AccountListProps = {
   /** Opens the new account form. */
   onAdd: () => void;
-  /** Opens the edit form for the account whose Edit button was pressed. */
-  onEdit: (account: Account) => void;
 };
 
-export function AccountList({ onAdd, onEdit }: AccountListProps) {
+export function AccountList({ onAdd }: AccountListProps) {
   const { data: accounts, isPending, error } = useQuery(accountQueries.list());
   const [showArchived, setShowArchived] = useState(false);
 
@@ -59,16 +58,16 @@ export function AccountList({ onAdd, onEdit }: AccountListProps) {
       <thead>
         <tr className="text-left text-xs font-medium tracking-[0.12em] text-ink-faint uppercase">
           <th className="px-4 pb-3 font-medium">Name</th>
-          <th className="px-4 pb-3 font-medium">Type</th>
+          <th className="hidden px-4 pb-3 font-medium sm:table-cell">Type</th>
           <th className="px-4 pb-3 text-right font-medium">Balance</th>
           <th className="pb-3">
-            <span className="sr-only">Actions</span>
+            <span className="sr-only">Open</span>
           </th>
         </tr>
       </thead>
       <tbody>
         {activeAccounts.map((account) => (
-          <AccountRow key={account.id} account={account} onEdit={onEdit} />
+          <AccountRow key={account.id} account={account} />
         ))}
       </tbody>
 
@@ -84,7 +83,7 @@ export function AccountList({ onAdd, onEdit }: AccountListProps) {
               >
                 <span
                   aria-hidden
-                  className={`size-[7px] border-r-[1.5px] border-b-[1.5px] border-current transition-transform ${showArchived ? "-translate-y-0.5 rotate-45" : "-rotate-45"}`}
+                  className={`size-1.75 border-r-[1.5px] border-b-[1.5px] border-current transition-transform ${showArchived ? "-translate-y-0.5 rotate-45" : "-rotate-45"}`}
                 />
                 Archived ({archivedAccounts.length})
               </button>
@@ -96,7 +95,7 @@ export function AccountList({ onAdd, onEdit }: AccountListProps) {
       {showArchived && (
         <tbody>
           {archivedAccounts.map((account) => (
-            <AccountRow key={account.id} account={account} onEdit={onEdit} />
+            <AccountRow key={account.id} account={account} />
           ))}
         </tbody>
       )}
@@ -106,28 +105,49 @@ export function AccountList({ onAdd, onEdit }: AccountListProps) {
 
 type AccountRowProps = {
   account: Account;
-  onEdit: (account: Account) => void;
 };
-function AccountRow({ account, onEdit }: AccountRowProps) {
+
+function AccountRow({ account }: AccountRowProps) {
+  const active = account.archived_at === null;
+
   return (
-    <tr className={account.archived_at ? "text-ink-faint" : "odd:bg-surface"}>
-      <td className="px-4 py-3.5">{account.name}</td>
-      <td className="px-4 py-3.5 text-ink-dim">
+    <tr
+      className={`group relative hover:bg-rule ${active ? "odd:bg-surface" : "text-ink-faint"}`}
+    >
+      <td className="px-4 py-3.5">
+        <Link
+          href={`/accounts/${account.id}`}
+          className="outline-none after:absolute after:inset-0 focus-visible:underline focus-visible:underline-offset-4"
+        >
+          {account.name}
+        </Link>
+      </td>
+      <td className="hidden px-4 py-3.5 text-ink-dim sm:table-cell">
         {ACCOUNT_TYPE_LABELS[account.type]}
       </td>
       <td className="px-4 py-3.5 text-right font-mono tabular-nums">
         {account.balance} <span className="text-ink-faint">{account.unit}</span>
       </td>
-      <td className="py-0.5 pr-2 text-right">
-        <button
-          type="button"
-          aria-label={`Edit ${account.name}`}
-          onClick={() => onEdit(account)}
-          className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-ink-dim underline-offset-4 hover:text-accent hover:underline active:text-accent"
-        >
-          Edit
-        </button>
+      <td className="w-12 pr-4 text-right text-ink-faint group-hover:text-accent">
+        <ChevronIcon />
       </td>
     </tr>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      className="ml-auto size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m9 6 6 6-6 6" />
+    </svg>
   );
 }
