@@ -455,9 +455,10 @@ ever shows.
    `useAuthenticatedUser()`. No session checks in the page.
 2. Each account with its balance and unit. Add, rename, change unit or type, archive and restore.
    There is no delete: the spec dropped it so no path can destroy financial history.
-3. **Archived accounts stay listed, marked as archived**, with their balance, since the money in
-   one is still the user's. A name already taken shows the readable `409` reason, not a generic
-   failure.
+3. **Archived accounts are kept, under a collapsed "Archived" group below the active ones**, with
+   their balance, since the money in one is still the user's. Archive and restore are one click
+   each, with no confirmation, because each undoes the other. A name already taken shows the
+   readable `409` reason, not a generic failure.
 4. An empty state for a user with no accounts, since that is everyone on their first visit.
 5. The header gains links for Dashboard, Accounts and Transactions.
 6. Follow the existing visual language: the tokens already in `globals.css`, and the `Button` and
