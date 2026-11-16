@@ -95,6 +95,9 @@ the web server itself or reuses the one on port 3210.
   agent). Touch tests use `tap()` and skip on desktop with `test.skip(!isMobile)`. An iPhone
   profile (WebKit) needs its system libraries first: `sudo npx playwright install-deps webkit`.
 - **Measure sizes in whole pixels** (`Math.round`): a moving element reports 43.999996px.
+- **Measure sideways overflow against `clientWidth`, never `innerWidth`.** A phone widens
+  `innerWidth` to fit content that is too wide, so the overflow always reads 0. Give the page real
+  data first: an empty table never overflows.
 - **Visual snapshots** (`toHaveScreenshot`) cover the public pages at each width, with animations
   disabled and the dev overlay hidden (`e2e/hide-dev-overlay.css`). The allowance is a fixed 50
   pixels, never a ratio: a ratio forgives more on a bigger page, and 0.1% of a desktop page hid a

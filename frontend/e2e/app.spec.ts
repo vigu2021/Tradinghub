@@ -91,6 +91,11 @@ test.describe("on a phone", () => {
   test("the app fits the screen with sign out beside the logo", async ({
     page,
   }) => {
+    await seedAccount(page.request, {
+      name: uniqueName("Vanguard ISA"),
+      unit: "GBP",
+      type: "stock",
+    });
     await page.goto("/dashboard");
 
     for (const section of ["Dashboard", "Accounts"]) {
@@ -101,7 +106,9 @@ test.describe("on a phone", () => {
       );
 
       const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - window.innerWidth,
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
       );
       const logo = await page
         .locator("header")

@@ -407,7 +407,9 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
         await expect(logo(page)).toBeVisible();
 
         const overflow = await page.evaluate(
-          () => document.documentElement.scrollWidth - window.innerWidth,
+          () =>
+            document.documentElement.scrollWidth -
+            document.documentElement.clientWidth,
         );
 
         expect(overflow).toBeLessThanOrEqual(0);
