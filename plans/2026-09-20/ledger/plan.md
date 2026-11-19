@@ -451,7 +451,8 @@ buttons on every row both read as clutter. The edit panel, row buttons, banner a
 were each built and dropped along the way; the mockups under this folder show why.
 
 **Files:**
-- Create: `frontend/src/app/(app)/accounts/page.tsx`, `frontend/src/app/(app)/accounts/[id]/page.tsx`,
+- Create: `frontend/src/app/(app)/accounts/page.tsx`, `frontend/src/app/(app)/accounts/new/page.tsx`,
+  `frontend/src/app/(app)/accounts/[id]/page.tsx`,
   `frontend/src/features/ledger/components/{AccountForm,AccountList,ArchiveAccount,RecentTransactions}.tsx`
 - Modify: `frontend/src/app/(app)/layout.tsx`
 
@@ -459,7 +460,7 @@ were each built and dropped along the way; the mockups under this folder show wh
 1. Under `(app)`, so the layout guards it and the page reads the user through
    `useAuthenticatedUser()`. No session checks in the page.
 2. **`/accounts` is an index.** Each row is one link to the account's page, with its balance and
-   unit, and a "New account" panel adds one. There is no delete: the spec dropped it so no path can
+   unit. "New account" opens `/accounts/new`, and saving lands on the new account's page. There is no delete: the spec dropped it so no path can
    destroy financial history.
 3. **Archived accounts are kept, under a collapsed "Archived" group below the active ones**, with
    their balance, since the money in one is still the user's. A name already taken shows the

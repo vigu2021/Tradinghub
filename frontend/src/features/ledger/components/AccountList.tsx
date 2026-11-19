@@ -10,12 +10,7 @@ import { messageFor } from "@/lib/api/errors";
 import { accountQueries } from "../api/accounts";
 import { ACCOUNT_TYPE_LABELS, type Account } from "../types/accounts";
 
-type AccountListProps = {
-  /** Opens the new account form. */
-  onAdd: () => void;
-};
-
-export function AccountList({ onAdd }: AccountListProps) {
+export function AccountList() {
   const { data: accounts, isPending, error } = useQuery(accountQueries.list());
   const [showArchived, setShowArchived] = useState(false);
 
@@ -35,13 +30,12 @@ export function AccountList({ onAdd }: AccountListProps) {
           An account is anywhere money sits: a bank, an exchange, a broker. Add
           one and everything you record against it adds up here.
         </p>
-        <button
-          type="button"
-          onClick={onAdd}
+        <Link
+          href="/accounts/new"
           className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-accent underline underline-offset-4 hover:text-ink active:text-ink"
         >
           Add your first account
-        </button>
+        </Link>
       </div>
     );
   }

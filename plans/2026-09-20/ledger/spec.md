@@ -280,12 +280,13 @@ gains the model import, and `main.py` includes the router.
 
 ## Frontend
 
-Four pages under `(app)`, so the layout guards them and each reads the user through
+Five pages under `(app)`, so the layout guards them and each reads the user through
 `useAuthenticatedUser()`.
 
 | Page | Shows |
 |---|---|
-| `/accounts` | each account with its balance, each row a link to its page; add; archived accounts in a collapsed group |
+| `/accounts` | each account with its balance, each row a link to its page; archived accounts in a collapsed group |
+| `/accounts/new` | name, unit and type; saving lands on the new account's page |
 | `/accounts/[id]` | one account: its balance, its latest transactions, and settings to rename, change unit or type, archive and restore. No delete |
 | `/transactions` | a table: date, account, kind, category, amount, note. Filters for account, kind, category, and date range. Page controls. Buttons for new transaction and new transfer |
 | `/dashboard` | total balance per unit, each account's balance, this month's income and expenses, expenses by category, this week's expenses, and the five most recent transactions |

@@ -28,28 +28,33 @@ test.describe("accounts page", () => {
     await expect(row).toContainText("BTC");
   });
 
-  test("adding an account with the form puts it in the list", async ({
-    page,
-  }) => {
+  test("adding an account lands on its new page", async ({ page }) => {
     const name = uniqueName("Monzo");
     await page.goto("/accounts");
 
-    await page.getByRole("button", { name: "New account" }).click();
+    await page.getByRole("link", { name: "New account" }).click();
+    await expect(page).toHaveURL(/\/accounts\/new$/);
     await page.getByLabel("Name").fill(name);
     await page.getByLabel("Unit").fill("GBP");
     await page.getByRole("button", { name: "Add account" }).click();
 
-    await expect(
-      page.getByRole("row", { name: new RegExp(name) }),
-    ).toBeVisible();
+    await expect(page).toHaveURL(/\/accounts\/\d+$/);
+    await expect(page.getByRole("heading", { name, level: 1 })).toBeVisible();
+  });
+
+  test("cancelling a new account goes back to the list", async ({ page }) => {
+    await page.goto("/accounts/new");
+
+    await page.getByRole("button", { name: "Cancel" }).click();
+
+    await expect(page).toHaveURL(/\/accounts$/);
   });
 
   test("a name already in use is refused with the reason", async ({ page }) => {
     const name = uniqueName("Chase");
     await seedAccount(page.request, { name, unit: "GBP", type: "cash" });
-    await page.goto("/accounts");
+    await page.goto("/accounts/new");
 
-    await page.getByRole("button", { name: "New account" }).click();
     await page.getByLabel("Name").fill(name);
     await page.getByLabel("Unit").fill("GBP");
     await page.getByRole("button", { name: "Add account" }).click();
@@ -163,16 +168,19 @@ test.describe("accessibility", () => {
     await expectAccessible(page);
   });
 
-  test("the accounts page, with the form open, has no WCAG A or AA violations", async ({
+  test("the accounts list has no WCAG A or AA violations", async ({ page }) => {
+    const name = uniqueName("Vanguard");
+    await seedAccount(page.request, { name, unit: "GBP", type: "stock" });
+    await page.goto("/accounts");
+    await expect(page.getByRole("link", { name })).toBeVisible();
+
+    await expectAccessible(page);
+  });
+
+  test("the new account page has no WCAG A or AA violations", async ({
     page,
   }) => {
-    await seedAccount(page.request, {
-      name: uniqueName("Vanguard"),
-      unit: "GBP",
-      type: "stock",
-    });
-    await page.goto("/accounts");
-    await page.getByRole("button", { name: "New account" }).click();
+    await page.goto("/accounts/new");
     await expect(page.getByLabel("Name")).toBeVisible();
 
     await expectAccessible(page);

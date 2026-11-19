@@ -32,7 +32,11 @@ const accountSchema = z.object({
 type AccountValues = z.infer<typeof accountSchema>;
 
 type AccountFormProps =
-  | { mode: "creating" }
+  | {
+      mode: "creating";
+      onCreated: (account: Account) => void;
+      onCancel: () => void;
+    }
   | {
       mode: "editing";
       account: Account;
@@ -46,7 +50,7 @@ const SUBMIT_LABELS = {
 } as const;
 
 const LAYOUTS = {
-  creating: { fields: "space-y-7", actions: "" },
+  creating: { fields: "space-y-7", actions: "flex gap-2" },
   editing: {
     fields: "grid gap-5 sm:grid-cols-[2fr_1fr_1fr]",
     actions: "flex gap-2",
@@ -72,7 +76,6 @@ export function AccountForm(props: AccountFormProps) {
   const {
     register: field,
     handleSubmit,
-    reset,
     formState: { errors },
   } = useForm<AccountValues>({
     resolver: zodResolver(accountSchema),
@@ -84,7 +87,7 @@ export function AccountForm(props: AccountFormProps) {
   const submit = handleSubmit((values) => {
     if (props.mode === "creating") {
       createAccount.mutate(values, {
-        onSuccess: () => reset(),
+        onSuccess: (account) => props.onCreated(account),
       });
     } else {
       updateAccount.mutate(
@@ -136,18 +139,16 @@ export function AccountForm(props: AccountFormProps) {
       )}
 
       <div className={layout.actions}>
-        <Button
-          type="submit"
-          className={props.mode === "creating" ? "w-full" : ""}
-          disabled={mutation.isPending}
-        >
+        <Button type="submit" disabled={mutation.isPending}>
           {mutation.isPending ? label.busy : label.idle}
         </Button>
-        {props.mode === "editing" && (
-          <Button type="button" variant="ghost" onClick={props.onClose}>
-            Cancel
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={props.mode === "editing" ? props.onClose : props.onCancel}
+        >
+          Cancel
+        </Button>
       </div>
     </form>
   );
