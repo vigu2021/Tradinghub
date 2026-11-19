@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tradinghub themes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Manrope:wght@300;400;500;600;700&family=Source+Sans+3:wght@400;500;600&family=Source+Serif+4:wght@400;600&family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Public+Sans:wght@400;500;700;800&family=DM+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&family=Spline+Sans+Mono:wght@300;400;500&family=Hanken+Grotesk:wght@400;500;600;700&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: system-ui, sans-serif; background: #e9e9e9; }
+
+  /* ---------- Gallery chrome (not part of any theme) ---------- */
+  .chrome { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid #d6d6d6; padding: 10px 16px; font-size: 13px; color: #222; }
+  .chrome-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .chrome-row + .chrome-row { margin-top: 8px; }
+  .chrome button { font: inherit; border: 1px solid #ccc; background: #f6f6f6; padding: 5px 9px; border-radius: 5px; cursor: pointer; color: #222; }
+  .chrome button[aria-pressed="true"] { background: #222; color: #fff; border-color: #222; }
+  .chrome .src { font-size: 10px; opacity: .6; margin-left: 4px; }
+  .chrome .lbl { font-weight: 600; margin-right: 4px; }
+  .info { margin-top: 8px; font-size: 12px; color: #555; line-height: 1.5; max-width: 120ch; }
+  .info b { color: #222; }
+
+  /* ---------- Stage: everything below reads the theme's variables ---------- */
+  #stage {
+    min-height: calc(100dvh - 120px);
+    background: var(--ground); color: var(--ink);
+    font-family: var(--font-ui), system-ui, sans-serif; font-size: 15px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .shell { max-width: 1120px; margin: 0 auto; padding: 32px clamp(16px, 4vw, 48px) 80px; }
+  .num { font-family: var(--font-num), ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .display { font-family: var(--font-display), serif; }
+  .dim { color: var(--ink-dim); }
+  .faint { color: var(--ink-faint); }
+  .unit { color: var(--ink-faint); font-size: .8em; margin-left: .35em; }
+  .pos { color: var(--positive); }
+  .neg { color: var(--negative); }
+  .caption { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+
+  .logo { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 19px; color: var(--ink); }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 48px; }
+  .nav { display: flex; gap: 22px; font-size: 14px; }
+  .nav a { color: var(--ink-dim); text-decoration: none; padding: 4px 0; }
+  .nav a.on { color: var(--ink); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+
+  .btn { font: inherit; font-size: 14px; font-weight: 600; border: 0; cursor: pointer; border-radius: var(--radius); padding: 11px 18px; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); }
+  .btn.secondary { background: var(--surface); color: var(--ink); }
+  .btn.quiet { background: none; color: var(--ink-dim); padding-left: 0; padding-right: 0; }
+  .kbd { display: inline-block; font-family: var(--font-num); font-size: 11px; padding: 1px 6px; margin-left: 8px; border-radius: 4px; background: color-mix(in srgb, var(--accent-ink) 14%, transparent); opacity: .8; }
+
+  h1.title { font-family: var(--font-display); font-size: var(--title); line-height: 1.05; font-weight: 600; letter-spacing: -.015em; }
+  .t-light h1.title { font-weight: 300; }
+  .sub { color: var(--ink-dim); margin-top: 10px; font-size: 15px; max-width: 60ch; }
+  .serif-note { font-family: var(--font-display); font-style: italic; color: var(--ink-dim); margin-top: 10px; font-size: 17px; }
+
+  .head-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+
+  /* fields */
+  .field { margin-bottom: 20px; }
+  .field label { display: block; font-size: 13px; font-weight: 500; color: var(--ink-dim); margin-bottom: 6px; }
+  .field input, .field select { width: 100%; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid transparent; border-radius: var(--radius); padding: 11px 12px; outline: none; }
+  .field input:focus { border-color: var(--accent); }
+  .field .hint { font-size: 12px; color: var(--ink-faint); margin-top: 6px; }
+  .panel { background: var(--surface); border-radius: calc(var(--radius) + 4px); padding: 28px; }
+  .panel .field input, .panel .field select { background: var(--ground); }
+
+  /* ---------- Account / holdings heroes ---------- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 32px; margin: 40px 0 8px; }
+  .stat .big { font-size: 40px; line-height: 1.1; margin-top: 6px; letter-spacing: -.01em; }
+  .bigone { margin: 44px 0 4px; }
+  .bigone .big { font-size: 64px; line-height: 1; letter-spacing: -.02em; }
+  .t-light .bigone .big { font-weight: 300; }
+  .tape { display: flex; gap: 28px; flex-wrap: wrap; padding: 8px 14px; background: var(--surface); border-radius: var(--radius); font-size: 13px; margin-bottom: 28px; }
+  .tape span b { font-weight: 500; color: var(--ink); }
+  .wells { display: flex; gap: 16px; flex-wrap: wrap; margin: 36px 0 8px; }
+  .well { background: color-mix(in srgb, var(--ink) 7%, var(--surface)); border-radius: var(--radius); padding: 14px 18px; min-width: 210px; box-shadow: inset 0 1px 3px color-mix(in srgb, var(--ink) 14%, transparent); }
+  .well .big { font-size: 30px; margin-top: 4px; }
+  .masthead { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; margin: 36px 0 8px; padding: 18px 0; }
+  .masthead .big { font-size: 26px; margin-top: 4px; }
+  .sentence { font-family: var(--font-display); font-size: 26px; line-height: 1.35; max-width: 34ch; margin: 36px 0 8px; }
+  .sentence b { font-family: var(--font-num); font-weight: 600; }
+
+  /* ---------- Tables, four ways of separating rows without a grid ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-weight: 500; font-size: 12px; color: var(--ink-faint); padding: 10px 14px; }
+  td { padding: 14px; }
+  th.r, td.r { text-align: right; }
+  tr.archived td { color: var(--ink-faint); }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--surface); color: var(--ink-faint); margin-left: 10px; }
+
+  .ts-zebra tbody tr:nth-child(odd) { background: var(--surface); }
+  .ts-zebra tbody td:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+  .ts-zebra tbody td:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+
+  .ts-space td { padding: 18px 14px; }
+  .ts-space tbody tr:hover { background: var(--surface); }
+
+  .ts-panel .tablewrap { background: var(--surface); border-radius: calc(var(--radius) + 4px); padding: 8px; }
+  .ts-panel tbody tr:hover { background: color-mix(in srgb, var(--ink) 5%, var(--surface)); }
+
+  .ts-divider tbody tr + tr td { box-shadow: inset 0 1px 0 var(--divider); }
+  .ts-compact td { padding: 8px 12px; }
+  .ts-compact th { padding: 6px 12px; }
+
+  .group-label { padding: 22px 14px 6px; }
+  .group-label td { padding: 22px 14px 6px; }
+
+  /* ---------- Dashboard ---------- */
+  .chips { display: flex; gap: 6px; }
+  .chip { font-size: 13px; padding: 7px 12px; border-radius: 999px; background: none; color: var(--ink-dim); border: 0; font-family: inherit; }
+  .chip.on { background: var(--surface); color: var(--ink); font-weight: 600; }
+  .bars { margin-top: 18px; }
+  .bar { display: grid; grid-template-columns: 140px minmax(0,1fr) 110px; gap: 18px; align-items: center; padding: 10px 0; }
+  .track { height: 8px; border-radius: 999px; background: var(--surface); overflow: hidden; }
+  .fill { height: 100%; background: var(--accent); border-radius: 999px; }
+  .fill.muted { background: var(--ink-faint); }
+
+  /* ---------- Landing ---------- */
+  .hero { padding: 40px 0 56px; }
+  .hero h1 { font-family: var(--font-display); font-weight: 600; letter-spacing: -.02em; line-height: 1.02; font-size: clamp(40px, 6vw, 72px); }
+  .t-light .hero h1 { font-weight: 300; }
+  .hero p { color: var(--ink-dim); font-size: 19px; margin-top: 18px; max-width: 46ch; }
+  .hero .ctas { display: flex; gap: 14px; margin-top: 30px; align-items: center; }
+  .l-centered .hero { text-align: center; }
+  .l-centered .hero p { margin-left: auto; margin-right: auto; }
+  .l-centered .hero .ctas { justify-content: center; }
+  .l-split .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 48px; align-items: center; }
+  @media (max-width: 860px) { .l-split .hero { grid-template-columns: 1fr; } }
+  .l-editorial .hero h1 { font-size: clamp(48px, 8vw, 96px); max-width: 14ch; }
+  .preview { background: var(--surface); border-radius: calc(var(--radius) + 6px); padding: 22px; }
+  .preview .inner { background: var(--ground); border-radius: var(--radius); padding: 14px; }
+  .features { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 40px; padding-top: 24px; }
+  @media (max-width: 760px) { .features { grid-template-columns: 1fr; } }
+  .features h3 { font-family: var(--font-display); font-size: 19px; font-weight: 600; margin-bottom: 8px; }
+  .features p { color: var(--ink-dim); font-size: 15px; }
+
+  /* ---------- Sign in ---------- */
+  .auth { min-height: calc(100dvh - 200px); display: grid; }
+  .s-centered .auth { place-items: center; }
+  .s-centered .auth > div { width: min(400px, 100%); }
+  .s-left .auth { align-items: center; }
+  .s-left .auth > div { width: min(400px, 100%); margin-left: 8%; }
+  .s-panel .auth { place-items: center; }
+  .s-panel .auth > div { width: min(430px, 100%); }
+  .s-split .auth, .s-side .auth { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 64px; align-items: center; }
+  @media (max-width: 860px) { .s-split .auth, .s-side .auth { grid-template-columns: 1fr; } }
+  .auth h1 { font-family: var(--font-display); font-size: 44px; font-weight: 600; letter-spacing: -.02em; line-height: 1.05; margin-bottom: 8px; }
+  .t-light .auth h1 { font-weight: 300; }
+  .auth .alt { font-size: 14px; color: var(--ink-dim); margin-top: 22px; }
+  .auth .alt a { color: var(--ink); text-underline-offset: 4px; text-decoration-color: var(--accent); }
+  .sidecopy { font-family: var(--font-display); font-size: 34px; line-height: 1.2; color: var(--ink-dim); max-width: 16ch; }
+</style>
+</head>
+<body>
+<div class="chrome">
+  <div class="chrome-row" id="themeRow"><span class="lbl">Theme</span></div>
+  <div class="chrome-row" id="viewRow"><span class="lbl">Page</span></div>
+  <div class="info" id="info"></div>
+</div>
+<div id="stage"></div>
+
+<script>
+const THEMES = [
+  { src: "Codex", name: "Swiss Ledger", mood: "Precise and editorial, with the clarity of a well-set financial report.", inspired: "Swiss typography, Monocle", light: true,
+    fonts: { ui: "Archivo", num: "IBM Plex Mono", display: "Archivo" },
+    t: { ground: "#F5F5F1", surface: "#EBECE7", ink: "#202320", inkDim: "#626761", inkFaint: "#858A83", divider: "#DDE0D9", accent: "#9A4D28", accentInk: "#FFFFFF", positive: "#26714A", negative: "#B3453D" },
+    radius: "0px", title: 40, table: "ts-zebra", hero: "stats", landing: "l-editorial", signin: "s-side",
+    signature: "Oversized balances under small uppercase labels.",
+    copy: { h: "A clearer record of every decision.", s: "Track accounts, transactions and transfers in a journal built for reviewing your own decisions." } },
+  { src: "Codex", name: "Quiet Banking", mood: "Calm and reassuring, designed for an everyday check-in.", inspired: "Modern retail banking, Muji", light: true,
+    fonts: { ui: "Manrope", num: "Manrope", display: "Manrope" },
+    t: { ground: "#F3F5F2", surface: "#E8ECE7", ink: "#26302B", inkDim: "#626D65", inkFaint: "#8A948C", divider: "#DCE2DB", accent: "#6D526F", accentInk: "#FFFFFF", positive: "#28724B", negative: "#B34D46" },
+    radius: "10px", title: 34, table: "ts-space", hero: "stats", landing: "l-centered", signin: "s-centered",
+    signature: "Balances lead on a larger line while units recede in size and tone.",
+    copy: { h: "Know where your money went.", s: "Keep accounts and transactions together, then review balances and spending without the noise." } },
+  { src: "Codex", name: "Paper Journal", mood: "Warm and reflective, like a personal record worth returning to.", inspired: "Editorial notebooks, The Gentlewoman", light: true,
+    fonts: { ui: "Source Sans 3", num: "Source Sans 3", display: "Fraunces" },
+    t: { ground: "#F6F1E7", surface: "#EBE3D6", ink: "#302B25", inkDim: "#70685E", inkFaint: "#968C7E", divider: "#DED4C5", accent: "#A34D32", accentInk: "#FFFFFF", positive: "#3B7350", negative: "#AF4C43" },
+    radius: "6px", title: 42, table: "ts-divider", hero: "note", landing: "l-split", signin: "s-side",
+    signature: "A short serif note under each page title frames the numbers as a record of choices.",
+    copy: { h: "Make sense of the money moves.", s: "Record what happened across your accounts and revisit the decisions behind each transaction." } },
+  { src: "Codex", name: "Operator Desk", mood: "Focused and efficient for frequent review of dense financial data.", inspired: "Bloomberg Terminal, trading workstations", light: false,
+    fonts: { ui: "IBM Plex Sans", num: "IBM Plex Mono", display: "IBM Plex Sans" },
+    t: { ground: "#171A18", surface: "#222723", ink: "#F0F1EC", inkDim: "#A8B0A6", inkFaint: "#798379", divider: "#343C35", accent: "#D5AD66", accentInk: "#211A0D", positive: "#78BD89", negative: "#E18B83" },
+    radius: "6px", title: 32, table: "ts-divider ts-compact", hero: "tape", landing: "l-split", signin: "s-split",
+    signature: "A compact holdings strip shows each unit as a spaced, right-aligned figure.",
+    copy: { h: "Review the record. Improve the decision.", s: "A private journal for accounts, transactions, transfers and the patterns behind your spending." } },
+  { src: "Codex", name: "Midnight Type", mood: "Bold and minimal, with strong hierarchy and very little chrome.", inspired: "High-contrast editorial, Japanese minimalism", light: false,
+    fonts: { ui: "Public Sans", num: "DM Mono", display: "Public Sans" },
+    t: { ground: "#20201E", surface: "#2B2B28", ink: "#FAF9F3", inkDim: "#B9B8AF", inkFaint: "#898980", divider: "#3B3B36", accent: "#E8B88A", accentInk: "#292017", positive: "#8BC99A", negative: "#E59A91" },
+    radius: "0px", title: 48, table: "ts-space", hero: "big", landing: "l-editorial", signin: "s-centered",
+    signature: "One large balance anchors each view; everything else steps down sharply.",
+    copy: { h: "See your decisions in full.", s: "Keep a clear account of money moving in, out and between the places you hold it." } },
+  { src: "Claude", name: "Printed Statement", mood: "A quarterly bank statement crossed with a broadsheet business page.", inspired: "Private-bank statements, FT markets pages", light: true,
+    fonts: { ui: "Source Sans 3", num: "Source Sans 3", display: "Source Serif 4" },
+    t: { ground: "#F6F3EC", surface: "#ECE7DC", ink: "#1C1B19", inkDim: "#5C5850", inkFaint: "#7D786E", divider: "rgba(28,27,25,0.08)", accent: "#1F3A93", accentInk: "#FFFFFF", positive: "#1E6B3A", negative: "#A8322D" },
+    radius: "2px", title: 40, table: "ts-zebra", hero: "masthead", landing: "l-split", signin: "s-centered",
+    signature: "A statement masthead: opening balance, money in, money out, closing balance.",
+    copy: { h: "Your money, on the record.", s: "Record every account, transaction and transfer, then read your own decisions back like a statement you wrote." } },
+  { src: "Claude", name: "Quiet Washi", mood: "Japanese-minimal calm where empty space does the grouping.", inspired: "Muji, Kenya Hara, Japanese stationery", light: true, lightType: true,
+    fonts: { ui: "Zen Kaku Gothic New", num: "Spline Sans Mono", display: "Zen Kaku Gothic New" },
+    t: { ground: "#F7F6F2", surface: "#EFEDE6", ink: "#23221F", inkDim: "#5F5D57", inkFaint: "#807D76", divider: "rgba(35,34,31,0.07)", accent: "#2B4C7E", accentInk: "#FFFFFF", positive: "#3D6B4F", negative: "#A4413A" },
+    radius: "4px", title: 28, table: "ts-space", hero: "big", landing: "l-editorial", signin: "s-left",
+    signature: "Each page leads with exactly one large light-weight figure; everything else is small.",
+    copy: { h: "Look back, calmly.", s: "A private journal for your accounts, spending and trades, made for quiet review rather than constant checking." } },
+  { src: "Claude", name: "Braun Instrument", mood: "A precise, friendly desk instrument with one orange key.", inspired: "Dieter Rams for Braun, Teenage Engineering", light: true,
+    fonts: { ui: "Hanken Grotesk", num: "DM Mono", display: "Hanken Grotesk" },
+    t: { ground: "#EDECE8", surface: "#F8F8F6", ink: "#1D1D1B", inkDim: "#55554F", inkFaint: "#77766F", divider: "rgba(29,29,27,0.09)", accent: "#EE5D12", accentInk: "#1D1D1B", positive: "#2B7448", negative: "#B0263B" },
+    radius: "10px", title: 30, table: "ts-panel", hero: "wells", landing: "l-centered", signin: "s-panel",
+    signature: "Balances sit in recessed readout wells, like a calculator display.",
+    copy: { h: "Less, but accounted for.", s: "Record accounts, transactions and transfers, and see every balance and spending total at a glance." } },
+  { src: "Claude", name: "Graphite Desk", mood: "A dense, keyboard-first terminal, restrained: graphite and ivory.", inspired: "Bloomberg Terminal, Linear, Superhuman", light: false,
+    fonts: { ui: "Geist", num: "Geist Mono", display: "Geist" },
+    t: { ground: "#0F1113", surface: "#171A1D", ink: "#E6E8EA", inkDim: "#A3A9B0", inkFaint: "#737A82", divider: "rgba(255,255,255,0.06)", accent: "#ECE6D6", accentInk: "#0F1113", positive: "#3FB27F", negative: "#F0605D" },
+    radius: "4px", title: 22, table: "ts-zebra ts-compact", hero: "tape", landing: "l-split", signin: "s-split", shortcuts: true,
+    signature: "A balance tape across the top, and every action shows its single-key shortcut.",
+    copy: { h: "Review your money like a desk reviews its book.", s: "Accounts, transactions and transfers in one fast, keyboard-driven journal, with trade review on the way." } },
+  { src: "Claude", name: "Evening Warmth", mood: "Soft and warm, a money app that is kind about your spending.", inspired: "Copilot Money, Monzo, Things 3", light: false,
+    fonts: { ui: "Manrope", num: "Manrope", display: "Fraunces" },
+    t: { ground: "#1A1715", surface: "#24201D", ink: "#F3EDE6", inkDim: "#B9AFA4", inkFaint: "#8A8076", divider: "rgba(243,237,230,0.07)", accent: "#F2A07B", accentInk: "#1A1715", positive: "#7FC79A", negative: "#F08A80" },
+    radius: "14px", title: 34, table: "ts-panel", hero: "sentence", landing: "l-centered", signin: "s-panel",
+    signature: "The page opens with one plain-language sentence with the figures inline.",
+    copy: { h: "Know where it went.", s: "A private journal for your accounts and spending that tells you what happened in plain words, then lets you look closer." } },
+  { src: "Mix 1+6", name: "Statement Swiss (blue)", mood: "Swiss precision for the interface, a printed statement's voice for titles and summaries.", inspired: "Swiss Ledger + Printed Statement", light: true,
+    fonts: { ui: "Archivo", num: "IBM Plex Mono", display: "Source Serif 4" },
+    t: { ground: "#F6F4EE", surface: "#ECE9E1", ink: "#1E201D", inkDim: "#5E615B", inkFaint: "#7E817A", divider: "rgba(30,32,29,0.08)", accent: "#1F3A93", accentInk: "#FFFFFF", positive: "#26714A", negative: "#B3453D" },
+    radius: "0px", title: 42, table: "ts-zebra", hero: "masthead", landing: "l-split", signin: "s-side",
+    signature: "Serif titles over a statement masthead; Archivo and Plex Mono do the work underneath.",
+    copy: { h: "Your money, on the record.", s: "Track accounts, transactions and transfers in a journal built for reviewing your own decisions." } },
+  { src: "Mix 1+6", name: "Statement Swiss (rust)", mood: "All-sans Swiss rigour with the statement masthead and a warm rust accent.", inspired: "Swiss Ledger + Printed Statement", light: true,
+    fonts: { ui: "Archivo", num: "IBM Plex Mono", display: "Archivo" },
+    t: { ground: "#F5F5F1", surface: "#EBECE7", ink: "#202320", inkDim: "#626761", inkFaint: "#7F847D", divider: "#DDE0D9", accent: "#9A4D28", accentInk: "#FFFFFF", positive: "#26714A", negative: "#B3453D" },
+    radius: "0px", title: 40, table: "ts-zebra", hero: "masthead", landing: "l-editorial", signin: "s-side",
+    signature: "The statement masthead in Swiss type, square corners and one rust key.",
+    copy: { h: "A clearer record of every decision.", s: "Track accounts, transactions and transfers in a journal built for reviewing your own decisions." } },
+];
+
+const ACCOUNTS = [
+  { name: "Chase", type: "cash", balance: "-1,005.00", unit: "GBP" },
+  { name: "Monzo", type: "cash", balance: "1,000.00", unit: "GBP" },
+  { name: "Binance", type: "crypto", balance: "0.50000000", unit: "BTC" },
+  { name: "Vanguard ISA", type: "stock", balance: "12,480.20", unit: "GBP" },
+  { name: "Old ISA", type: "stock", balance: "0.00", unit: "GBP", archived: true },
+];
+const CATS = [["rent", 900, 74], ["food", 212.4, 17], ["transport", 48, 4], ["fees", 5, 0.5], ["uncategorised", 52, 4.5, true]];
+
+const VIEWS = ["Landing", "Sign in", "Accounts", "Dashboard"];
+let current = { theme: 0, view: "Accounts" };
+
+const logo = () => `<span class="logo"><svg viewBox="0 0 32 32" width="24" height="24" fill="none" aria-hidden="true">
+  <g stroke="currentColor" stroke-width="2" opacity=".4"><path d="M6 7v18"/><rect x="3" y="11" width="6" height="9" fill="currentColor"/></g>
+  <g stroke="currentColor" stroke-width="2" opacity=".4"><path d="M16 10v16"/><rect x="13" y="15" width="6" height="7" fill="currentColor"/></g>
+  <g stroke="var(--accent)" stroke-width="2"><path d="M26 4v20"/><rect x="23" y="8" width="6" height="12" fill="var(--accent)"/></g></svg>Tradinghub</span>`;
+
+const kbd = (key, th) => th.shortcuts ? `<span class="kbd">${key}</span>` : "";
+
+function appTop(th, active) {
+  const items = ["Dashboard", "Accounts", "Transactions"].map((n) => `<a href="#" data-view="${n === "Transactions" ? "" : n}" class="${n === active ? "on" : ""}">${n}</a>`).join("");
+  return `<div class="topbar">${logo()}<nav class="nav">${items}</nav><button class="btn quiet">Sign out</button></div>`;
+}
+
+function accountsTable(th) {
+  const rows = ACCOUNTS.map((a) => `<tr class="${a.archived ? "archived" : ""}">
+    <td>${a.name}${a.archived ? '<span class="tag">Archived</span>' : ""}</td>
+    <td class="dim">${a.type}</td>
+    <td class="r num">${a.balance}<span class="unit">${a.unit}</span></td></tr>`).join("");
+  return `<div class="tablewrap"><table><thead><tr><th>Name</th><th>Type</th><th class="r">Balance</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function holdingsHero(th) {
+  switch (th.hero) {
+    case "stats": return `<div class="stats">
+      <div class="stat"><div class="caption">Total, GBP</div><div class="big num">12,475.20<span class="unit">GBP</span></div></div>
+      <div class="stat"><div class="caption">Total, BTC</div><div class="big num">0.50000000<span class="unit">BTC</span></div></div>
+      <div class="stat"><div class="caption">Accounts</div><div class="big num">4<span class="unit">active</span></div></div></div>`;
+    case "big": return `<div class="bigone"><div class="caption">Held in GBP</div><div class="big num">12,475.20<span class="unit">GBP</span></div><div class="faint" style="margin-top:10px">and 0.50000000 BTC across 4 active accounts</div></div>`;
+    case "wells": return `<div class="wells">
+      <div class="well"><div class="caption">GBP</div><div class="big num">12,475.20</div></div>
+      <div class="well"><div class="caption">BTC</div><div class="big num">0.50000000</div></div></div>`;
+    case "masthead": return `<div class="masthead" style="background:var(--surface);padding:18px 20px;border-radius:var(--radius)">
+      <div><div class="caption">Opening, 1 Nov</div><div class="big num">10,692.60</div></div>
+      <div><div class="caption">Money in</div><div class="big num pos">+3,000.00</div></div>
+      <div><div class="caption">Money out</div><div class="big num">-1,217.40</div></div>
+      <div><div class="caption">Closing</div><div class="big num">12,475.20<span class="unit">GBP</span></div></div></div>`;
+    case "sentence": return `<p class="sentence">You hold <b>12,475.20 GBP</b> and <b>0.5 BTC</b> across four accounts, and spent <b>1,217.40</b> this month, 18% less than October.</p>`;
+    case "note": return `<p class="serif-note">Four places your money sits, and one you have closed.</p>`;
+    default: return "";
+  }
+}
+
+function tapeIfAny(th) {
+  return th.hero === "tape" ? `<div class="tape num"><span class="faint">GBP <b>12,475.20</b></span><span class="faint">BTC <b>0.50000000</b></span><span class="faint">Nov spend <b>1,217.40</b></span><span class="faint">Net <b class="pos">+1,782.60</b></span></div>` : "";
+}
+
+function viewAccounts(th) {
+  return `<div class="shell">${tapeIfAny(th)}${appTop(th, "Accounts")}
+    <div class="head-row"><div><h1 class="title">Accounts</h1>${th.hero === "note" ? "" : '<p class="sub">Every place money sits. Balances are the sum of what you recorded.</p>'}</div>
+    <button class="btn primary" data-toggle>New account${kbd("N", th)}</button></div>
+    ${holdingsHero(th)}
+    <section class="panel" data-panel hidden style="max-width:560px;margin-top:32px">
+      <div class="field"><label>Name</label><input value="" placeholder="Monzo"></div>
+      <div class="field"><label>Unit</label><input placeholder="GBP"><div class="hint">A currency or ticker, like GBP or BTC</div></div>
+      <div class="field"><label>Type</label><select><option>cash</option><option>crypto</option><option>stock</option></select></div>
+      <button class="btn primary" style="width:100%">Add account</button>
+    </section>
+    <div class="${th.table}" style="margin-top:36px">${accountsTable(th)}</div></div>`;
+}
+
+function viewDashboard(th) {
+  const bars = CATS.map(([c, v, w, m]) => `<div class="bar"><span class="${m ? "faint" : ""}">${c}</span><div class="track"><div class="fill ${m ? "muted" : ""}" style="width:${w}%"></div></div><span class="num" style="text-align:right">${v.toFixed(2)}</span></div>`).join("");
+  return `<div class="shell">${tapeIfAny(th)}${appTop(th, "Dashboard")}
+    <div class="head-row"><div><h1 class="title">November</h1><p class="sub">1 to 30 November 2026</p></div>
+    <div class="chips"><button class="chip">October</button><button class="chip on">This month</button><button class="chip">Custom</button></div></div>
+    ${th.hero === "sentence" ? holdingsHero(th) : ""}
+    <div class="stats" style="margin-top:40px">
+      <div class="stat"><div class="caption">Holdings now</div><div class="big num">12,475.20<span class="unit">GBP</span></div><div class="faint num" style="margin-top:6px">0.50000000 BTC</div></div>
+      <div class="stat"><div class="caption">Income</div><div class="big num pos">3,000.00</div></div>
+      <div class="stat"><div class="caption">Spending</div><div class="big num">1,217.40</div><div class="faint" style="margin-top:6px">net <span class="pos num">+1,782.60</span></div></div>
+    </div>
+    <section style="margin-top:56px"><div class="caption">Spending by category, GBP</div><div class="bars">${bars}</div></section></div>`;
+}
+
+function viewLanding(th) {
+  const preview = `<div class="preview"><div class="inner ${th.table}">${accountsTable(th)}</div></div>`;
+  const hero = th.landing === "l-split"
+    ? `<div class="hero"><div><h1>${th.copy.h}</h1><p>${th.copy.s}</p><div class="ctas"><button class="btn primary">Start your journal</button><button class="btn quiet">Sign in</button></div></div>${preview}</div>`
+    : `<div class="hero"><h1>${th.copy.h}</h1><p>${th.copy.s}</p><div class="ctas"><button class="btn primary">Start your journal</button><button class="btn quiet">Sign in</button></div></div><div style="margin-bottom:64px">${preview}</div>`;
+  return `<div class="shell ${th.landing}"><div class="topbar">${logo()}<div style="display:flex;gap:18px;align-items:center"><a href="#" style="color:var(--ink-dim);text-decoration:none;font-size:14px">Sign in</a><button class="btn primary">Get started</button></div></div>
+    ${hero}
+    <div class="features">
+      <div><h3>Every account in one place</h3><p>Cash, crypto and stock accounts, each in its own unit. Nothing converted behind your back.</p></div>
+      <div><h3>Money in, out and between</h3><p>Income, expenses and transfers, with fees recorded as what they are: spending.</p></div>
+      <div><h3>Review, not just record</h3><p>See where it went by period and category, then look back at the decisions behind it.</p></div>
+    </div></div>`;
+}
+
+function viewSignin(th) {
+  const form = `<div><h1>Welcome back.</h1><p class="dim" style="margin-bottom:28px">Pick up where the last trade left off.</p>
+    <div class="field"><label>Email</label><input placeholder="you@example.com"></div>
+    <div class="field"><label>Password</label><input type="password" value="hunter22"></div>
+    <button class="btn primary" style="width:100%;margin-top:6px">Sign in</button>
+    <p class="alt">New here? <a href="#">Create an account</a></p></div>`;
+  let body;
+  if (th.signin === "s-panel") body = `<div><div class="panel" style="padding:36px">${form}</div></div>`;
+  else if (th.signin === "s-split") body = `${form}<div class="preview ${th.table}" style="opacity:.7">${accountsTable(th)}</div>`;
+  else if (th.signin === "s-side") body = `<div class="sidecopy">A journal for reviewing your own decisions.</div>${form}`;
+  else body = form;
+  return `<div class="shell ${th.signin}"><div class="topbar">${logo()}</div><div class="auth">${body}</div></div>`;
+}
+
+const RENDER = { Landing: viewLanding, "Sign in": viewSignin, Accounts: viewAccounts, Dashboard: viewDashboard };
+
+function apply() {
+  const th = THEMES[current.theme];
+  const stage = document.getElementById("stage");
+  const vars = { "--ground": th.t.ground, "--surface": th.t.surface, "--ink": th.t.ink, "--ink-dim": th.t.inkDim, "--ink-faint": th.t.inkFaint,
+    "--divider": th.t.divider, "--accent": th.t.accent, "--accent-ink": th.t.accentInk, "--positive": th.t.positive, "--negative": th.t.negative,
+    "--radius": th.radius, "--title": th.title + "px", "--font-ui": `"${th.fonts.ui}"`, "--font-num": `"${th.fonts.num}"`, "--font-display": `"${th.fonts.display}"` };
+  Object.entries(vars).forEach(([k, v]) => stage.style.setProperty(k, v));
+  stage.className = th.lightType ? "t-light" : "";
+  stage.innerHTML = RENDER[current.view](th);
+  stage.querySelectorAll("[data-toggle]").forEach((b) => b.addEventListener("click", () => {
+    const p = stage.querySelector("[data-panel]"); p.hidden = !p.hidden;
+    b.className = p.hidden ? "btn primary" : "btn secondary"; b.innerHTML = p.hidden ? `New account${kbd("N", th)}` : "Close";
+  }));
+  stage.querySelectorAll(".nav a").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); if (a.dataset.view) { current.view = a.dataset.view; sync(); } }));
+  document.getElementById("info").innerHTML = `<b>${th.name}</b> (${th.src}, ${th.light ? "light" : "dark"}) &middot; ${th.mood} &middot; <b>Inspired by</b> ${th.inspired} &middot; <b>Fonts</b> ${th.fonts.ui}${th.fonts.num !== th.fonts.ui ? " + " + th.fonts.num : ""}${th.fonts.display !== th.fonts.ui ? " + " + th.fonts.display : ""} &middot; <b>Signature</b> ${th.signature}`;
+}
+
+function sync() {
+  document.querySelectorAll("#themeRow button").forEach((b, i) => b.setAttribute("aria-pressed", String(i === current.theme)));
+  document.querySelectorAll("#viewRow button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === current.view)));
+  apply();
+}
+
+THEMES.forEach((th, i) => {
+  const b = document.createElement("button");
+  b.innerHTML = `${i + 1}. ${th.name}<span class="src">${th.src}</span>`;
+  b.addEventListener("click", () => { current.theme = i; sync(); });
+  document.getElementById("themeRow").appendChild(b);
+});
+VIEWS.forEach((v) => {
+  const b = document.createElement("button");
+  b.textContent = v; b.dataset.view = v;
+  b.addEventListener("click", () => { current.view = v; sync(); });
+  document.getElementById("viewRow").appendChild(b);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.target.matches("input, select")) return;
+  if (e.key === "ArrowRight") { current.theme = (current.theme + 1) % THEMES.length; sync(); }
+  if (e.key === "ArrowLeft") { current.theme = (current.theme + THEMES.length - 1) % THEMES.length; sync(); }
+});
+sync();
+</script>
+</body>
+</html>

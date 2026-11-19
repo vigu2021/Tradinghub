@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Archived accounts: two layouts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ground: #f5f5f1; --surface: #ebece7; --ink: #202320; --ink-dim: #4d524c;
+    --ink-faint: #676c65; --rule: #dde0d9; --rule-strong: #c9cdc5; --accent: #9a4d28;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: Archivo, sans-serif; }
+  .wrap { max-width: 1072px; margin: 0 auto; padding: 48px 16px 96px; }
+  .intro { color: var(--ink-dim); font-size: 14px; max-width: 70ch; line-height: 1.6; }
+  .options { display: grid; gap: 64px; margin-top: 40px; }
+  @media (min-width: 1000px) { .options { grid-template-columns: 1fr 1fr; gap: 48px; } }
+  .caption { font-size: 12px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+  h2 { font-size: 22px; font-weight: 600; letter-spacing: -.01em; margin: 8px 0 4px; }
+  .verdict { font-size: 14px; color: var(--ink-dim); margin: 0 0 28px; line-height: 1.5; }
+  .verdict b { color: var(--accent); font-weight: 600; }
+  h1 { font-size: 40px; font-weight: 600; letter-spacing: -.02em; margin: 0; line-height: 1; }
+  .sub { margin: 12px 0 32px; font-size: 14px; color: var(--ink-dim); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 12px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); padding: 0 12px 12px; }
+  th.num, td.num { text-align: right; }
+  td { padding: 14px 12px; }
+  td.type { color: var(--ink-dim); }
+  td.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  td.num .unit { color: var(--ink-faint); }
+  td.actions { padding: 2px 4px 2px 0; text-align: right; white-space: nowrap; }
+  tbody.active tr:nth-child(odd), table.mixed tbody tr:nth-child(odd) { background: var(--surface); }
+  tr.archived { color: var(--ink-faint); }
+  .tag { margin-left: 10px; background: var(--rule); color: var(--ink-dim); font-size: 11px; font-weight: 500; padding: 2px 6px; }
+
+  .link { font: 600 14px Archivo, sans-serif; color: var(--ink-dim); background: none; border: 0; min-height: 44px; padding: 0 8px; cursor: pointer; text-underline-offset: 4px; }
+  .link:hover { color: var(--accent); text-decoration: underline; }
+  .toggle { font: 600 14px Archivo, sans-serif; color: var(--ink-dim); background: none; border: 0; min-height: 44px; padding: 0; margin-top: 12px; cursor: pointer; text-underline-offset: 4px; }
+  .toggle:hover { color: var(--accent); text-decoration: underline; }
+
+  tbody.group-head td { padding: 28px 12px 0; }
+  .group-toggle { display: inline-flex; align-items: center; gap: 10px; font: 500 12px Archivo, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); background: none; border: 0; min-height: 44px; padding: 0; cursor: pointer; }
+  .group-toggle:hover { color: var(--ink); }
+  .chev { display: inline-block; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform .15s; }
+  [aria-expanded="true"] .chev { transform: rotate(45deg); }
+  tbody.archived-rows tr { color: var(--ink-faint); }
+  .note { font-size: 13px; color: var(--ink-faint); margin-top: 24px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="caption">Tradinghub · accounts page</p>
+  <h2 style="font-size:28px">Where archived accounts go</h2>
+  <p class="intro">Both hide archived accounts until asked. Click the toggles to compare. Same theme tokens and fonts as the app.</p>
+
+  <div class="options">
+    <section>
+      <p class="caption">Option A</p>
+      <h2>Mixed in when shown</h2>
+      <p class="verdict">Archived rows appear in their alphabetical places, greyed and tagged.</p>
+
+      <h1>Accounts</h1>
+      <p class="sub">Every place money sits. Balances are the sum of what you recorded.</p>
+      <table class="mixed">
+        <thead><tr><th>Name</th><th>Type</th><th class="num">Balance</th><th></th></tr></thead>
+        <tbody id="mixed-body"></tbody>
+      </table>
+      <button class="toggle" id="mixed-toggle" aria-expanded="false"></button>
+    </section>
+
+    <section>
+      <p class="caption">Option B · recommended</p>
+      <h2>Their own group, collapsed</h2>
+      <p class="verdict"><b>The active list never changes shape.</b> Archived accounts open below it as one group.</p>
+
+      <h1>Accounts</h1>
+      <p class="sub">Every place money sits. Balances are the sum of what you recorded.</p>
+      <table>
+        <thead><tr><th>Name</th><th>Type</th><th class="num">Balance</th><th></th></tr></thead>
+        <tbody class="active" id="active-body"></tbody>
+        <tbody class="group-head"><tr><td colspan="4">
+          <button class="group-toggle" id="group-toggle" aria-expanded="false"><span class="chev"></span><span id="group-label"></span></button>
+        </td></tr></tbody>
+        <tbody class="archived-rows" id="archived-body" hidden></tbody>
+      </table>
+    </section>
+  </div>
+
+  <p class="note">Archive and Restore work in this mock too, so you can see where a row goes in each layout.</p>
+</div>
+
+<script>
+  const accounts = [
+    { name: "Binance", type: "Crypto", balance: "0.4125", unit: "BTC", archived: false },
+    { name: "Monzo", type: "Cash", balance: "1,240.50", unit: "GBP", archived: false },
+    { name: "Old savings", type: "Cash", balance: "0", unit: "GBP", archived: true },
+    { name: "Revolut", type: "Cash", balance: "12.08", unit: "EUR", archived: true },
+    { name: "Vanguard ISA", type: "Stocks", balance: "8,930.00", unit: "GBP", archived: false },
+  ];
+  let showMixed = false;
+  let showGroup = false;
+
+  function row(account, { tag }) {
+    const tr = document.createElement("tr");
+    if (account.archived) tr.className = "archived";
+    tr.innerHTML = `
+      <td>${account.name}${tag && account.archived ? '<span class="tag">Archived</span>' : ""}</td>
+      <td class="type">${account.type}</td>
+      <td class="num">${account.balance} <span class="unit">${account.unit}</span></td>
+      <td class="actions"><button class="link">Edit</button><button class="link" data-flip>${account.archived ? "Restore" : "Archive"}</button></td>`;
+    tr.querySelector("[data-flip]").onclick = () => { account.archived = !account.archived; render(); };
+    return tr;
+  }
+
+  function render() {
+    const archivedCount = accounts.filter((a) => a.archived).length;
+
+    const mixedBody = document.getElementById("mixed-body");
+    mixedBody.replaceChildren(...accounts.filter((a) => showMixed || !a.archived).map((a) => row(a, { tag: true })));
+    const mixedToggle = document.getElementById("mixed-toggle");
+    mixedToggle.hidden = archivedCount === 0;
+    mixedToggle.textContent = showMixed ? "Hide archived" : `Show archived (${archivedCount})`;
+    mixedToggle.setAttribute("aria-expanded", showMixed);
+
+    document.getElementById("active-body").replaceChildren(...accounts.filter((a) => !a.archived).map((a) => row(a, { tag: false })));
+    document.getElementById("archived-body").replaceChildren(...accounts.filter((a) => a.archived).map((a) => row(a, { tag: false })));
+    document.getElementById("archived-body").hidden = !showGroup;
+    document.querySelector(".group-head").hidden = archivedCount === 0;
+    document.getElementById("group-label").textContent = `Archived (${archivedCount})`;
+    document.getElementById("group-toggle").setAttribute("aria-expanded", showGroup);
+  }
+
+  document.getElementById("mixed-toggle").onclick = () => { showMixed = !showMixed; render(); };
+  document.getElementById("group-toggle").onclick = () => { showGroup = !showGroup; render(); };
+  render();
+</script>
+</body>
+</html>
