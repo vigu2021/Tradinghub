@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account page layouts</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --ground:#f5f5f1; --surface:#ebece7; --ink:#202320; --ink-dim:#4d524c; --ink-faint:#676c65; --rule:#dde0d9; --control:#868b84; --accent:#9a4d28; --positive:#26714a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--ground); color:var(--ink); font-family:Archivo, sans-serif; }
+  .wrap { max-width:1072px; margin:0 auto; padding:40px 16px 96px; }
+  .caption { font-size:12px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); }
+  .intro { color:var(--ink-dim); font-size:14px; line-height:1.6; max-width:72ch; }
+  .tabs { display:flex; flex-wrap:wrap; gap:4px; margin:28px 0 8px; }
+  .tab { font:600 14px Archivo; background:var(--surface); border:0; padding:12px 16px; min-height:44px; cursor:pointer; color:var(--ink-dim); }
+  .tab[aria-selected="true"] { background:var(--ink); color:var(--ground); }
+  .why { font-size:14px; color:var(--ink-dim); line-height:1.6; max-width:72ch; margin:16px 0 24px; }
+  .why b { color:var(--ink); }
+  .stage { border:1px solid var(--rule); padding:32px clamp(16px, 4vw, 40px) 48px; background:var(--ground); }
+  .appbar { display:flex; justify-content:space-between; align-items:center; font-size:14px; color:var(--ink-dim); margin-bottom:40px; }
+  .appbar b { color:var(--ink); font-size:20px; }
+  .back { font:600 14px Archivo; color:var(--ink-dim); background:none; border:0; padding:0; min-height:44px; cursor:pointer; }
+  .back:hover { color:var(--accent); text-decoration:underline; text-underline-offset:4px; }
+  h1 { font-size:40px; font-weight:600; letter-spacing:-.02em; line-height:1.05; margin:6px 0 0; }
+  .mono { font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+  .unit { color:var(--ink-faint); }
+  .big { font-size:44px; letter-spacing:-.02em; line-height:1; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th { text-align:left; font-size:12px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); padding:0 12px 10px; }
+  td { padding:13px 12px; }
+  tbody tr:nth-child(odd) { background:var(--surface); }
+  .num { text-align:right; }
+  .in { color:var(--positive); }
+  .dim { color:var(--ink-dim); }
+  .link { font:600 14px Archivo; color:var(--ink-dim); background:none; border:0; min-height:44px; padding:0; cursor:pointer; text-underline-offset:4px; }
+  .link:hover { color:var(--accent); text-decoration:underline; }
+  .link.accent { color:var(--accent); text-decoration:underline; }
+  .btn { font:600 14px Archivo; border:0; min-height:44px; padding:0 16px; cursor:pointer; }
+  .btn.solid { background:var(--accent); color:#fff; }
+  .btn.ghost { background:var(--surface); color:var(--ink); }
+  input, select { font:16px Archivo; border:1px solid var(--control); background:var(--ground); padding:9px 11px; width:100%; color:var(--ink); }
+  label { display:block; font-size:13px; font-weight:500; color:var(--ink-dim); margin-bottom:6px; }
+  .grid3 { display:grid; gap:20px; }
+  @media (min-width:720px) { .grid3 { grid-template-columns: 2fr 1fr 1fr; } }
+  .row { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:24px; }
+  .bal { text-align:right; }
+  @media (max-width:640px) { .bal { text-align:left; } .big { font-size:34px; } h1 { font-size:32px; } }
+  .note { font-size:13px; color:var(--ink-dim); line-height:1.5; }
+  .banner { background:var(--surface); padding:10px 14px; font-size:14px; color:var(--ink-dim); display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:24px; }
+  .stats { display:flex; flex-wrap:wrap; gap:20px 48px; border-top:1px solid var(--rule); margin-top:28px; padding-top:18px; }
+  .stats .mono { font-size:22px; margin-top:6px; }
+  details summary { cursor:pointer; list-style:none; display:flex; align-items:center; gap:10px; min-height:44px; }
+  details summary::-webkit-details-marker { display:none; }
+  .chev { width:7px; height:7px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(-45deg); transition:transform .15s; }
+  details[open] .chev { transform:rotate(45deg) translateY(-2px); }
+  .sep { border-top:1px solid var(--rule); margin:40px 0 0; padding-top:8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="caption">Tradinghub · one account</p>
+  <h1 style="font-size:28px">The account page, three ways</h1>
+  <p class="intro">All three put the money first and stop the settings from taking a third of the screen. Click around: Edit, the settings toggle and Archive all work.</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-v="statement" aria-selected="true">A · Statement (recommended)</button>
+    <button class="tab" role="tab" data-v="tabs" aria-selected="false">B · Activity and settings tabs</button>
+    <button class="tab" role="tab" data-v="drawer" aria-selected="false">C · Settings folded at the bottom</button>
+  </div>
+  <p class="why" id="why"></p>
+  <div class="stage" id="stage"></div>
+</div>
+
+<script>
+const account = { name: "Monzo", type: "Cash", unit: "GBP", balance: "1,857.90", archived: false };
+const tx = [
+  ["14 Nov", "Groceries", "-42.10"], ["12 Nov", "Salary", "2,400.00"], ["9 Nov", "Rent", "-500.00"],
+  ["7 Nov", "Eating out", "-23.50"], ["3 Nov", "Transfer from Revolut", "23.50"],
+];
+const WHY = {
+  statement: "<b>Reads like the top of a bank statement.</b> Name on the left, balance on the right, both on one line, with this month's in and out underneath. Activity runs full width below. Settings are not on screen at all until you press Edit, which turns the header into the three fields in place. Archive sits at the very bottom as a quiet line.",
+  tabs: "<b>Two tabs under the header: Activity and Settings.</b> The balance header stays put; the tab decides what is under it. Very tidy, and settings get a full page with room to explain the unit warning and archiving. Costs a click to reach settings and hides that they exist.",
+  drawer: "<b>One column, money first, settings folded away.</b> Header and activity at full width, then an \"Account settings\" disclosure at the bottom, closed by default, holding the fields and Archive. The smallest change from today and very calm, but settings are a scroll away.",
+};
+let view = "statement", editing = false, tab = "activity";
+
+const txTable = () => `
+  <table>
+    <thead><tr><th>Date</th><th>Description</th><th class="num">Amount</th></tr></thead>
+    <tbody>${tx.map(([d, c, a]) => `<tr><td class="dim" style="width:90px">${d}</td><td>${c}</td><td class="num mono ${a.startsWith("-") ? "" : "in"}">${a.startsWith("-") ? "−" + a.slice(1) : "+" + a} <span class="unit">GBP</span></td></tr>`).join("")}</tbody>
+  </table>
+  <p style="margin-top:12px"><button class="link">All 48 transactions ›</button></p>`;
+
+const fields = () => `
+  <div class="grid3">
+    <div><label>Name</label><input value="${account.name}"></div>
+    <div><label>Unit</label><input value="${account.unit}"></div>
+    <div><label>Type</label><select><option>${account.type}</option><option>Crypto</option><option>Stocks</option></select></div>
+  </div>`;
+
+const archiveLine = () => account.archived ? "" : `
+  <div class="sep"><p class="note">Closed this account? Archiving hides it from your list and keeps its history.
+    <button class="link" data-act="archive" style="margin-left:6px">Archive account</button></p></div>`;
+
+const banner = () => account.archived ? `
+  <div class="banner"><span>This account is archived and hidden from your list.</span><button class="link accent" data-act="archive">Restore</button></div>` : "";
+
+const stats = () => `
+  <div class="stats">
+    <div><p class="caption">In this month</p><p class="mono in">+2,423.50</p></div>
+    <div><p class="caption">Out this month</p><p class="mono">−565.60</p></div>
+    <div><p class="caption">Transactions</p><p class="mono">48</p></div>
+  </div>`;
+
+function statement() {
+  const header = editing ? `
+    <p class="caption">Edit account</p>
+    <div style="margin-top:14px">${fields()}</div>
+    <div style="display:flex;gap:8px;margin-top:20px"><button class="btn solid" data-act="done">Save</button><button class="btn ghost" data-act="done">Cancel</button></div>` : `
+    <div class="row">
+      <div>
+        <p class="caption">${account.type} · ${account.unit}</p>
+        <h1>${account.name}</h1>
+        <p style="margin-top:10px"><button class="link" data-act="edit">Edit</button></p>
+      </div>
+      <div class="bal">
+        <p class="caption">Balance</p>
+        <p class="mono big" style="margin-top:8px">${account.balance} <span class="unit">${account.unit}</span></p>
+      </div>
+    </div>
+    ${stats()}`;
+  return `${banner()}${header}
+    <section style="margin-top:44px"><p class="caption" style="margin-bottom:14px">Recent activity</p>${txTable()}</section>
+    ${archiveLine()}`;
+}
+
+function tabs() {
+  const tabBtn = (id, label) => `<button class="link" data-tab="${id}" style="padding:0 2px;margin-right:24px;${tab === id ? "color:var(--ink);box-shadow:inset 0 -2px 0 var(--accent)" : ""}">${label}</button>`;
+  const body = tab === "activity" ? txTable() : `
+    <div style="max-width:640px">${fields()}
+      <p class="note" style="margin-top:12px">Changing the unit relabels the balance; nothing is converted.</p>
+      <button class="btn solid" style="margin-top:20px">Save changes</button>
+      ${archiveLine()}</div>`;
+  return `${banner()}
+    <div class="row">
+      <div><p class="caption">${account.type} · ${account.unit}</p><h1>${account.name}</h1></div>
+      <div class="bal"><p class="caption">Balance</p><p class="mono big" style="margin-top:8px">${account.balance} <span class="unit">${account.unit}</span></p></div>
+    </div>
+    <div style="margin-top:32px;border-bottom:1px solid var(--rule);margin-bottom:24px">${tabBtn("activity", "Activity")}${tabBtn("settings", "Settings")}</div>
+    ${body}`;
+}
+
+function drawer() {
+  return `${banner()}
+    <p class="caption">${account.type} · ${account.unit}</p>
+    <h1>${account.name}</h1>
+    <p class="mono big" style="margin-top:14px">${account.balance} <span class="unit">${account.unit}</span></p>
+    <section style="margin-top:44px"><p class="caption" style="margin-bottom:14px">Recent activity</p>${txTable()}</section>
+    <details class="sep" style="margin-top:40px">
+      <summary class="caption"><span class="chev"></span>Account settings</summary>
+      <div style="padding:16px 0 4px;max-width:640px">${fields()}
+        <button class="btn solid" style="margin-top:20px">Save changes</button>
+        ${account.archived ? "" : `<p class="note" style="margin-top:28px">Closed this account? Archiving hides it from your list and keeps its history. <button class="link" data-act="archive" style="margin-left:6px">Archive account</button></p>`}
+      </div>
+    </details>`;
+}
+
+function render() {
+  document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.v === view));
+  document.getElementById("why").innerHTML = WHY[view];
+  document.getElementById("stage").innerHTML = `
+    <div class="appbar"><b>Tradinghub</b><span>Dashboard &nbsp;&nbsp; <span style="color:var(--ink);box-shadow:inset 0 -2px 0 var(--accent);font-weight:600">Accounts</span></span></div>
+    <button class="back">‹ Accounts</button>
+    <div style="margin-top:16px">${{ statement, tabs, drawer }[view]()}</div>`;
+}
+
+document.querySelector(".tabs").onclick = (e) => { const v = e.target.closest(".tab")?.dataset.v; if (v) { view = v; editing = false; tab = "activity"; render(); } };
+document.getElementById("stage").onclick = (e) => {
+  const el = e.target.closest("[data-act],[data-tab]");
+  if (!el) return;
+  if (el.dataset.tab) tab = el.dataset.tab;
+  if (el.dataset.act === "edit") editing = true;
+  if (el.dataset.act === "done") editing = false;
+  if (el.dataset.act === "archive") account.archived = !account.archived;
+  render();
+};
+render();
+</script>
+</body>
+</html>

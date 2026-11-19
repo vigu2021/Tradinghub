@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Archive and restore looks</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --ground:#f5f5f1; --surface:#ebece7; --ink:#202320; --ink-dim:#4d524c; --ink-faint:#676c65; --rule:#dde0d9; --rule-strong:#c9cdc5; --control:#868b84; --accent:#9a4d28; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#e9eae4; color:var(--ink); font-family:Archivo, sans-serif; }
+  .wrap { max-width:1160px; margin:0 auto; padding:40px 16px 96px; }
+  .caption { font-size:12px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); }
+  .intro { color:var(--ink-dim); font-size:14px; line-height:1.6; max-width:76ch; }
+  .controls { display:flex; flex-wrap:wrap; gap:24px; margin:24px 0 32px; align-items:center; }
+  .seg { display:inline-flex; background:var(--surface); }
+  .seg button { font:600 14px Archivo; border:0; background:none; padding:10px 14px; min-height:44px; cursor:pointer; color:var(--ink-dim); }
+  .seg button[aria-pressed="true"] { background:var(--ink); color:var(--ground); }
+  .looks { display:grid; gap:36px; }
+  .look h2 { font-size:20px; margin:0 0 4px; }
+  .look .why { font-size:14px; color:var(--ink-dim); line-height:1.55; margin:0 0 14px; max-width:80ch; }
+  .look .why b { color:var(--ink); }
+  .frame { background:var(--ground); border:1px solid var(--rule-strong); padding:28px; margin:0; }
+  .frame.phone { width:390px; max-width:100%; padding:20px 16px; }
+  .back { font:600 14px Archivo; color:var(--ink-dim); margin-bottom:18px; display:block; }
+  .head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:20px 40px; }
+  .phone .head { display:block; }
+  h1 { font-size:36px; font-weight:600; letter-spacing:-.02em; line-height:1.1; margin:6px 0 0; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .phone h1 { font-size:28px; }
+  .bal { text-align:right; }
+  .phone .bal { text-align:left; margin-top:18px; }
+  .mono { font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+  .big { font-size:40px; line-height:1; margin-top:8px; }
+  .phone .big { font-size:34px; }
+  .unit { color:var(--ink-faint); }
+  .actions { display:flex; gap:22px; align-items:center; margin-top:6px; }
+  .link { font:600 14px Archivo; color:var(--ink-dim); background:none; border:0; min-height:44px; padding:0; cursor:pointer; text-underline-offset:4px; }
+  .link:hover { color:var(--accent); text-decoration:underline; }
+  .link.accent { color:var(--accent); }
+  .btn { font:600 14px Archivo; border:0; min-height:44px; padding:0 16px; cursor:pointer; }
+  .btn.solid { background:var(--accent); color:#fff; }
+  .btn.ghost { background:var(--surface); color:var(--ink); }
+  .btn.line { background:none; border:1px solid var(--rule-strong); color:var(--ink); }
+  .tag { font:500 11px Archivo; letter-spacing:.08em; text-transform:uppercase; background:var(--rule); color:var(--ink-dim); padding:4px 7px; }
+  .activity { margin-top:30px; }
+  .tx { display:flex; justify-content:space-between; padding:12px 14px; font-size:14px; }
+  .tx:nth-child(odd) { background:var(--surface); }
+  .tx .mono { font-size:13px; }
+  .grid3 { display:grid; gap:16px; grid-template-columns:2fr 1fr 1fr; }
+  .phone .grid3 { grid-template-columns:1fr; }
+  label { display:block; font-size:13px; font-weight:500; color:var(--ink-dim); margin-bottom:6px; }
+  input, select { font:16px Archivo; border:1px solid var(--control); background:var(--ground); padding:9px 11px; width:100%; color:var(--ink); }
+  .formrow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:18px; }
+  .formrow .push { margin-left:auto; }
+  .menu { position:relative; display:inline-block; }
+  .menu-btn { font:600 18px Archivo; width:40px; height:40px; border:0; background:var(--surface); cursor:pointer; color:var(--ink-dim); line-height:1; }
+  .menu-list { position:absolute; left:0; top:44px; background:var(--ground); border:1px solid var(--rule-strong); min-width:180px; box-shadow:0 8px 24px rgba(0,0,0,.08); z-index:2; }
+  .menu-list button { display:block; width:100%; text-align:left; font:500 14px Archivo; background:none; border:0; padding:12px 14px; min-height:44px; cursor:pointer; color:var(--ink); }
+  .menu-list button:hover { background:var(--surface); }
+  .menu-list small { display:block; color:var(--ink-faint); font-size:12px; margin-top:2px; }
+  .strip { display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:13px; color:var(--ink-dim); border-left:2px solid var(--rule-strong); padding:4px 0 4px 12px; margin-bottom:22px; }
+  .settings { margin-top:34px; border-top:1px solid var(--rule); padding-top:6px; }
+  .settings summary { list-style:none; cursor:pointer; min-height:44px; display:flex; align-items:center; gap:10px; }
+  .settings summary::-webkit-details-marker { display:none; }
+  .setrow { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:14px 0; border-top:1px solid var(--rule); font-size:14px; }
+  .setrow p { margin:0; color:var(--ink-dim); font-size:13px; }
+  .setrow b { font-weight:600; color:var(--ink); display:block; font-size:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="caption">Tradinghub · one account</p>
+  <h1 style="font-size:28px;margin-top:6px">Archive and restore: five looks</h1>
+  <p class="intro">Same account page each time; only where Archive lives and how an archived account looks changes. Flip between an active and an archived account, and between desktop and phone. Every button works: Edit, Archive, Restore, the menu.</p>
+
+  <div class="controls">
+    <div><span class="caption" style="margin-right:10px">Account</span>
+      <span class="seg" id="state"><button data-v="active" aria-pressed="true">Active</button><button data-v="archived" aria-pressed="false">Archived</button></span></div>
+    <div><span class="caption" style="margin-right:10px">Width</span>
+      <span class="seg" id="width"><button data-v="desktop" aria-pressed="true">Desktop</button><button data-v="phone" aria-pressed="false">Phone</button></span></div>
+  </div>
+
+  <div class="looks" id="looks"></div>
+</div>
+
+<script>
+const LOOKS = [
+  { id: "edit", title: "1 · Archive inside Edit, tag when archived", rec: true,
+    why: "<b>What most finance apps do.</b> The page shows only Edit. Archive and Restore wait inside edit mode, on the far right of Save and Cancel, because they are rare, deliberate changes. An archived account gets a small tag by its name; nothing else changes colour." },
+  { id: "menu", title: "2 · A ⋯ menu by the name",
+    why: "<b>One small button holds every action</b>, each with a line saying what it does. The header is the cleanest of all, at the cost of a click to see what is possible." },
+  { id: "strip", title: "3 · A slim note instead of a banner",
+    why: "<b>Archive inside Edit, like 1</b>, but an archived account also gets a thin note above the header with Restore, so bringing it back is one click without opening Edit. Lighter than the old grey box." },
+  { id: "settings", title: "4 · A settings section at the bottom",
+    why: "<b>The page ends with a quiet Settings section</b>: rows for details and for archiving, each with a sentence and its button, like a phone's settings screen. Very clear, but settings sit below the activity." },
+  { id: "pill", title: "5 · Status as a switch-like button",
+    why: "<b>A small outlined button by the name says the status and flips it</b>: Active ↔ Archived, with the meaning on hover. Compact and always visible, but a status that is also a button can confuse." },
+];
+const state = { archived: false, width: "desktop", editing: {}, menu: {} };
+const account = { name: "Monzo", type: "Cash", unit: "GBP", balance: "1857.9" };
+const tx = [["Groceries", "14 Nov", "-42.1"], ["Salary", "12 Nov", "2400"], ["Rent", "9 Nov", "-500"]];
+
+const tag = () => state.archived ? `<span class="tag">Archived</span>` : "";
+const toggleWord = () => state.archived ? "Restore" : "Archive";
+const balance = () => `<div class="bal"><p class="caption">Balance</p><p class="mono big">${account.balance} <span class="unit">${account.unit}</span></p></div>`;
+const activity = () => `<div class="activity"><p class="caption" style="margin-bottom:10px">Recent activity</p>${tx.map(([d, day, a]) => `<div class="tx"><span>${d}<br><small style="color:var(--ink-faint)">${day}</small></span><span class="mono">${a} <span class="unit">GBP</span></span></div>`).join("")}</div>`;
+const editForm = (look, extraRight) => `
+  <p class="caption">Edit ${account.name}</p>
+  <div class="grid3" style="margin-top:14px">
+    <div><label>Name</label><input value="${account.name}"></div>
+    <div><label>Unit</label><input value="${account.unit}"></div>
+    <div><label>Type</label><select><option>${account.type}</option></select></div>
+  </div>
+  <div class="formrow">
+    <button class="btn solid" data-act="close" data-look="${look}">Save</button>
+    <button class="btn ghost" data-act="close" data-look="${look}">Cancel</button>
+    ${extraRight}
+  </div>`;
+const nameBlock = (extraInH1 = "") => `<div><p class="caption">${account.type} · ${account.unit}</p><h1>${account.name} ${tag()} ${extraInH1}</h1>`;
+
+function render1() {
+  if (state.editing.edit) return editForm("edit", `<button class="link push" data-act="flip">${state.archived ? "Restore account" : "Archive account"}</button>`) + activity();
+  return `<div class="head">${nameBlock()}<div class="actions"><button class="link" data-act="edit" data-look="edit">Edit</button></div></div>${balance()}</div>${activity()}`;
+}
+function render2() {
+  const open = state.menu.menu;
+  const menu = `<span class="menu"><button class="menu-btn" data-act="menu" data-look="menu" aria-label="Account actions">⋯</button>${open ? `
+    <div class="menu-list">
+      <button data-act="edit" data-look="menu">Edit details<small>Name, unit and type</small></button>
+      <button data-act="flip">${state.archived ? "Restore" : "Archive"}<small>${state.archived ? "Show it in your list again" : "Hide it, keep its history"}</small></button>
+    </div>` : ""}</span>`;
+  if (state.editing.menu) return editForm("menu", "") + activity();
+  return `<div class="head">${nameBlock(menu)}</div>${balance()}</div>${activity()}`;
+}
+function render3() {
+  const strip = state.archived ? `<div class="strip"><span>Archived · hidden from your account list</span><button class="link accent" data-act="flip">Restore</button></div>` : "";
+  if (state.editing.strip) return strip + editForm("strip", state.archived ? "" : `<button class="link push" data-act="flip">Archive account</button>`) + activity();
+  return `${strip}<div class="head">${nameBlock()}<div class="actions"><button class="link" data-act="edit" data-look="strip">Edit</button></div></div>${balance()}</div>${activity()}`;
+}
+function render4() {
+  return `<div class="head">${nameBlock()}</div>${balance()}</div>${activity()}
+    <div class="settings">
+      <p class="caption" style="margin:16px 0 4px">Settings</p>
+      <div class="setrow"><div><b>Details</b><p>${account.name} · ${account.unit} · ${account.type}</p></div><button class="btn line">Edit</button></div>
+      <div class="setrow"><div><b>${state.archived ? "Archived" : "Archive"}</b><p>${state.archived ? "Hidden from your list. Its history is kept." : "Hide it from your list and keep its history."}</p></div><button class="btn line" data-act="flip">${state.archived ? "Restore" : "Archive"}</button></div>
+    </div>`;
+}
+function render5() {
+  const pill = `<button class="btn line" style="min-height:32px;padding:0 10px;font-size:12px;letter-spacing:.06em;text-transform:uppercase" data-act="flip" title="${state.archived ? "Click to restore" : "Click to archive"}">${state.archived ? "Archived ↺" : "Active"}</button>`;
+  return `<div class="head"><div><p class="caption">${account.type} · ${account.unit}</p><h1>${account.name} ${pill}</h1><div class="actions"><button class="link">Edit</button></div></div>${balance()}</div>${activity()}`;
+}
+const RENDER = { edit: render1, menu: render2, strip: render3, settings: render4, pill: render5 };
+
+function render() {
+  document.getElementById("looks").innerHTML = LOOKS.map((look) => `
+    <section class="look">
+      <h2>${look.title}${look.rec ? ' <span class="caption" style="color:var(--accent)">recommended</span>' : ""}</h2>
+      <p class="why">${look.why}</p>
+      <div class="frame ${state.width}"><span class="back">‹ Accounts</span>${RENDER[look.id]()}</div>
+    </section>`).join("");
+  for (const [id, key] of [["state", state.archived ? "archived" : "active"], ["width", state.width]])
+    document.querySelectorAll(`#${id} button`).forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === key));
+}
+
+document.getElementById("state").onclick = (e) => { const v = e.target.dataset.v; if (v) { state.archived = v === "archived"; render(); } };
+document.getElementById("width").onclick = (e) => { const v = e.target.dataset.v; if (v) { state.width = v; render(); } };
+document.getElementById("looks").onclick = (e) => {
+  const el = e.target.closest("[data-act]");
+  if (!el) return;
+  const { act, look } = el.dataset;
+  if (act === "edit") { state.editing[look] = true; state.menu = {}; }
+  if (act === "close") state.editing[look] = false;
+  if (act === "menu") state.menu[look] = !state.menu[look];
+  if (act === "flip") { state.archived = !state.archived; state.menu = {}; }
+  render();
+};
+render();
+</script>
+</body>
+</html>
