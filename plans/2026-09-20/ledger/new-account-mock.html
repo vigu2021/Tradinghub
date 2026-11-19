@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New account flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --ground:#f5f5f1; --surface:#ebece7; --ink:#202320; --ink-dim:#4d524c; --ink-faint:#676c65; --rule:#dde0d9; --rule-strong:#c9cdc5; --control:#868b84; --accent:#9a4d28; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#e9eae4; color:var(--ink); font-family:Archivo, sans-serif; }
+  .wrap { max-width:1160px; margin:0 auto; padding:40px 16px 96px; }
+  .caption { font-size:12px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); }
+  .intro { color:var(--ink-dim); font-size:14px; line-height:1.6; max-width:76ch; }
+  .controls { display:flex; flex-wrap:wrap; gap:24px; margin:24px 0 16px; align-items:center; }
+  .seg { display:inline-flex; background:var(--surface); }
+  .seg button { font:600 14px Archivo; border:0; background:none; padding:10px 14px; min-height:44px; cursor:pointer; color:var(--ink-dim); }
+  .seg button[aria-pressed="true"] { background:var(--ink); color:var(--ground); }
+  .why { font-size:14px; color:var(--ink-dim); line-height:1.6; max-width:80ch; margin:8px 0 18px; }
+  .why b { color:var(--ink); }
+  .url { font:13px "IBM Plex Mono", monospace; color:var(--ink-dim); background:#dfe0da; padding:8px 12px; border:1px solid var(--rule-strong); border-bottom:0; }
+  .frame { position:relative; background:var(--ground); border:1px solid var(--rule-strong); padding:28px; min-height:560px; overflow:hidden; }
+  .frame.phone { width:390px; max-width:100%; padding:20px 16px; }
+  .url.phone { width:390px; max-width:100%; }
+  .appbar { display:flex; justify-content:space-between; align-items:center; font-size:14px; color:var(--ink-dim); margin-bottom:32px; }
+  .appbar b { color:var(--ink); font-size:19px; }
+  h1 { font-size:36px; font-weight:600; letter-spacing:-.02em; line-height:1.1; margin:6px 0 0; }
+  .phone h1 { font-size:28px; }
+  .row { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:16px; }
+  .sub { font-size:14px; color:var(--ink-dim); margin:10px 0 0; }
+  .btn { font:600 14px Archivo; border:0; min-height:44px; padding:0 16px; cursor:pointer; }
+  .btn.solid { background:var(--accent); color:#fff; }
+  .btn.ghost { background:var(--surface); color:var(--ink); }
+  .link { font:600 14px Archivo; color:var(--ink-dim); background:none; border:0; min-height:44px; padding:0; cursor:pointer; }
+  .link:hover { color:var(--accent); text-decoration:underline; text-underline-offset:4px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; margin-top:28px; }
+  th { text-align:left; font-size:12px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); padding:0 12px 10px; }
+  td { padding:13px 12px; }
+  tbody tr:nth-child(odd) { background:var(--surface); }
+  tr.fresh td { background:#efe4dc !important; transition:background 1.2s; }
+  .num { text-align:right; font-family:"IBM Plex Mono", monospace; }
+  .unit { color:var(--ink-faint); }
+  .chev { color:var(--ink-faint); text-align:right; width:24px; }
+  .phone .hide-phone { display:none; }
+  label { display:block; font-size:13px; font-weight:500; color:var(--ink-dim); margin-bottom:6px; }
+  input, select { font:16px Archivo; border:1px solid var(--control); background:var(--ground); padding:9px 11px; width:100%; color:var(--ink); }
+  input:focus, select:focus { outline:none; border-color:var(--accent); }
+  .hint { font-size:12px; color:var(--ink-faint); margin-top:6px; }
+  .field { margin-bottom:20px; }
+  .formcol { max-width:440px; margin-top:28px; }
+  .actions { display:flex; gap:8px; margin-top:8px; }
+  .scrim { position:absolute; inset:0; background:rgba(32,35,32,.28); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .dialog { background:var(--ground); width:min(440px, 100%); padding:26px; box-shadow:0 16px 48px rgba(0,0,0,.18); }
+  .phone .scrim { align-items:flex-end; padding:0; }
+  .phone .dialog { width:100%; padding:22px 16px 26px; }
+  .dialog h2 { font-size:22px; margin:0 0 4px; }
+  .big { font:40px "IBM Plex Mono", monospace; margin-top:8px; line-height:1; }
+  .phone .big { font-size:34px; }
+  .note { font-size:13px; color:var(--ink-dim); background:var(--surface); padding:10px 12px; margin-bottom:18px; }
+  .steps { font-size:13px; color:var(--ink-faint); margin:10px 0 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="caption">Tradinghub · adding an account</p>
+  <h1 style="font-size:28px">New account: a page, or a dialog</h1>
+  <p class="intro">Both end the same way: Save takes you to the new account's own page. Click through: press <b>New account</b>, fill in the name, Save. Cancel and the back link work too.</p>
+
+  <div class="controls">
+    <div><span class="caption" style="margin-right:10px">Flow</span>
+      <span class="seg" id="flow"><button data-v="page" aria-pressed="true">A · Its own page</button><button data-v="dialog" aria-pressed="false">B · A dialog</button></span></div>
+    <div><span class="caption" style="margin-right:10px">Width</span>
+      <span class="seg" id="width"><button data-v="desktop" aria-pressed="true">Desktop</button><button data-v="phone" aria-pressed="false">Phone</button></span></div>
+    <button class="link" id="reset">Start again</button>
+  </div>
+  <p class="why" id="why"></p>
+  <div class="url" id="url"></div>
+  <div class="frame" id="frame"></div>
+</div>
+
+<script>
+const WHY = {
+  page: "<b>A · New account is a page of its own</b> at /accounts/new: three fields, Save and Cancel. Save lands on the new account's page. A real address, so the browser's back button and a bookmark both work, and it is the same kind of screen as the account page you land on.",
+  dialog: "<b>B · New account opens a dialog over the list.</b> The list stays visible behind it; Save closes it and lands on the new account's page. Feels quicker, and on a phone it rises from the bottom like a native sheet. Escape or Cancel closes it.",
+};
+const accounts = [
+  { id: 1, name: "Binance", type: "Crypto", unit: "BTC", balance: "0.4125" },
+  { id: 2, name: "Monzo", type: "Cash", unit: "GBP", balance: "1857.9" },
+  { id: 3, name: "Vanguard ISA", type: "Stocks", unit: "GBP", balance: "8930" },
+];
+let flow = "page", width = "desktop", screen = "list", openId = null, draft = { name: "", unit: "", type: "Cash" };
+
+const appbar = () => `<div class="appbar"><b>Tradinghub</b><span>Dashboard &nbsp;&nbsp;<span style="color:var(--ink);font-weight:600;box-shadow:inset 0 -2px 0 var(--accent)">Accounts</span></span></div>`;
+const fields = () => `
+  <div class="field"><label>Name</label><input id="f-name" placeholder="Monzo, Binance, Vanguard ISA" value="${draft.name}"></div>
+  <div class="field"><label>Unit</label><input id="f-unit" placeholder="GBP" value="${draft.unit}"><p class="hint">A currency or ticker, like GBP or BTC</p></div>
+  <div class="field"><label>Type</label><select id="f-type"><option>Cash</option><option>Crypto</option><option>Stocks</option></select></div>`;
+
+function list() {
+  return `${appbar()}
+    <div class="row"><div><h1>Accounts</h1><p class="sub">Every place money sits.</p></div>
+      <button class="btn solid" data-act="new">New account</button></div>
+    <table><thead><tr><th>Name</th><th class="hide-phone">Type</th><th style="text-align:right">Balance</th><th></th></tr></thead>
+    <tbody>${accounts.map((a) => `<tr><td>${a.name}</td><td class="hide-phone" style="color:var(--ink-dim)">${a.type}</td><td class="num">${a.balance} <span class="unit">${a.unit}</span></td><td class="chev">›</td></tr>`).join("")}</tbody></table>`;
+}
+
+function newPage() {
+  return `${appbar()}
+    <button class="link" data-act="cancel">‹ Accounts</button>
+    <h1 style="margin-top:8px">New account</h1>
+    <p class="sub">Anywhere money sits: a bank, an exchange, a broker.</p>
+    <div class="formcol">${fields()}
+      <div class="actions"><button class="btn solid" data-act="save">Add account</button><button class="btn ghost" data-act="cancel">Cancel</button></div>
+    </div>`;
+}
+
+function dialog() {
+  return `${list()}
+    <div class="scrim" data-act="scrim">
+      <div class="dialog" role="dialog" aria-modal="true" aria-label="New account">
+        <h2>New account</h2>
+        <p class="sub" style="margin:0 0 20px">Anywhere money sits: a bank, an exchange, a broker.</p>
+        ${fields()}
+        <div class="actions"><button class="btn solid" data-act="save">Add account</button><button class="btn ghost" data-act="cancel">Cancel</button></div>
+      </div>
+    </div>`;
+}
+
+function accountPage() {
+  const a = accounts.find((x) => x.id === openId);
+  return `${appbar()}
+    <button class="link" data-act="cancel">‹ Accounts</button>
+    <div class="row" style="margin-top:10px">
+      <div><p class="caption">${a.type} · ${a.unit}</p><h1>${a.name}</h1></div>
+      <div style="${width === "phone" ? "" : "text-align:right"}"><p class="caption">Balance</p><p class="big">0 <span class="unit">${a.unit}</span></p></div>
+    </div>
+    <p class="caption" style="margin:36px 0 10px">Recent activity</p>
+    <p class="note">No transactions yet.</p>
+    <p class="steps">Landed here after Save. The next step, recording a transaction into it, lives on this page once the transactions page exists.</p>`;
+}
+
+const URLS = { list: "/accounts", new: "/accounts/new", dialog: "/accounts", account: () => `/accounts/${openId}` };
+
+function render() {
+  document.querySelectorAll("#flow button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === flow));
+  document.querySelectorAll("#width button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === width));
+  document.getElementById("why").innerHTML = WHY[flow];
+  const frame = document.getElementById("frame");
+  frame.className = `frame ${width}`;
+  document.getElementById("url").className = `url ${width}`;
+  const url = screen === "account" ? URLS.account() : URLS[screen];
+  document.getElementById("url").textContent = `localhost:3210${url}`;
+  frame.innerHTML = { list, new: newPage, dialog, account: accountPage }[screen]();
+  const name = document.getElementById("f-name");
+  if (name) { name.focus(); document.getElementById("f-type").value = draft.type; }
+}
+
+function readDraft() {
+  const name = document.getElementById("f-name");
+  if (!name) return;
+  draft = { name: name.value.trim(), unit: document.getElementById("f-unit").value.trim().toUpperCase(), type: document.getElementById("f-type").value };
+}
+
+document.getElementById("frame").addEventListener("click", (e) => {
+  const el = e.target.closest("[data-act]");
+  if (!el) return;
+  const act = el.dataset.act;
+  if (act === "scrim" && e.target !== el) return;
+  if (act === "new") { draft = { name: "", unit: "", type: "Cash" }; screen = flow === "page" ? "new" : "dialog"; }
+  if (act === "cancel" || act === "scrim") screen = "list";
+  if (act === "save") {
+    readDraft();
+    if (!draft.name) { document.getElementById("f-name").style.borderColor = "#b3453d"; return; }
+    const id = Math.max(...accounts.map((a) => a.id)) + 1;
+    accounts.push({ id, name: draft.name, type: draft.type, unit: draft.unit || "GBP", balance: "0" });
+    accounts.sort((a, b) => a.name.localeCompare(b.name));
+    openId = id; screen = "account";
+  }
+  render();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && screen === "dialog") { screen = "list"; render(); } });
+document.getElementById("flow").onclick = (e) => { const v = e.target.dataset.v; if (v) { flow = v; screen = "list"; render(); } };
+document.getElementById("width").onclick = (e) => { const v = e.target.dataset.v; if (v) { width = v; render(); } };
+document.getElementById("reset").onclick = () => { screen = "list"; render(); };
+render();
+</script>
+</body>
+</html>
