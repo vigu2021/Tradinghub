@@ -105,6 +105,7 @@ export function AccountForm(props: AccountFormProps) {
         <Field
           id="account-name"
           label="Name"
+          hint="The bank, exchange or broker, like Monzo or Binance"
           autoComplete="off"
           error={errors.name?.message}
           {...field("name")}
