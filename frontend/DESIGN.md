@@ -81,6 +81,9 @@ the web server itself or reuses the one on port 3210.
   `waitForTimeout`.
 - **One behaviour per test**, named as a sentence about that behaviour. A bug fix gets a regression
   test that fails without the fix.
+- **Tests run in parallel, in any order** (`fullyParallel`, 10 workers). A test never relies on
+  another having run, and names what it creates with `uniqueName`. `npm run e2e:quick` runs desktop
+  only while working; `npm run e2e` runs both devices before a commit.
 - **Sign in once.** The `setup` project registers one user through the API and saves its cookies to
   `e2e/.auth/user.json` (gitignored); signed-in specs start from it with
   `test.use({ storageState: SIGNED_IN })`. Only `auth.spec.ts`, which tests signing in itself, goes

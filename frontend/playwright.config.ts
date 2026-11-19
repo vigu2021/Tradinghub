@@ -11,8 +11,10 @@ export const BASE_URL = "http://localhost:3210";
 export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/global-setup.ts",
-  fullyParallel: false,
-  workers: 1,
+  // Measured on this machine: 1 worker 102s, 4 workers 28s, 6 workers 21s, 10 workers 17s. Every
+  // test makes its own uniquely named data and its own browser context, so any order is safe.
+  fullyParallel: true,
+  workers: 10,
   reporter: process.env.CI ? "github" : "list",
   // A fixed pixel allowance, not a ratio: a ratio forgives more on a bigger page, and 0.1% of a
   // full desktop page is enough to hide a whole input outline. 50 absorbs anti-aliasing noise.
