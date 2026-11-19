@@ -445,23 +445,34 @@ ever shows.
 
 ## Task 7: Accounts page
 
+**Status:** Done, except the Transactions link in the header, which arrives with Task 8's page.
+Editing and archiving moved off the list onto a page per account, after the side panel and the
+buttons on every row both read as clutter. The edit panel, row buttons, banner and header links
+were each built and dropped along the way; the mockups under this folder show why.
+
 **Files:**
-- Create: `frontend/src/app/(app)/accounts/page.tsx`,
-  `frontend/src/features/ledger/components/{AccountForm,AccountList}.tsx`
+- Create: `frontend/src/app/(app)/accounts/page.tsx`, `frontend/src/app/(app)/accounts/[id]/page.tsx`,
+  `frontend/src/features/ledger/components/{AccountForm,AccountList,ArchiveAccount,RecentTransactions}.tsx`
 - Modify: `frontend/src/app/(app)/layout.tsx`
 
 **Requirements:**
 1. Under `(app)`, so the layout guards it and the page reads the user through
    `useAuthenticatedUser()`. No session checks in the page.
-2. Each account with its balance and unit. Add, rename, change unit or type, archive and restore.
-   There is no delete: the spec dropped it so no path can destroy financial history.
+2. **`/accounts` is an index.** Each row is one link to the account's page, with its balance and
+   unit, and a "New account" panel adds one. There is no delete: the spec dropped it so no path can
+   destroy financial history.
 3. **Archived accounts are kept, under a collapsed "Archived" group below the active ones**, with
-   their balance, since the money in one is still the user's. Archive and restore are one click
-   each, with no confirmation, because each undoes the other. A name already taken shows the
+   their balance, since the money in one is still the user's. A name already taken shows the
    readable `409` reason, not a generic failure.
-4. An empty state for a user with no accounts, since that is everyone on their first visit.
-5. The header gains links for Dashboard, Accounts and Transactions.
-6. Follow the existing visual language: the tokens already in `globals.css`, and the `Button` and
+4. **`/accounts/[id]` is the account's own page:** its name and balance as a statement header, its
+   five latest transactions, and a Settings section with a Details row (Edit opens the fields in
+   place) and an Archive or Restore row. Archive and restore are one click each, with no
+   confirmation, because each undoes the other. An address that is not one of the user's accounts
+   says "No account here" without saying whether it exists.
+5. An empty state for a user with no accounts, since that is everyone on their first visit.
+6. The header gains links for Dashboard, Accounts and Transactions, and marks a section as current
+   on the pages inside it.
+7. Follow the existing visual language: the tokens already in `globals.css`, and the `Button` and
    `Field` primitives. No new colours and no new libraries.
 
 **Commit:** `Add the accounts page`

@@ -51,8 +51,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <Link
                 key={href}
                 href={href}
-                aria-current={pathname === href ? "page" : undefined}
-                className="py-2.5 text-ink-dim transition-colors hover:text-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink aria-[current=page]:shadow-[inset_0_-2px_0_var(--accent)]"
+                aria-current={currentFor(pathname, href)}
+                className="py-2.5 text-ink-dim transition-colors hover:text-ink aria-[current]:font-semibold aria-[current]:text-ink aria-[current]:shadow-[inset_0_-2px_0_var(--accent)]"
               >
                 {label}
               </Link>
@@ -98,4 +98,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </main>
     </div>
   );
+}
+
+/** "page" on the section's own page, "true" anywhere inside it, such as one account's page. */
+function currentFor(
+  pathname: string,
+  href: string,
+): "page" | "true" | undefined {
+  if (pathname === href) {
+    return "page";
+  }
+  return pathname.startsWith(`${href}/`) ? "true" : undefined;
 }

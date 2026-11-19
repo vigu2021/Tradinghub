@@ -33,8 +33,28 @@ type NewAccount = {
 export async function seedAccount(
   request: APIRequestContext,
   account: NewAccount,
-): Promise<void> {
+): Promise<{ id: number }> {
   const response = await request.post(`${API_URL}/accounts`, { data: account });
+  expect(response.status(), await response.text()).toBe(201);
+  return response.json();
+}
+
+type NewTransaction = {
+  account_id: number;
+  amount: string;
+  kind: "income" | "expense";
+  category: string;
+  occurred_at: string;
+};
+
+/** Records a transaction straight through the API, as `seedAccount` does an account. */
+export async function seedTransaction(
+  request: APIRequestContext,
+  transaction: NewTransaction,
+): Promise<void> {
+  const response = await request.post(`${API_URL}/transactions`, {
+    data: transaction,
+  });
   expect(response.status(), await response.text()).toBe(201);
 }
 

@@ -36,7 +36,8 @@ type AccountFormProps =
   | {
       mode: "editing";
       account: Account;
-      onDone: () => void;
+      /** Called after a save, and on Cancel. */
+      onClose: () => void;
     };
 
 const SUBMIT_LABELS = {
@@ -44,11 +45,20 @@ const SUBMIT_LABELS = {
   editing: { idle: "Save", busy: "Saving" },
 } as const;
 
+const LAYOUTS = {
+  creating: { fields: "space-y-7", actions: "" },
+  editing: {
+    fields: "grid gap-5 sm:grid-cols-[2fr_1fr_1fr]",
+    actions: "flex gap-2",
+  },
+} as const;
+
 export function AccountForm(props: AccountFormProps) {
   const createAccount = useMutation(accountMutations.create());
   const updateAccount = useMutation(accountMutations.update());
   const mutation = props.mode === "editing" ? updateAccount : createAccount;
   const label = SUBMIT_LABELS[props.mode];
+  const layout = LAYOUTS[props.mode];
 
   const defaultValues: AccountValues =
     props.mode === "editing"
@@ -80,7 +90,7 @@ export function AccountForm(props: AccountFormProps) {
       updateAccount.mutate(
         { id: props.account.id, changes: values },
         {
-          onSuccess: () => props.onDone(),
+          onSuccess: () => props.onClose(),
         },
       );
     }
@@ -88,44 +98,57 @@ export function AccountForm(props: AccountFormProps) {
 
   return (
     <form onSubmit={submit} noValidate className="space-y-7">
-      <Field
-        id="account-name"
-        label="Name"
-        autoComplete="off"
-        error={errors.name?.message}
-        {...field("name")}
-      />
-      <Field
-        id="account-unit"
-        label="Unit"
-        hint="A currency or ticker, like GBP or BTC"
-        autoComplete="off"
-        autoCapitalize="characters"
-        autoCorrect="off"
-        spellCheck={false}
-        error={errors.unit?.message}
-        {...field("unit")}
-      />
-      <SelectField
-        id="account-type"
-        label="Type"
-        error={errors.type?.message}
-        {...field("type")}
-      >
-        {ACCOUNT_TYPES.map((type) => (
-          <option key={type} value={type} className="bg-surface">
-            {ACCOUNT_TYPE_LABELS[type]}
-          </option>
-        ))}
-      </SelectField>
+      <div className={layout.fields}>
+        <Field
+          id="account-name"
+          label="Name"
+          autoComplete="off"
+          error={errors.name?.message}
+          {...field("name")}
+        />
+        <Field
+          id="account-unit"
+          label="Unit"
+          hint="A currency or ticker, like GBP or BTC"
+          autoComplete="off"
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+          error={errors.unit?.message}
+          {...field("unit")}
+        />
+        <SelectField
+          id="account-type"
+          label="Type"
+          error={errors.type?.message}
+          {...field("type")}
+        >
+          {ACCOUNT_TYPES.map((type) => (
+            <option key={type} value={type} className="bg-surface">
+              {ACCOUNT_TYPE_LABELS[type]}
+            </option>
+          ))}
+        </SelectField>
+      </div>
 
       {mutation.error && (
         <ErrorBanner>{messageFor(mutation.error)}</ErrorBanner>
       )}
 
-      <Button type="submit" className="w-full" disabled={mutation.isPending}>
-        {mutation.isPending ? label.busy : label.idle}
-      </Button>
+      <div className={layout.actions}>
+        <Button
+          type="submit"
+          className={props.mode === "creating" ? "w-full" : ""}
+          disabled={mutation.isPending}
+        >
+          {mutation.isPending ? label.busy : label.idle}
+        </Button>
+        {props.mode === "editing" && (
+          <Button type="button" variant="ghost" onClick={props.onClose}>
+            Cancel
+          </Button>
+        )}
+      </div>
     </form>
   );
 }

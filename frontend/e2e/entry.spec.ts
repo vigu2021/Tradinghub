@@ -376,7 +376,7 @@ test.describe("device basics", () => {
           .filter((control) => {
             const box = control.getBoundingClientRect();
             const inSentence = control.parentElement?.tagName === "P";
-            const devToolsOnly = control.hasAttribute("data-next-mark");
+            const devToolsOnly = control.getRootNode() !== document;
             return (
               box.height > 0 &&
               !inSentence &&

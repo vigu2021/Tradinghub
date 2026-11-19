@@ -4,6 +4,7 @@ import {
   SIGNED_IN,
   expectAccessible,
   seedAccount,
+  seedTransaction,
   uniqueName,
 } from "./support";
 
@@ -59,6 +60,101 @@ test.describe("accounts page", () => {
   });
 });
 
+test.describe("an account's own page", () => {
+  test("opens from its row in the list", async ({ page }) => {
+    const name = uniqueName("Monzo");
+    await seedAccount(page.request, { name, unit: "GBP", type: "cash" });
+    await page.goto("/accounts");
+
+    await page.getByRole("link", { name }).click();
+
+    await expect(page).toHaveURL(/\/accounts\/\d+$/);
+    await expect(page.getByRole("heading", { name, level: 1 })).toBeVisible();
+    const section = page
+      .getByRole("navigation")
+      .getByRole("link", { name: "Accounts" });
+    await expect(section).toHaveAttribute("aria-current", "true");
+    await expect(section).toHaveCSS("font-weight", "600");
+  });
+
+  test("lists the account's recent transactions", async ({ page }) => {
+    const account = await seedAccount(page.request, {
+      name: uniqueName("Monzo"),
+      unit: "GBP",
+      type: "cash",
+    });
+    await seedTransaction(page.request, {
+      account_id: account.id,
+      amount: "2400",
+      kind: "income",
+      category: "salary",
+      occurred_at: "2026-11-12T09:00:00Z",
+    });
+
+    await page.goto(`/accounts/${account.id}`);
+
+    const row = page.getByRole("row", { name: /salary/i });
+    await expect(row).toContainText("12 Nov");
+    await expect(row).toContainText("2400 GBP");
+  });
+
+  test("editing its details renames it", async ({ page }) => {
+    const account = await seedAccount(page.request, {
+      name: uniqueName("Monzo"),
+      unit: "GBP",
+      type: "cash",
+    });
+    const renamed = uniqueName("Monzo joint");
+    await page.goto(`/accounts/${account.id}`);
+
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
+    await page.getByLabel("Name").fill(renamed);
+    await page.getByRole("button", { name: "Save" }).click();
+
+    await expect(
+      page.getByRole("heading", { name: renamed, level: 1 }),
+    ).toBeVisible();
+    await expect(page.getByLabel("Name")).toBeHidden();
+  });
+
+  test("archiving hides it from the list and restoring brings it back", async ({
+    page,
+  }) => {
+    const name = uniqueName("Old savings");
+    const account = await seedAccount(page.request, {
+      name,
+      unit: "GBP",
+      type: "cash",
+    });
+    await page.goto(`/accounts/${account.id}`);
+
+    await page.getByRole("button", { name: "Archive", exact: true }).click();
+    await expect(
+      page.getByText("Hidden from your list. Its history is kept."),
+    ).toBeVisible();
+
+    await page.getByRole("link", { name: "‹ Accounts" }).click();
+    await expect(page.getByRole("link", { name })).toBeHidden();
+    await page.getByRole("button", { name: /^Archived \(\d+\)$/ }).click();
+    await page.getByRole("link", { name }).click();
+
+    await page.getByRole("button", { name: "Restore" }).click();
+    await expect(
+      page.getByRole("button", { name: "Archive", exact: true }),
+    ).toBeVisible();
+  });
+
+  test("an address that is not one of your accounts says so", async ({
+    page,
+  }) => {
+    await page.goto("/accounts/999999999");
+
+    await expect(
+      page.getByRole("heading", { name: "No account here" }),
+    ).toBeVisible();
+  });
+});
+
 test.describe("accessibility", () => {
   test("the dashboard has no WCAG A or AA violations", async ({ page }) => {
     await page.goto("/dashboard");
@@ -78,6 +174,19 @@ test.describe("accessibility", () => {
     await page.goto("/accounts");
     await page.getByRole("button", { name: "New account" }).click();
     await expect(page.getByLabel("Name")).toBeVisible();
+
+    await expectAccessible(page);
+  });
+
+  test("an account's page has no WCAG A or AA violations", async ({ page }) => {
+    const name = uniqueName("Vanguard");
+    const account = await seedAccount(page.request, {
+      name,
+      unit: "GBP",
+      type: "stock",
+    });
+    await page.goto(`/accounts/${account.id}`);
+    await expect(page.getByRole("heading", { name, level: 1 })).toBeVisible();
 
     await expectAccessible(page);
   });
