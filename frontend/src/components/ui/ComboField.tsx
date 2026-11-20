@@ -1,7 +1,8 @@
 "use client";
 
-import type { InputHTMLAttributes } from "react";
+import { useState, type InputHTMLAttributes, type Ref } from "react";
 import {
+  Button,
   ComboBox,
   FieldError,
   Input,
@@ -26,9 +27,11 @@ type ComboFieldProps = Omit<
   value: string;
   onChange: (value: string) => void;
   onBlur?: () => void;
+  /** Lets a form move focus here, as react-hook-form does to the first invalid field. */
+  ref?: Ref<HTMLInputElement>;
 };
 
-type Option = { id: string; label: string; text: string; creates: boolean };
+type Option = { id: string; label: string };
 
 const CREATE = "\u0000create";
 
@@ -45,20 +48,40 @@ export function ComboField({
   value,
   onChange,
   onBlur,
+  ref,
   ...input
 }: ComboFieldProps) {
+  // Opening the list on purpose (tapping in, or the button) shows everything; typing filters it.
+  const [showingAll, setShowingAll] = useState(true);
   const typed = value.trim();
-  const existing = matchIgnoringCase(options, typed);
-  const items = optionsFor(options, typed, existing);
+  const existing = options.find(
+    (option) => option.toLowerCase() === typed.toLowerCase(),
+  );
+  const items: Option[] = options
+    .filter(
+      (option) =>
+        showingAll || option.toLowerCase().includes(typed.toLowerCase()),
+    )
+    .map((option) => ({ id: option, label: option }));
+  if (typed !== "" && existing === undefined) {
+    items.push({ id: CREATE, label: `+ Create "${typed}"` });
+  }
 
   return (
     <ComboBox
       allowsCustomValue
       menuTrigger="focus"
       items={items}
-      defaultFilter={() => true}
       inputValue={value}
-      onInputChange={onChange}
+      onInputChange={(next) => {
+        setShowingAll(false);
+        onChange(next);
+      }}
+      onOpenChange={(isOpen, trigger) => {
+        if (isOpen && trigger !== "input") {
+          setShowingAll(true);
+        }
+      }}
       onSelectionChange={(key) => {
         if (key !== null) {
           onChange(key === CREATE ? typed : String(key));
@@ -80,10 +103,27 @@ export function ComboField({
       >
         {label}
       </Label>
-      <Input
-        className={`${CONTROL} ${error ? "border-danger" : "border-control"}`}
-        {...input}
-      />
+      <div className="relative">
+        <Input
+          ref={ref}
+          className={`${CONTROL} pr-11 ${error ? "border-danger" : "border-control"}`}
+          {...input}
+        />
+        <Button className="absolute top-2 right-0 bottom-0 flex w-11 items-center justify-center text-ink-faint outline-none hover:text-ink data-[focus-visible]:text-accent">
+          <svg
+            aria-hidden
+            viewBox="0 0 24 24"
+            className="size-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.75}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </Button>
+      </div>
       {hint && !error && (
         <Text slot="description" className="mt-2 block text-xs text-ink-faint">
           {hint}
@@ -100,9 +140,9 @@ export function ComboField({
           {(option) => (
             <ListBoxItem
               id={option.id}
-              textValue={option.text}
+              textValue={option.id === CREATE ? typed : option.id}
               className={`flex min-h-11 cursor-pointer items-center px-3 text-base outline-none data-[focused]:bg-surface ${
-                option.creates ? "font-semibold text-accent" : "text-ink"
+                option.id === CREATE ? "font-semibold text-accent" : "text-ink"
               }`}
             >
               {option.label}
@@ -112,36 +152,4 @@ export function ComboField({
       </Popover>
     </ComboBox>
   );
-}
-
-function matchIgnoringCase(
-  options: string[],
-  typed: string,
-): string | undefined {
-  const wanted = typed.toLowerCase();
-  return options.find((option) => option.toLowerCase() === wanted);
-}
-
-/** The options containing what is typed, then "+ Create …" when the typed value is new. */
-function optionsFor(
-  options: string[],
-  typed: string,
-  existing: string | undefined,
-): Option[] {
-  const wanted = typed.toLowerCase();
-  const matches: Option[] = options
-    .filter((option) => option.toLowerCase().includes(wanted))
-    .map((option) => ({
-      id: option,
-      label: option,
-      text: option,
-      creates: false,
-    }));
-  if (typed === "" || existing !== undefined) {
-    return matches;
-  }
-  return [
-    ...matches,
-    { id: CREATE, label: `+ Create "${typed}"`, text: typed, creates: true },
-  ];
 }
