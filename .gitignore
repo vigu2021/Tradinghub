@@ -226,3 +226,6 @@ node_modules/
 .next/
 /frontend/test-results/
 /frontend/playwright-report/
+
+# Editor
+.zed/settings.json
