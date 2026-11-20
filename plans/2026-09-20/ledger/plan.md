@@ -506,13 +506,12 @@ were each built and dropped along the way; the mockups under this folder show wh
    the phone keyboard's way) is too easy to get subtly wrong by hand, and the native `<select>`
    alternative was drawn and rejected as clunkier (`picker-options-mock.html`). The API is
    unchanged: both are still text.
-4. **The form asks Group, Unit, then Name, and asks for type only when it cannot tell.** Group and
-   type both sound like "what kind of account", so type is not its own question: each unit in the
-   list carries its type (GBP, USD, EUR are Cash; BTC, ETH, USDT are Crypto; a unit used before
-   keeps its last type), and only "+ New unit…" asks "What is it? Money / Crypto / Shares". Name
-   fills itself as "Group Unit" ("Binance BTC") until the user types their own; it stays required
-   and unique, since an account is shown without its group in the transactions table and the
-   transfer pickers. Editing Group or Unit never rewrites an existing name. The API is unchanged.
+4. **The new account form asks Group, Unit, Type, then Name.** Type is a plain dropdown the user
+   always picks, starting on "Choose one"; inferring it from the unit was tried and dropped for now,
+   since a guessed type is easy to accept without reading. Name fills itself as "Group Unit"
+   ("Binance BTC") until the user types their own; it stays required and unique, since an account
+   is shown without its group in the transactions table and the transfer pickers. The edit form
+   fills nothing in: an existing name is never rewritten. The API is unchanged.
 5. **The accounts list groups active accounts under group headings,** alphabetical, matched
    case-insensitively so "binance" and "Binance" share one. The Archived group at the bottom stays
    one flat group. Each heading opens and closes its group, like Archived does. A group of more than
