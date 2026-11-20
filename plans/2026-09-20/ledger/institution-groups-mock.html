@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accounts by institution</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --ground:#f5f5f1; --surface:#ebece7; --ink:#202320; --ink-dim:#4d524c; --ink-faint:#676c65; --rule:#dde0d9; --rule-strong:#c9cdc5; --accent:#9a4d28; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#e9eae4; color:var(--ink); font-family:Archivo, sans-serif; }
+  .wrap { max-width:1160px; margin:0 auto; padding:40px 16px 96px; }
+  .caption { font-size:12px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); }
+  .intro { color:var(--ink-dim); font-size:14px; line-height:1.6; max-width:78ch; }
+  .controls { display:flex; flex-wrap:wrap; gap:24px; margin:24px 0 18px; align-items:center; }
+  .seg { display:inline-flex; background:var(--surface); }
+  .seg button { font:600 14px Archivo; border:0; background:none; padding:10px 14px; min-height:44px; cursor:pointer; color:var(--ink-dim); }
+  .seg button[aria-pressed="true"] { background:var(--ink); color:var(--ground); }
+  .why { font-size:14px; color:var(--ink-dim); line-height:1.6; max-width:80ch; margin:0 0 18px; }
+  .why b { color:var(--ink); }
+  .frame { background:var(--ground); border:1px solid var(--rule-strong); padding:28px; }
+  .frame.phone { width:390px; max-width:100%; padding:20px 16px; }
+  .appbar { display:flex; justify-content:space-between; align-items:center; font-size:14px; color:var(--ink-dim); margin-bottom:30px; }
+  .appbar b { color:var(--ink); font-size:19px; }
+  .head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:28px; }
+  h1 { font-size:36px; font-weight:600; letter-spacing:-.02em; margin:0; line-height:1; }
+  .phone h1 { font-size:28px; }
+  .sub { font-size:14px; color:var(--ink-dim); margin:10px 0 0; }
+  .btn { font:600 14px Archivo; border:0; min-height:44px; padding:0 16px; background:var(--accent); color:#fff; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th { text-align:left; font-size:12px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); padding:0 12px 10px; }
+  td { padding:12px; }
+  .num { text-align:right; font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .unit { color:var(--ink-faint); }
+  .chev-cell { width:28px; text-align:right; color:var(--ink-faint); }
+  .phone .hide-phone { display:none; }
+  tbody.rows tr:nth-child(odd) { background:var(--surface); }
+  tbody.rows tr:hover td { background:var(--rule); }
+  tbody.rows td:first-child { padding-left:34px; }
+  .phone tbody.rows td:first-child { padding-left:24px; }
+  tbody.group-head td { padding:22px 12px 6px; }
+  tbody.group-head:first-of-type td { padding-top:6px; }
+  .group-btn { width:100%; display:flex; align-items:center; gap:12px; background:none; border:0; padding:0; min-height:44px; cursor:pointer; font:inherit; color:inherit; text-align:left; }
+  .group-btn:hover .gname { color:var(--accent); }
+  .gname { font-size:12px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--ink); }
+  .gmeta { margin-left:auto; display:flex; gap:16px; align-items:baseline; font-size:13px; color:var(--ink-faint); }
+  .gunits { font:12px "IBM Plex Mono", monospace; color:var(--ink-dim); }
+  .phone .gunits { display:none; }
+  .arrow { display:inline-block; width:7px; height:7px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(-45deg); transition:transform .15s; color:var(--ink-faint); flex:none; }
+  [aria-expanded="true"] .arrow { transform:rotate(45deg) translateY(-2px); }
+  tr.archived td { color:var(--ink-faint); }
+  .toolbar { display:flex; gap:20px; align-items:center; margin:0 0 14px; font-size:13px; color:var(--ink-dim); }
+  .toolbar button { font:600 13px Archivo; background:none; border:0; color:var(--ink-dim); cursor:pointer; min-height:36px; padding:0; }
+  .toolbar button:hover { color:var(--accent); text-decoration:underline; text-underline-offset:4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="caption">Tradinghub · accounts page</p>
+  <h1 style="font-size:28px;margin-top:6px">Accounts grouped by institution</h1>
+  <p class="intro">Binance has ten accounts here, one per coin, the way the Binance import will create them. Click any institution heading to open or close it. Groups with more than five accounts start closed; a closed group shows how many accounts it holds and its first few units. No totals: BTC and USDT cannot be added without prices.</p>
+
+  <div class="controls">
+    <div><span class="caption" style="margin-right:10px">Width</span>
+      <span class="seg" id="width"><button data-v="desktop" aria-pressed="true">Desktop</button><button data-v="phone" aria-pressed="false">Phone</button></span></div>
+    <div><span class="caption" style="margin-right:10px">Big groups start</span>
+      <span class="seg" id="start"><button data-v="closed" aria-pressed="true">Closed</button><button data-v="open" aria-pressed="false">Open</button></span></div>
+  </div>
+  <p class="why" id="why"></p>
+  <div class="frame" id="frame"></div>
+</div>
+
+<script>
+const ACCOUNTS = [
+  { i: "Revolut", name: "Revolut GBP", type: "Cash", bal: "1240.5", unit: "GBP" },
+  { i: "Revolut", name: "Revolut EUR", type: "Cash", bal: "88.2", unit: "EUR" },
+  ...[["BTC", "0.4125"], ["ETH", "3.2"], ["USDT", "1500"], ["SOL", "42"], ["BNB", "1.75"], ["ADA", "900"], ["DOT", "120"], ["LINK", "64"], ["XRP", "2500"], ["AVAX", "18.5"]]
+    .map(([unit, bal]) => ({ i: "Binance", name: `Binance ${unit}`, type: "Crypto", bal, unit })),
+  { i: "Vanguard", name: "Vanguard ISA", type: "Stocks", bal: "8930", unit: "GBP" },
+  { i: null, name: "Wallet", type: "Cash", bal: "45", unit: "GBP" },
+];
+const ARCHIVED = [{ name: "Old savings", type: "Cash", bal: "0", unit: "GBP" }];
+const BIG = 5;
+let width = "desktop", start = "closed", open = {};
+
+function groups() {
+  const byKey = new Map();
+  for (const a of ACCOUNTS) {
+    const key = a.i ? a.i.toLowerCase() : "";
+    if (!byKey.has(key)) byKey.set(key, { label: a.i ?? "Other", key, accounts: [] });
+    byKey.get(key).accounts.push(a);
+  }
+  return [...byKey.values()].sort((a, b) => (a.key === "" ? 1 : b.key === "" ? -1 : a.label.localeCompare(b.label)));
+}
+const isOpen = (g) => open[g.key] ?? (start === "open" || g.accounts.length <= BIG);
+function unitPreview(g) {
+  const units = [...new Set(g.accounts.map((a) => a.unit))];
+  return units.length > 3 ? `${units.slice(0, 3).join(", ")} +${units.length - 3}` : units.join(", ");
+}
+const row = (a, cls = "") => `<tr class="${cls}"><td>${a.name}</td><td class="hide-phone" style="color:var(--ink-dim)">${a.type}</td><td class="num">${a.bal} <span class="unit">${a.unit}</span></td><td class="chev-cell">›</td></tr>`;
+
+function render() {
+  for (const [id, v] of [["width", width], ["start", start]]) document.querySelectorAll(`#${id} button`).forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === v));
+  document.getElementById("why").innerHTML = start === "closed"
+    ? "<b>Big groups start closed.</b> Binance (10) is folded to one line; Revolut (2) and Vanguard (1) stay open. The list fits on one screen however many coins you hold."
+    : "<b>Every group starts open.</b> Simple and predictable, but ten Binance rows push Vanguard and the rest down the page.";
+  const frame = document.getElementById("frame");
+  frame.className = `frame ${width}`;
+  const archOpen = open.__archived ?? false;
+  frame.innerHTML = `
+    <div class="appbar"><b>Tradinghub</b><span>Dashboard &nbsp;&nbsp;<span style="color:var(--ink);font-weight:600;box-shadow:inset 0 -2px 0 var(--accent)">Accounts</span></span></div>
+    <div class="head"><div><h1>Accounts</h1><p class="sub">Every place money sits.</p></div><button class="btn">New account</button></div>
+    <div class="toolbar"><button data-all="open">Open all</button><button data-all="closed">Close all</button></div>
+    <table>
+      <thead><tr><th>Name</th><th class="hide-phone">Type</th><th style="text-align:right">Balance</th><th></th></tr></thead>
+      ${groups().map((g) => `
+        <tbody class="group-head"><tr><td colspan="4">
+          <button class="group-btn" data-key="${g.key}" aria-expanded="${isOpen(g)}">
+            <span class="arrow"></span><span class="gname">${g.label}</span>
+            <span class="gmeta">${isOpen(g) ? "" : `<span class="gunits">${unitPreview(g)}</span>`}<span>${g.accounts.length} account${g.accounts.length === 1 ? "" : "s"}</span></span>
+          </button></td></tr></tbody>
+        ${isOpen(g) ? `<tbody class="rows">${g.accounts.map((a) => row(a)).join("")}</tbody>` : ""}`).join("")}
+      <tbody class="group-head"><tr><td colspan="4">
+        <button class="group-btn" data-key="__archived" aria-expanded="${archOpen}"><span class="arrow"></span><span class="gname" style="color:var(--ink-faint)">Archived (${ARCHIVED.length})</span></button>
+      </td></tr></tbody>
+      ${archOpen ? `<tbody class="rows">${ARCHIVED.map((a) => row(a, "archived")).join("")}</tbody>` : ""}
+    </table>`;
+}
+
+document.getElementById("frame").addEventListener("click", (e) => {
+  const all = e.target.closest("[data-all]");
+  if (all) { open = {}; for (const g of groups()) open[g.key] = all.dataset.all === "open"; render(); return; }
+  const btn = e.target.closest(".group-btn");
+  if (!btn) return;
+  const key = btn.dataset.key;
+  const g = groups().find((x) => x.key === key);
+  open[key] = key === "__archived" ? !(open.__archived ?? false) : !isOpen(g);
+  render();
+});
+document.getElementById("width").onclick = (e) => { const v = e.target.dataset.v; if (v) { width = v; render(); } };
+document.getElementById("start").onclick = (e) => { const v = e.target.dataset.v; if (v) { start = v; open = {}; render(); } };
+render();
+</script>
+</body>
+</html>

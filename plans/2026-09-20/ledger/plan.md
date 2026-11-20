@@ -480,38 +480,42 @@ were each built and dropped along the way; the mockups under this folder show wh
 
 ---
 
-## Task 7b: Accounts grouped by institution
+## Task 7b: Accounts grouped
 
 **Files:**
-- Create: an Alembic revision adding `accounts.institution`
-- Modify: `backend/src/tradinghub/ledger/models/account.py`, `schemas/accounts.py`,
+- Create: an Alembic revision adding `accounts.group_name`
+- Modify: `backend/src/tradinghub/ledger/models/account.py`, `schemas/accounts.py`, `routes.py`,
   `services/accounts.py`, `crud/accounts.py`, and their tests;
   `frontend/src/features/ledger/types/accounts.ts`, `components/{AccountForm,AccountList}.tsx`,
-  `frontend/src/app/(app)/accounts/[id]/page.tsx`, `frontend/e2e/app.spec.ts`
+  `frontend/src/app/(app)/accounts/[id]/page.tsx`, `frontend/e2e/{app.spec,support}.ts`
 
 **Requirements:**
-1. **A nullable `institution` text column,** 1 to 60 characters, trimmed, with the same no-NUL rule
-   as `name`. Existing accounts get null; nothing is guessed for them.
-2. **`AccountCreate` takes it optionally; `AccountResponse` always carries it,** null included.
-3. **`AccountUpdate` can clear it.** An explicit `null` sets it to null, an omitted field leaves it.
-   The service tells the two apart with the fields the caller actually sent (`model_fields_set`),
-   since today it drops every `null`.
-4. **The form gets an optional Institution field** above Name, with a hint, and suggestions from
-   the institutions the user has already typed (a native `<datalist>`, no new library). An empty
-   field sends `null`.
-5. **The accounts list groups active accounts under institution headings,** alphabetical, matched
-   case-insensitively so "revolut" and "Revolut" share one, with accounts that have none in an
-   "Other" group last. The Archived group at the bottom stays one flat group.
-6. **The account page caption reads "Revolut · Cash · GBP"** when there is one.
+1. **A required `group_name` text column,** 1 to 60 characters, trimmed, with the same no-NUL rule as
+   `name`. The migration files every existing account under "Other".
+2. **`AccountCreate` requires it, `AccountUpdate` may change it, `AccountResponse` always carries
+   it.** A `null` on update means not sent, as for every other field, so the update service needs
+   no special case.
+3. **Group and Unit are picked, not typed,** so a typo cannot split a group or mislabel a balance.
+   Each is a dropdown of the values the user has already used, plus "+ New…" that reveals a text box
+   to type one once. Group sits above Name. Unit also lists a few common units (GBP, USD, EUR, BTC,
+   ETH, USDT) so a first account has something to pick. One shared "pick or add new" component
+   serves both, built on a native `<select>`, no new library.
+4. **The accounts list groups active accounts under group headings,** alphabetical, matched
+   case-insensitively so "binance" and "Binance" share one. The Archived group at the bottom stays
+   one flat group. Each heading opens and closes its group, like Archived does. A group of more than
+   five accounts starts closed, and a closed heading shows its account count and first few units
+   ("BTC, ETH, USDT +7"), the units hidden on phones. No "open all" control until it is missed. See
+   `institution-groups-mock.html`, drawn before the field was renamed.
+5. **The account page caption reads "Binance · Crypto · BTC".**
 
-**Tests:** schema rules (trimmed, length, blank refused); create with and without it; update sets,
-clears with `null`, and leaves it alone when omitted; the list response carries it. End to end:
-an account with an institution appears under its heading, and clearing it moves it to Other.
+**Tests:** schema rules (trimmed, length, blank refused, required on create); create with it; update
+changes it and leaves it alone when omitted or null; the list response carries it. End to end: a new
+account appears under its group's heading, and a big group starts closed.
 
-**Deliberately not here:** pre-filling it from the name, totals per institution, and grouping the
-transaction forms' account picker, which belongs to Task 8 (`<optgroup>` per institution).
+**Deliberately not here:** totals per group, and grouping the transaction forms' account picker,
+which belongs to Task 8 (`<optgroup>` per group).
 
-**Commit:** `Group accounts by institution`
+**Commit:** `Group accounts`
 
 ---
 
