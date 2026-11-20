@@ -61,14 +61,14 @@ async def list_accounts_with_balances(
 
 
 async def create_account(
-    db: AsyncSession, *, user_id: int, name: str, unit: str, type: AccountType
+    db: AsyncSession, *, user_id: int, name: str, unit: str, type: AccountType, group_name: str
 ) -> Account:
     """Insert an account and flush, so the returned object carries its id and timestamps.
 
     Raises IntegrityError when the user already has an account with that name. The comparison is
     case-insensitive, since name is CITEXT.
     """
-    account = Account(user_id=user_id, name=name, unit=unit, type=type)
+    account = Account(user_id=user_id, name=name, unit=unit, type=type, group_name=group_name)
     db.add(account)
     await db.flush()
     return account

@@ -19,7 +19,12 @@ async def create_account(
     """
     try:
         account = await account_crud.create_account(
-            db, user_id=user_id, name=details.name, unit=details.unit, type=details.type
+            db,
+            user_id=user_id,
+            name=details.name,
+            unit=details.unit,
+            type=details.type,
+            group_name=details.group_name,
         )
     except IntegrityError as error:
         raise AccountNameTakenError from error

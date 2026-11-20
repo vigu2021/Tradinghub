@@ -17,7 +17,7 @@ from tradinghub.ledger.models import Account, AccountType, Transaction, Transact
 
 async def _account(db_session: AsyncSession, user: User, name: str, unit: str = "GBP") -> Account:
     return await create_account(
-        db_session, user_id=user.id, name=name, unit=unit, type=AccountType.CASH
+        db_session, user_id=user.id, name=name, unit=unit, type=AccountType.CASH, group_name="Banks"
     )
 
 
@@ -207,7 +207,12 @@ async def test_an_account_may_hold_a_unit_that_is_not_money(
 ) -> None:
     """A holding is an account whose unit is not a currency, which is what a portfolio needs."""
     await create_account(
-        db_session, user_id=alice.id, name="Binance BTC", unit="BTC", type=AccountType.CRYPTO
+        db_session,
+        user_id=alice.id,
+        name="Binance BTC",
+        unit="BTC",
+        type=AccountType.CRYPTO,
+        group_name="Binance",
     )
 
     balances = await list_accounts_with_balances(db_session, user_id=alice.id)

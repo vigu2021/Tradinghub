@@ -21,7 +21,12 @@ NOVEMBER = datetime(2026, 11, 1, tzinfo=UTC)
 
 async def _account(db_session: AsyncSession, user: User, name: str = "Chase") -> Account:
     return await create_account(
-        db_session, user_id=user.id, name=name, unit="GBP", type=AccountType.CASH
+        db_session,
+        user_id=user.id,
+        name=name,
+        unit="GBP",
+        type=AccountType.CASH,
+        group_name="Banks",
     )
 
 

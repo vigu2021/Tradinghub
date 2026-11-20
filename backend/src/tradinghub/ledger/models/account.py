@@ -40,6 +40,7 @@ class Account(Base):
             values_callable=lambda enum: [member.value for member in enum],
         )
     )
+    group_name: Mapped[str]  # How the user files it, for grouping: Binance, Savings, Home safe
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

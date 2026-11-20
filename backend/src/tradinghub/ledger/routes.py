@@ -226,6 +226,7 @@ def _account_response(account_with_balance: AccountWithBalance) -> AccountRespon
         name=account.name,
         unit=account.unit,
         type=account.type,
+        group_name=account.group_name,
         balance=account_with_balance.balance,
         archived_at=account.archived_at,
     )

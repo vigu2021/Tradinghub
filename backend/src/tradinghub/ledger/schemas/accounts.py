@@ -12,6 +12,10 @@ AccountName = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1, max_length=60, pattern=NO_NUL_PATTERN),
 ]
+GroupName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=60, pattern=NO_NUL_PATTERN),
+]
 Unit = Annotated[
     str,
     StringConstraints(
@@ -24,6 +28,7 @@ class AccountCreate(RequestModel):
     name: AccountName
     unit: Unit
     type: AccountType
+    group_name: GroupName
 
 
 class AccountUpdate(RequestModel):
@@ -36,6 +41,7 @@ class AccountUpdate(RequestModel):
     name: AccountName | None = None
     unit: Unit | None = None
     type: AccountType | None = None
+    group_name: GroupName | None = None
     archived: bool | None = None
 
 
@@ -50,5 +56,6 @@ class AccountResponse(BaseModel):
     name: str
     unit: str
     type: AccountType
+    group_name: str
     balance: DecimalString
     archived_at: datetime | None

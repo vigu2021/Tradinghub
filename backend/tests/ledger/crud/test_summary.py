@@ -28,7 +28,12 @@ async def _account(
     db_session: AsyncSession, user: User, unit: str = "GBP", name: str = ""
 ) -> Account:
     return await create_account(
-        db_session, user_id=user.id, name=name or unit, unit=unit, type=AccountType.CASH
+        db_session,
+        user_id=user.id,
+        name=name or unit,
+        unit=unit,
+        type=AccountType.CASH,
+        group_name="Banks",
     )
 
 

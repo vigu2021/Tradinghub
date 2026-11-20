@@ -8,7 +8,7 @@ from tradinghub.auth.dependencies import ACCESS_COOKIE
 from tradinghub.auth.models import User
 from tradinghub.auth.security.tokens import encode_access_token
 
-CHASE = {"name": "Chase", "unit": "gbp", "type": "cash"}
+CHASE = {"name": "Chase", "unit": "gbp", "type": "cash", "group_name": "Banks"}
 
 
 def _sign_in(client: AsyncClient, user: User) -> None:
@@ -34,6 +34,7 @@ async def test_opening_an_account_returns_it_with_a_zero_balance(
         "name": "Chase",
         "unit": "GBP",
         "type": "cash",
+        "group_name": "Banks",
         "balance": "0",
         "archived_at": None,
     }
@@ -113,6 +114,44 @@ async def test_a_null_field_is_left_alone(client: AsyncClient, alice: User) -> N
     opened = await _open(client)
 
     response = await client.patch(f"/accounts/{opened['id']}", json={"name": None})
+
+    assert response.status_code == 200
+    assert response.json() == opened
+
+
+async def test_an_account_is_opened_in_its_group(client: AsyncClient, alice: User) -> None:
+    _sign_in(client, alice)
+
+    opened = await _open(client, group_name="  Savings  ")
+
+    assert opened["group_name"] == "Savings"
+
+
+async def test_an_account_needs_a_group(client: AsyncClient, alice: User) -> None:
+    """Every account is filed somewhere, so the list never has to invent a heading."""
+    _sign_in(client, alice)
+    body = {key: value for key, value in CHASE.items() if key != "group_name"}
+
+    response = await client.post("/accounts", json=body)
+
+    assert response.status_code == 422
+
+
+async def test_a_patch_moves_an_account_to_another_group(client: AsyncClient, alice: User) -> None:
+    _sign_in(client, alice)
+    opened = await _open(client)
+
+    response = await client.patch(f"/accounts/{opened['id']}", json={"group_name": "Savings"})
+
+    assert response.json() == opened | {"group_name": "Savings"}
+
+
+async def test_a_null_group_is_left_alone(client: AsyncClient, alice: User) -> None:
+    """A group cannot be removed, so null means not sent, as for every other field."""
+    _sign_in(client, alice)
+    opened = await _open(client)
+
+    response = await client.patch(f"/accounts/{opened['id']}", json={"group_name": None})
 
     assert response.status_code == 200
     assert response.json() == opened
@@ -843,7 +882,7 @@ async def test_a_nul_character_in_transaction_text_is_rejected(
     assert response.status_code == 422
 
 
-@pytest.mark.parametrize("field", ["name", "unit"])
+@pytest.mark.parametrize("field", ["name", "unit", "group_name"])
 async def test_a_nul_character_in_account_text_is_rejected(
     client: AsyncClient, alice: User, field: str
 ) -> None:

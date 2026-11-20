@@ -12,12 +12,14 @@ from tradinghub.ledger.schemas.accounts import AccountCreate, AccountResponse, A
 def test_a_unit_is_letters_and_digits_only(unit: str) -> None:
     """The same-unit transfer rule and every per-unit total compare this value."""
     with pytest.raises(ValidationError):
-        AccountCreate(name="Chase", unit=unit, type=AccountType.CASH)
+        AccountCreate(name="Chase", unit=unit, type=AccountType.CASH, group_name="Banks")
 
 
 def test_a_name_is_trimmed_and_a_unit_is_uppercased() -> None:
     """The schema normalises, so no service has to remember to."""
-    account = AccountCreate(name="  Chase  ", unit=" gbp ", type=AccountType.CASH)
+    account = AccountCreate(
+        name="  Chase  ", unit=" gbp ", type=AccountType.CASH, group_name="Banks"
+    )
 
     assert account.name == "Chase"
     assert account.unit == "GBP"
@@ -36,6 +38,23 @@ def test_an_update_distinguishes_archiving_from_leaving_it_alone() -> None:
     assert AccountUpdate(name="Chase").archived is None
 
 
+def test_a_group_is_required_and_trimmed() -> None:
+    with pytest.raises(ValidationError):
+        AccountCreate(name="Chase", unit="GBP", type=AccountType.CASH)  # type: ignore[call-arg]
+
+    account = AccountCreate(
+        name="Chase", unit="GBP", type=AccountType.CASH, group_name="  Savings  "
+    )
+
+    assert account.group_name == "Savings"
+
+
+@pytest.mark.parametrize("group_name", ["   ", "x" * 61])
+def test_a_group_that_is_blank_or_too_long_is_rejected(group_name: str) -> None:
+    with pytest.raises(ValidationError):
+        AccountCreate(name="Chase", unit="GBP", type=AccountType.CASH, group_name=group_name)
+
+
 def test_a_misspelled_field_is_rejected_rather_than_ignored() -> None:
     """Without extra="forbid" this returns 200 and silently changes nothing."""
     with pytest.raises(ValidationError):
@@ -45,17 +64,23 @@ def test_a_misspelled_field_is_rejected_rather_than_ignored() -> None:
 def test_a_caller_cannot_claim_a_user_id() -> None:
     """Ownership comes from the cookie. A body that tries to set it is a 422."""
     with pytest.raises(ValidationError):
-        AccountCreate(name="Chase", unit="GBP", type=AccountType.CASH, user_id=7)  # type: ignore[call-arg]
+        AccountCreate(
+            name="Chase",
+            unit="GBP",
+            type=AccountType.CASH,
+            group_name="Banks",
+            user_id=7,  # type: ignore[call-arg]
+        )
 
 
 def test_an_empty_name_is_rejected() -> None:
     with pytest.raises(ValidationError):
-        AccountCreate(name="   ", unit="GBP", type=AccountType.CASH)
+        AccountCreate(name="   ", unit="GBP", type=AccountType.CASH, group_name="Banks")
 
 
 def test_an_unknown_type_is_rejected() -> None:
     with pytest.raises(ValidationError):
-        AccountCreate(name="Chase", unit="GBP", type="bogus")  # type: ignore[arg-type]
+        AccountCreate(name="Chase", unit="GBP", type="bogus", group_name="Banks")  # type: ignore[arg-type]
 
 
 def test_a_response_carries_no_user_id() -> None:
@@ -64,6 +89,7 @@ def test_a_response_carries_no_user_id() -> None:
         name="Chase",
         unit="GBP",
         type=AccountType.CASH,
+        group_name="Banks",
         balance=Decimal("0"),
         archived_at=None,
     )
@@ -80,6 +106,7 @@ def test_a_response_says_when_an_account_was_archived() -> None:
         name="Chase",
         unit="GBP",
         type=AccountType.CASH,
+        group_name="Banks",
         balance=Decimal("0"),
         archived_at=closed_at,
     )
