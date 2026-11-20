@@ -73,6 +73,7 @@ Two tables. One Alembic revision.
 | `name` | citext | not null, 1 to 60 characters, trimmed |
 | `unit` | text | not null, 2 to 10 characters, uppercase. `GBP`, `USDT`, `BTC`, `AAPL` |
 | `type` | text | not null, `cash`, `crypto`, or `stock`. What kind of thing the unit is |
+| `institution` | text | optional, 1 to 60 characters, trimmed. Where the account is held: Revolut, Binance |
 | `archived_at` | timestamptz | null while the account is live |
 | `created_at` | timestamptz | not null, set by the database |
 | `updated_at` | timestamptz | not null, set by the database on every update |
@@ -146,6 +147,16 @@ All eleven require a session through the existing `get_current_user_claims` depe
 | `GET /accounts` | list own accounts with each balance, name ascending | 200 | |
 | `GET /accounts/{id}` | one account with its balance | 200 | 404 |
 | `PATCH /accounts/{id}` | rename, change unit or type, archive or restore | 200 | 404, 409, 422 |
+
+**Institution is optional and groups the list.** One unit per account splits a single place into
+several accounts, Revolut GBP and Revolut EUR, and the institution puts them back together on the
+accounts page. It is optional because cash in a wallet has no institution, and because making it
+required would mean guessing a value for every existing account. It is plain text, not its own
+table: a table earns its place once an institution has data of its own, such as the API connection
+in the Binance slice. There are no totals per institution, since adding GBP to EUR needs prices.
+
+On `PATCH`, `institution` is the one field that can be cleared: an explicit `null` removes it, and
+leaving it out leaves it alone. Every other field treats `null` as not sent.
 
 **Archiving is a field on `PATCH`, not its own endpoint.** `archived: true` archives, `false`
 restores, omitted leaves it alone. The request carries a boolean and the service decides the

@@ -480,6 +480,41 @@ were each built and dropped along the way; the mockups under this folder show wh
 
 ---
 
+## Task 7b: Accounts grouped by institution
+
+**Files:**
+- Create: an Alembic revision adding `accounts.institution`
+- Modify: `backend/src/tradinghub/ledger/models/account.py`, `schemas/accounts.py`,
+  `services/accounts.py`, `crud/accounts.py`, and their tests;
+  `frontend/src/features/ledger/types/accounts.ts`, `components/{AccountForm,AccountList}.tsx`,
+  `frontend/src/app/(app)/accounts/[id]/page.tsx`, `frontend/e2e/app.spec.ts`
+
+**Requirements:**
+1. **A nullable `institution` text column,** 1 to 60 characters, trimmed, with the same no-NUL rule
+   as `name`. Existing accounts get null; nothing is guessed for them.
+2. **`AccountCreate` takes it optionally; `AccountResponse` always carries it,** null included.
+3. **`AccountUpdate` can clear it.** An explicit `null` sets it to null, an omitted field leaves it.
+   The service tells the two apart with the fields the caller actually sent (`model_fields_set`),
+   since today it drops every `null`.
+4. **The form gets an optional Institution field** above Name, with a hint, and suggestions from
+   the institutions the user has already typed (a native `<datalist>`, no new library). An empty
+   field sends `null`.
+5. **The accounts list groups active accounts under institution headings,** alphabetical, matched
+   case-insensitively so "revolut" and "Revolut" share one, with accounts that have none in an
+   "Other" group last. The Archived group at the bottom stays one flat group.
+6. **The account page caption reads "Revolut · Cash · GBP"** when there is one.
+
+**Tests:** schema rules (trimmed, length, blank refused); create with and without it; update sets,
+clears with `null`, and leaves it alone when omitted; the list response carries it. End to end:
+an account with an institution appears under its heading, and clearing it moves it to Other.
+
+**Deliberately not here:** pre-filling it from the name, totals per institution, and grouping the
+transaction forms' account picker, which belongs to Task 8 (`<optgroup>` per institution).
+
+**Commit:** `Group accounts by institution`
+
+---
+
 ## Task 8: Transactions page
 
 **Files:**
