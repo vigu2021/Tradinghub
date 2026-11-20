@@ -24,7 +24,7 @@ type SelectFieldProps = FrameProps &
     ref?: Ref<HTMLSelectElement>;
   };
 
-const CONTROL =
+export const CONTROL =
   "mt-2 w-full border bg-ground px-3 py-2.5 text-base text-ink caret-accent outline-none transition-colors placeholder:text-ink-faint focus:border-accent";
 
 /**
