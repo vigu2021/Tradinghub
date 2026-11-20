@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { AccountForm } from "@/features/ledger/components/AccountForm";
+import { NewAccountForm } from "@/features/ledger/components/NewAccountForm";
 
 export default function NewAccountPage() {
   const router = useRouter();
@@ -23,8 +23,7 @@ export default function NewAccountPage() {
         Anywhere money sits: a bank, an exchange, a broker.
       </p>
       <div className="mt-8 max-w-md">
-        <AccountForm
-          mode="creating"
+        <NewAccountForm
           onCreated={(account) => router.push(`/accounts/${account.id}`)}
           onCancel={() => router.push("/accounts")}
         />

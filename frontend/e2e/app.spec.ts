@@ -34,9 +34,12 @@ test.describe("accounts page", () => {
 
     await page.getByRole("link", { name: "New account" }).click();
     await expect(page).toHaveURL(/\/accounts\/new$/);
-    await page.getByLabel("Group").fill("Banks");
+    await page.getByRole("combobox", { name: "Group" }).fill("Banks");
+    await page.keyboard.press("Tab");
+    await page.getByRole("combobox", { name: "Unit" }).fill("GBP");
+    await page.keyboard.press("Tab");
+    await page.getByLabel("Type").selectOption("cash");
     await page.getByLabel("Name").fill(name);
-    await page.getByLabel("Unit").fill("GBP");
     await page.getByRole("button", { name: "Add account" }).click();
 
     await expect(page).toHaveURL(/\/accounts\/\d+$/);
@@ -56,9 +59,12 @@ test.describe("accounts page", () => {
     await seedAccount(page.request, { name, unit: "GBP", type: "cash" });
     await page.goto("/accounts/new");
 
-    await page.getByLabel("Group").fill("E2E");
+    await page.getByRole("combobox", { name: "Group" }).fill("E2E");
+    await page.keyboard.press("Tab");
+    await page.getByRole("combobox", { name: "Unit" }).fill("GBP");
+    await page.keyboard.press("Tab");
+    await page.getByLabel("Type").selectOption("cash");
     await page.getByLabel("Name").fill(name);
-    await page.getByLabel("Unit").fill("GBP");
     await page.getByRole("button", { name: "Add account" }).click();
 
     await expect(page.locator("form").getByRole("alert")).toContainText(
@@ -142,9 +148,11 @@ test.describe("an account's own page", () => {
     await page.goto(`/accounts/${account.id}`);
     await page.getByRole("button", { name: "Edit", exact: true }).click();
 
-    await page.getByLabel("Unit").fill("usd");
+    await page.getByRole("combobox", { name: "Unit" }).fill("usd");
 
-    await expect(page.getByLabel("Unit")).toHaveAccessibleDescription(
+    await expect(
+      page.getByRole("combobox", { name: "Unit" }),
+    ).toHaveAccessibleDescription(
       "Nothing is converted: 100 GBP becomes 100 USD.",
     );
   });

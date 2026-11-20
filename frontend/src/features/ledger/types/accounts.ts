@@ -7,6 +7,9 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   stock: "Stocks",
 };
 
+/** Units offered alongside the user's own, so a first account has something to pick. */
+export const COMMON_UNITS = ["GBP", "USD", "EUR", "BTC", "ETH", "USDT"];
+
 /** Mirrors ledger/schemas/accounts.py: AccountResponse. Nothing enforces the match. */
 export type Account = {
   id: number;

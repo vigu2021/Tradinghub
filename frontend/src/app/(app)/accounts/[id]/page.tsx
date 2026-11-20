@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { accountQueries } from "@/features/ledger/api/accounts";
-import { AccountForm } from "@/features/ledger/components/AccountForm";
+import { EditAccountForm } from "@/features/ledger/components/EditAccountForm";
 import { ArchiveAccount } from "@/features/ledger/components/ArchiveAccount";
 import { RecentTransactions } from "@/features/ledger/components/RecentTransactions";
 import {
@@ -69,9 +69,8 @@ export default function AccountPage() {
         <div className="divide-y divide-rule border-y border-rule">
           <div className="py-4">
             {editing ? (
-              <AccountForm
+              <EditAccountForm
                 key={account.id}
-                mode="editing"
                 account={account}
                 onClose={() => setEditing(false)}
               />
@@ -97,7 +96,8 @@ function AccountHeader({ account }: AccountHeaderProps) {
     <div className="grid gap-x-10 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
       <div className="min-w-0">
         <p className={CAPTION}>
-          {ACCOUNT_TYPE_LABELS[account.type]} · {account.unit}
+          {account.group_name} · {ACCOUNT_TYPE_LABELS[account.type]} ·{" "}
+          {account.unit}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
           <h1 className="font-display text-[1.75rem] leading-tight font-semibold tracking-tight break-words sm:text-[2.5rem]">
@@ -132,7 +132,8 @@ function DetailsRow({ account, onEdit }: DetailsRowProps) {
       <div className="min-w-0 flex-1 text-sm">
         <p className="font-semibold">Details</p>
         <p className="mt-0.5 break-words text-ink-dim">
-          {account.name} · {account.unit} · {ACCOUNT_TYPE_LABELS[account.type]}
+          {account.group_name} · {account.name} · {account.unit} ·{" "}
+          {ACCOUNT_TYPE_LABELS[account.type]}
         </p>
       </div>
       <Button variant="ghost" className="min-w-24 shrink-0" onClick={onEdit}>
