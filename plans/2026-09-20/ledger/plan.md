@@ -495,18 +495,31 @@ were each built and dropped along the way; the mockups under this folder show wh
 2. **`AccountCreate` requires it, `AccountUpdate` may change it, `AccountResponse` always carries
    it.** A `null` on update means not sent, as for every other field, so the update service needs
    no special case.
-3. **Group and Unit are picked, not typed,** so a typo cannot split a group or mislabel a balance.
-   Each is a dropdown of the values the user has already used, plus "+ New…" that reveals a text box
-   to type one once. Group sits above Name. Unit also lists a few common units (GBP, USD, EUR, BTC,
-   ETH, USDT) so a first account has something to pick. One shared "pick or add new" component
-   serves both, built on a native `<select>`, no new library.
-4. **The accounts list groups active accounts under group headings,** alphabetical, matched
+3. **Group and Unit are combo boxes: type to filter, pick, or create.** Typing filters the values
+   the user has already used; a value with no match is offered as "+ Create …"; a value matching an
+   existing one regardless of case reuses that one, so "binance" files under "Binance" rather than
+   splitting the group. Tapping the box shows the whole list before any typing, so picking stays tap,
+   tap. Unit's list also holds a few common units (GBP, USD, EUR, BTC, ETH, USDT) so a first account
+   has something to pick. Both use one shared `ComboField`, built on React Aria Components'
+   `ComboBox` and styled with the existing tokens. **This is the slice's one new library, on
+   purpose:** an accessible combobox (arrow keys, announced results, focus, a list that moves out of
+   the phone keyboard's way) is too easy to get subtly wrong by hand, and the native `<select>`
+   alternative was drawn and rejected as clunkier (`picker-options-mock.html`). The API is
+   unchanged: both are still text.
+4. **The form asks Group, Unit, then Name, and asks for type only when it cannot tell.** Group and
+   type both sound like "what kind of account", so type is not its own question: each unit in the
+   list carries its type (GBP, USD, EUR are Cash; BTC, ETH, USDT are Crypto; a unit used before
+   keeps its last type), and only "+ New unit…" asks "What is it? Money / Crypto / Shares". Name
+   fills itself as "Group Unit" ("Binance BTC") until the user types their own; it stays required
+   and unique, since an account is shown without its group in the transactions table and the
+   transfer pickers. Editing Group or Unit never rewrites an existing name. The API is unchanged.
+5. **The accounts list groups active accounts under group headings,** alphabetical, matched
    case-insensitively so "binance" and "Binance" share one. The Archived group at the bottom stays
    one flat group. Each heading opens and closes its group, like Archived does. A group of more than
    five accounts starts closed, and a closed heading shows its account count and first few units
    ("BTC, ETH, USDT +7"), the units hidden on phones. No "open all" control until it is missed. See
    `institution-groups-mock.html`, drawn before the field was renamed.
-5. **The account page caption reads "Binance · Crypto · BTC".**
+6. **The account page caption reads "Binance · Crypto · BTC".**
 
 **Tests:** schema rules (trimmed, length, blank refused, required on create); create with it; update
 changes it and leaves it alone when omitted or null; the list response carries it. End to end: a new

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Three ways to pick a group</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --ground:#f5f5f1; --surface:#ebece7; --ink:#202320; --ink-dim:#4d524c; --ink-faint:#676c65; --rule:#dde0d9; --rule-strong:#c9cdc5; --control:#868b84; --accent:#9a4d28; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#e9eae4; color:var(--ink); font-family:Archivo, sans-serif; }
+  .wrap { max-width:1200px; margin:0 auto; padding:40px 16px 120px; }
+  .caption { font-size:12px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); }
+  .intro { color:var(--ink-dim); font-size:14px; line-height:1.6; max-width:80ch; }
+  .cols { display:grid; gap:24px; margin-top:28px; }
+  @media (min-width:1000px) { .cols { grid-template-columns:repeat(3, 1fr); } }
+  .card { background:var(--ground); border:1px solid var(--rule-strong); padding:24px; }
+  .card h2 { font-size:18px; margin:0 0 4px; }
+  .tag { display:inline-block; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; padding:3px 7px; margin-bottom:10px; background:var(--surface); color:var(--ink-dim); }
+  .tag.rec { background:var(--accent); color:#fff; }
+  .card p.why { font-size:13px; color:var(--ink-dim); line-height:1.55; margin:0 0 20px; }
+  .card p.why b { color:var(--ink); }
+  .field { margin-bottom:22px; position:relative; }
+  label { display:block; font-size:13px; font-weight:500; color:var(--ink-dim); margin-bottom:8px; }
+  input, select { font:16px Archivo; border:1px solid var(--control); background:var(--ground); padding:10px 12px; width:100%; color:var(--ink); }
+  input:focus, select:focus { outline:none; border-color:var(--accent); }
+  select + input { margin-top:8px; }
+  .hint { font-size:12px; color:var(--ink-faint); margin:8px 0 0; }
+  .result { font:12px "IBM Plex Mono", monospace; color:var(--ink-dim); background:var(--surface); padding:8px 10px; }
+  .pros { font-size:13px; line-height:1.55; margin:18px 0 0; padding:0; list-style:none; }
+  .pros li { padding-left:18px; position:relative; margin-bottom:6px; color:var(--ink-dim); }
+  .pros li::before { position:absolute; left:0; font-weight:700; }
+  .pros li.good::before { content:"+"; color:#26714a; }
+  .pros li.bad::before { content:"−"; color:#b3453d; }
+  .list { position:absolute; left:0; right:0; top:100%; background:var(--ground); border:1px solid var(--rule-strong); border-top:0; margin:0; padding:4px 0; list-style:none; z-index:5; box-shadow:0 10px 24px rgba(0,0,0,.08); max-height:220px; overflow:auto; }
+  .list li { padding:10px 12px; font-size:15px; cursor:pointer; }
+  .list li[aria-selected="true"], .list li:hover { background:var(--surface); }
+  .list li.create { color:var(--accent); font-weight:600; }
+  .list li.empty { color:var(--ink-faint); cursor:default; }
+  mark { background:none; color:var(--ink); font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="caption">Tradinghub · new account form</p>
+  <h1 style="font-size:28px;margin:6px 0 8px">Three ways to pick a group</h1>
+  <p class="intro">Same existing groups in each: Banks, Binance, Home safe, Savings, Vanguard. Try picking one, and try adding a new one such as "Trading 212". The grey box under each shows the value the form would send. On a phone, the first one opens the phone's own picker.</p>
+
+  <div class="cols">
+    <section class="card">
+      <span class="tag rec">1 · Recommended for now</span>
+      <h2>Dropdown + "New…"</h2>
+      <p class="why"><b>Native select</b> with an extra last option that reveals a text box.</p>
+      <div class="field">
+        <label for="s-group">Group</label>
+        <select id="s-group"></select>
+        <input id="s-new" aria-label="New group" hidden>
+        <p class="hint">How you file it, like Binance, Savings or Home safe</p>
+      </div>
+      <div class="result" id="s-out"></div>
+      <ul class="pros">
+        <li class="good">Keyboard, screen readers and phone pickers work for free</li>
+        <li class="good">Can't misspell an existing group</li>
+        <li class="good">Little code, no library</li>
+        <li class="bad">A new group takes two steps</li>
+        <li class="bad">Long lists mean scrolling</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <span class="tag">2 · Smoothest, hardest</span>
+      <h2>Type to search, "Create…"</h2>
+      <p class="why"><b>A combobox</b>, like Notion or Linear: typing filters, and an unmatched name offers to create it.</p>
+      <div class="field" id="c-field">
+        <label for="c-group">Group</label>
+        <input id="c-group" role="combobox" aria-expanded="false" aria-controls="c-list" aria-autocomplete="list" autocomplete="off" placeholder="Search or create">
+        <ul class="list" id="c-list" role="listbox" hidden></ul>
+        <p class="hint">How you file it, like Binance, Savings or Home safe</p>
+      </div>
+      <div class="result" id="c-out"></div>
+      <ul class="pros">
+        <li class="good">One box: type, pick or create</li>
+        <li class="good">Stays quick with long lists</li>
+        <li class="bad">Accessible version is hard to hand-build (arrow keys, announcements, focus)</li>
+        <li class="bad">Usually means adding a library</li>
+        <li class="bad">On phones the list can fight the keyboard for space</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <span class="tag">3 · Simplest, weakest</span>
+      <h2>Text box with suggestions</h2>
+      <p class="why"><b>A native <code>&lt;datalist&gt;</code></b>: a plain text box the browser offers suggestions for.</p>
+      <div class="field">
+        <label for="d-group">Group</label>
+        <input id="d-group" list="d-options" autocomplete="off">
+        <datalist id="d-options"></datalist>
+        <p class="hint">How you file it, like Binance, Savings or Home safe</p>
+      </div>
+      <div class="result" id="d-out"></div>
+      <ul class="pros">
+        <li class="good">Almost no code</li>
+        <li class="good">New groups need no extra step</li>
+        <li class="bad">Nothing stops "Binnace" becoming its own group</li>
+        <li class="bad">Suggestions look different in every browser, and are easy to miss on phones</li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<script>
+const GROUPS = ["Banks", "Binance", "Home safe", "Savings", "Vanguard"];
+const out = (id, value) => { document.getElementById(id).textContent = `group_name: ${JSON.stringify(value)}`; };
+
+// 1 · select + new
+const sGroup = document.getElementById("s-group"), sNew = document.getElementById("s-new");
+sGroup.innerHTML = `<option value="" disabled selected>Choose one</option>${GROUPS.map((g) => `<option>${g}</option>`).join("")}<option value="__new__">+ New group…</option>`;
+sGroup.onchange = () => {
+  const adding = sGroup.value === "__new__";
+  sNew.hidden = !adding;
+  if (adding) { sNew.value = ""; sNew.focus(); out("s-out", ""); } else out("s-out", sGroup.value);
+};
+sNew.oninput = () => out("s-out", sNew.value);
+out("s-out", "");
+
+// 2 · combobox
+const cInput = document.getElementById("c-group"), cList = document.getElementById("c-list");
+let active = 0, items = [];
+function cRender() {
+  const q = cInput.value.trim();
+  const matches = GROUPS.filter((g) => g.toLowerCase().includes(q.toLowerCase()));
+  const exact = GROUPS.some((g) => g.toLowerCase() === q.toLowerCase());
+  items = matches.map((g) => ({ label: g, value: g }));
+  if (q && !exact) items.push({ label: `+ Create "${q}"`, value: q, create: true });
+  active = Math.min(active, Math.max(items.length - 1, 0));
+  const hl = (g) => q ? g.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "i"), "<mark>$1</mark>") : g;
+  cList.innerHTML = items.length
+    ? items.map((it, i) => `<li role="option" id="c-opt-${i}" aria-selected="${i === active}" class="${it.create ? "create" : ""}" data-i="${i}">${it.create ? it.label : hl(it.label)}</li>`).join("")
+    : `<li class="empty">No groups yet</li>`;
+  cInput.setAttribute("aria-activedescendant", items.length ? `c-opt-${active}` : "");
+}
+function cOpen(open) { cList.hidden = !open; cInput.setAttribute("aria-expanded", open); if (open) cRender(); }
+function cChoose(i) { const it = items[i]; if (!it) return; cInput.value = it.value; out("c-out", it.value); cOpen(false); }
+cInput.onfocus = () => cOpen(true);
+cInput.oninput = () => { active = 0; cOpen(true); out("c-out", cInput.value.trim()); };
+cInput.onkeydown = (e) => {
+  if (e.key === "ArrowDown") { e.preventDefault(); cOpen(true); active = Math.min(active + 1, items.length - 1); cRender(); }
+  if (e.key === "ArrowUp") { e.preventDefault(); active = Math.max(active - 1, 0); cRender(); }
+  if (e.key === "Enter" && !cList.hidden) { e.preventDefault(); cChoose(active); }
+  if (e.key === "Escape") cOpen(false);
+};
+cList.onmousedown = (e) => { const li = e.target.closest("li[data-i]"); if (li) { e.preventDefault(); cChoose(Number(li.dataset.i)); } };
+cInput.onblur = () => setTimeout(() => cOpen(false), 100);
+out("c-out", "");
+
+// 3 · datalist
+const dInput = document.getElementById("d-group");
+document.getElementById("d-options").innerHTML = GROUPS.map((g) => `<option value="${g}">`).join("");
+dInput.oninput = () => out("d-out", dInput.value);
+out("d-out", "");
+</script>
+</body>
+</html>
