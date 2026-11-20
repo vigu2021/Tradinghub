@@ -13,6 +13,7 @@ export type Account = {
   name: string;
   unit: string;
   type: AccountType;
+  group_name: string;
   balance: string;
   archived_at: string | null;
 };
@@ -22,6 +23,7 @@ export type AccountCreate = {
   name: string;
   unit: string;
   type: AccountType;
+  group_name: string;
 };
 
 /** Mirrors ledger/schemas/accounts.py: AccountUpdate. An omitted field is left alone. */
@@ -29,5 +31,6 @@ export type AccountUpdate = {
   name?: string;
   unit?: string;
   type?: AccountType;
+  group_name?: string;
   archived?: boolean;
 };

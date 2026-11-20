@@ -34,6 +34,7 @@ test.describe("accounts page", () => {
 
     await page.getByRole("link", { name: "New account" }).click();
     await expect(page).toHaveURL(/\/accounts\/new$/);
+    await page.getByLabel("Group").fill("Banks");
     await page.getByLabel("Name").fill(name);
     await page.getByLabel("Unit").fill("GBP");
     await page.getByRole("button", { name: "Add account" }).click();
@@ -55,6 +56,7 @@ test.describe("accounts page", () => {
     await seedAccount(page.request, { name, unit: "GBP", type: "cash" });
     await page.goto("/accounts/new");
 
+    await page.getByLabel("Group").fill("E2E");
     await page.getByLabel("Name").fill(name);
     await page.getByLabel("Unit").fill("GBP");
     await page.getByRole("button", { name: "Add account" }).click();

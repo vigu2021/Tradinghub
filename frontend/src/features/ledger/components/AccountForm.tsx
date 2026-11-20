@@ -27,6 +27,11 @@ const accountSchema = z.object({
     .max(10, "Keep the unit to 10 characters.")
     .regex(/^[A-Za-z0-9]+$/, "Letters and digits only, like GBP or BTC."),
   type: z.enum(ACCOUNT_TYPES),
+  group_name: z
+    .string()
+    .trim()
+    .min(1, "Give the account a group, like Savings.")
+    .max(60, "Keep the group to 60 characters."),
 });
 
 type AccountValues = z.infer<typeof accountSchema>;
@@ -52,7 +57,7 @@ const SUBMIT_LABELS = {
 const LAYOUTS = {
   creating: { fields: "space-y-7", actions: "flex gap-2" },
   editing: {
-    fields: "grid gap-5 sm:grid-cols-[2fr_1fr_1fr]",
+    fields: "grid gap-5 sm:grid-cols-2",
     actions: "flex gap-2",
   },
 } as const;
@@ -70,8 +75,9 @@ export function AccountForm(props: AccountFormProps) {
           name: props.account.name,
           unit: props.account.unit,
           type: props.account.type,
+          group_name: props.account.group_name,
         }
-      : { name: "", unit: "", type: "cash" };
+      : { name: "", unit: "", type: "cash", group_name: "" };
 
   const {
     register: field,
@@ -110,9 +116,17 @@ export function AccountForm(props: AccountFormProps) {
     <form onSubmit={submit} noValidate className="space-y-7">
       <div className={layout.fields}>
         <Field
+          id="account-group"
+          label="Group"
+          hint="How you file it, like Binance, Savings or Home safe"
+          autoComplete="off"
+          error={errors.group_name?.message}
+          {...field("group_name")}
+        />
+        <Field
           id="account-name"
           label="Name"
-          hint="The bank, exchange or broker, like Monzo or Binance"
+          hint="Which account it is, like Revolut GBP or Cash jar"
           autoComplete="off"
           error={errors.name?.message}
           {...field("name")}

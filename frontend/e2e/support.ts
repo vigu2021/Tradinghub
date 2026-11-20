@@ -24,6 +24,7 @@ type NewAccount = {
   name: string;
   unit: string;
   type: "cash" | "crypto" | "stock";
+  group_name?: string;
 };
 
 /**
@@ -34,7 +35,9 @@ export async function seedAccount(
   request: APIRequestContext,
   account: NewAccount,
 ): Promise<{ id: number }> {
-  const response = await request.post(`${API_URL}/accounts`, { data: account });
+  const response = await request.post(`${API_URL}/accounts`, {
+    data: { group_name: "E2E", ...account },
+  });
   expect(response.status(), await response.text()).toBe(201);
   return response.json();
 }
