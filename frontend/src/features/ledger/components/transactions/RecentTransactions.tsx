@@ -5,9 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { messageFor } from "@/lib/api/errors";
 
-import { transactionQueries } from "../api/transactions";
-import type { Account } from "../types/accounts";
-import type { TransactionKind } from "../types/transactions";
+import { transactionQueries } from "../../api/transactions";
+import type { Account } from "../../types/accounts";
+import type { TransactionKind } from "../../types/transactions";
 
 type RecentTransactionsProps = {
   account: Account;

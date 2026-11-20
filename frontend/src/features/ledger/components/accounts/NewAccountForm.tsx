@@ -7,8 +7,8 @@ import { useForm } from "react-hook-form";
 
 import { Field } from "@/components/ui/Field";
 
-import { accountMutations } from "../api/accounts";
-import type { Account } from "../types/accounts";
+import { accountMutations } from "../../api/accounts";
+import type { Account } from "../../types/accounts";
 import {
   accountSchema,
   ChoiceField,

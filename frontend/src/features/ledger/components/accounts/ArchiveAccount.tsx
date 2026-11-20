@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { messageFor } from "@/lib/api/errors";
 
-import { accountMutations } from "../api/accounts";
-import type { Account } from "../types/accounts";
+import { accountMutations } from "../../api/accounts";
+import type { Account } from "../../types/accounts";
 
 type ArchiveAccountProps = {
   account: Account;

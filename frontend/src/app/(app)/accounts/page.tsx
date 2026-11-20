@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { buttonClasses } from "@/components/ui/Button";
-import { AccountList } from "@/features/ledger/components/AccountList";
+import { AccountList } from "@/features/ledger/components/accounts/AccountList";
 
 export default function AccountsPage() {
   return (

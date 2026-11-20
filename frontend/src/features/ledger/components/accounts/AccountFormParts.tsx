@@ -16,13 +16,13 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { SelectField } from "@/components/ui/Field";
 import { messageFor } from "@/lib/api/errors";
 
-import { accountQueries } from "../api/accounts";
+import { accountQueries } from "../../api/accounts";
 import {
   ACCOUNT_TYPE_LABELS,
   ACCOUNT_TYPES,
   COMMON_UNITS,
   type Account,
-} from "../types/accounts";
+} from "../../types/accounts";
 
 /** The rules of ledger/schemas/accounts.py: AccountCreate, checked before anything is sent. */
 export const accountSchema = z.object({

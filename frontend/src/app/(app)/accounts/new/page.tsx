@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { NewAccountForm } from "@/features/ledger/components/NewAccountForm";
+import { NewAccountForm } from "@/features/ledger/components/accounts/NewAccountForm";
 
 export default function NewAccountPage() {
   const router = useRouter();

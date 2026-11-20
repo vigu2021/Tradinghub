@@ -313,7 +313,7 @@ frontend/src/features/ledger/
 ├── types/         accounts.ts, transactions.ts, transfers.ts, summary.ts
 ├── api/           the same four, each with its keys, queryOptions and mutationOptions, and
 │                  keys.ts: ledgerKeys, the "ledger" root every ledger query key starts with
-└── components/
+└── components/  one folder per entity: accounts/, transactions/, summary/
 ```
 
 One folder for the ledger, split by layer and then by entity, the way

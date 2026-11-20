@@ -8,9 +8,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { accountQueries } from "@/features/ledger/api/accounts";
-import { EditAccountForm } from "@/features/ledger/components/EditAccountForm";
-import { ArchiveAccount } from "@/features/ledger/components/ArchiveAccount";
-import { RecentTransactions } from "@/features/ledger/components/RecentTransactions";
+import { EditAccountForm } from "@/features/ledger/components/accounts/EditAccountForm";
+import { ArchiveAccount } from "@/features/ledger/components/accounts/ArchiveAccount";
+import { RecentTransactions } from "@/features/ledger/components/transactions/RecentTransactions";
 import {
   ACCOUNT_TYPE_LABELS,
   type Account,

@@ -453,7 +453,8 @@ were each built and dropped along the way; the mockups under this folder show wh
 **Files:**
 - Create: `frontend/src/app/(app)/accounts/page.tsx`, `frontend/src/app/(app)/accounts/new/page.tsx`,
   `frontend/src/app/(app)/accounts/[id]/page.tsx`,
-  `frontend/src/features/ledger/components/{AccountForm,AccountList,ArchiveAccount,RecentTransactions}.tsx`
+  `frontend/src/features/ledger/components/accounts/{NewAccountForm,EditAccountForm,AccountFormParts,AccountList,ArchiveAccount}.tsx`,
+  `frontend/src/features/ledger/components/transactions/RecentTransactions.tsx`
 - Modify: `frontend/src/app/(app)/layout.tsx`
 
 **Requirements:**
@@ -486,7 +487,7 @@ were each built and dropped along the way; the mockups under this folder show wh
 - Create: an Alembic revision adding `accounts.group_name`
 - Modify: `backend/src/tradinghub/ledger/models/account.py`, `schemas/accounts.py`, `routes.py`,
   `services/accounts.py`, `crud/accounts.py`, and their tests;
-  `frontend/src/features/ledger/types/accounts.ts`, `components/{AccountForm,AccountList}.tsx`,
+  `frontend/src/features/ledger/types/accounts.ts`, `components/accounts/{NewAccountForm,EditAccountForm,AccountList}.tsx`,
   `frontend/src/app/(app)/accounts/[id]/page.tsx`, `frontend/e2e/{app.spec,support}.ts`
 
 **Requirements:**
@@ -535,7 +536,7 @@ which belongs to Task 8 (`<optgroup>` per group).
 
 **Files:**
 - Create: `frontend/src/app/(app)/transactions/page.tsx`,
-  `frontend/src/features/ledger/components/{TransactionForm,TransactionTable,TransactionFilters,TransferForm}.tsx`
+  `frontend/src/features/ledger/components/transactions/{TransactionForm,TransactionTable,TransactionFilters,TransferForm}.tsx`
 
 **Requirements:**
 1. A table: date, account, kind, category, amount, note. Filters for account, kind, category and a
@@ -570,7 +571,7 @@ which belongs to Task 8 (`<optgroup>` per group).
 
 **Files:**
 - Modify: `frontend/src/app/(app)/dashboard/page.tsx`
-- Create: `frontend/src/features/ledger/components/SummaryTiles.tsx`
+- Create: `frontend/src/features/ledger/components/summary/SummaryTiles.tsx`
 
 **Requirements:**
 1. Replace the placeholder. Total balance per unit, each account's balance, this month's income and
@@ -596,7 +597,7 @@ version differs from what most examples show.
 **Files:**
 - Create: `frontend/src/lib/api/server.ts`, `frontend/src/lib/query-client.ts`
 - Modify: `frontend/src/app/(app)/dashboard/page.tsx`,
-  `frontend/src/features/ledger/components/SummaryTiles.tsx`,
+  `frontend/src/features/ledger/components/summary/SummaryTiles.tsx`,
   `frontend/src/app/providers/query-provider.tsx`
 
 **Requirements:**

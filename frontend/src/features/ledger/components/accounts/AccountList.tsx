@@ -7,8 +7,8 @@ import { useState } from "react";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { messageFor } from "@/lib/api/errors";
 
-import { accountQueries } from "../api/accounts";
-import { ACCOUNT_TYPE_LABELS, type Account } from "../types/accounts";
+import { accountQueries } from "../../api/accounts";
+import { ACCOUNT_TYPE_LABELS, type Account } from "../../types/accounts";
 
 export function AccountList() {
   const { data: accounts, isPending, error } = useQuery(accountQueries.list());
