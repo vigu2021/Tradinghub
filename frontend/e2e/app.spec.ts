@@ -122,6 +122,31 @@ test.describe("an account's own page", () => {
     await expect(page.getByLabel("Name")).toBeHidden();
   });
 
+  test("changing the unit of a non-zero balance says nothing is converted", async ({
+    page,
+  }) => {
+    const account = await seedAccount(page.request, {
+      name: uniqueName("Revolut"),
+      unit: "GBP",
+      type: "cash",
+    });
+    await seedTransaction(page.request, {
+      account_id: account.id,
+      amount: "100",
+      kind: "income",
+      category: "salary",
+      occurred_at: "2026-11-12T09:00:00Z",
+    });
+    await page.goto(`/accounts/${account.id}`);
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
+
+    await page.getByLabel("Unit").fill("usd");
+
+    await expect(page.getByLabel("Unit")).toHaveAccessibleDescription(
+      "Nothing is converted: 100 GBP becomes 100 USD.",
+    );
+  });
+
   test("archiving hides it from the list and restoring brings it back", async ({
     page,
   }) => {

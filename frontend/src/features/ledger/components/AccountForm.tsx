@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/Button";
@@ -76,6 +76,7 @@ export function AccountForm(props: AccountFormProps) {
   const {
     register: field,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<AccountValues>({
     resolver: zodResolver(accountSchema),
@@ -83,6 +84,12 @@ export function AccountForm(props: AccountFormProps) {
     mode: "onSubmit",
     reValidateMode: "onChange",
   });
+
+  const unit = useWatch({ control, name: "unit" });
+  const unitWarning =
+    props.mode === "editing"
+      ? unitChangeWarning(props.account, unit)
+      : undefined;
 
   const submit = handleSubmit((values) => {
     if (props.mode === "creating") {
@@ -113,7 +120,7 @@ export function AccountForm(props: AccountFormProps) {
         <Field
           id="account-unit"
           label="Unit"
-          hint="A currency or ticker, like GBP or BTC"
+          hint={unitWarning ?? "A currency or ticker, like GBP or BTC"}
           autoComplete="off"
           autoCapitalize="characters"
           autoCorrect="off"
@@ -153,4 +160,19 @@ export function AccountForm(props: AccountFormProps) {
       </div>
     </form>
   );
+}
+
+/**
+ * Changing a unit relabels the balance rather than converting it, so a non-zero balance says what
+ * will happen to it. Returns nothing when there is no change to warn about.
+ */
+function unitChangeWarning(
+  account: Account,
+  typed: string,
+): string | undefined {
+  const unit = typed.trim().toUpperCase();
+  if (unit === "" || unit === account.unit || Number(account.balance) === 0) {
+    return undefined;
+  }
+  return `Nothing is converted: ${account.balance} ${account.unit} becomes ${account.balance} ${unit}.`;
 }
