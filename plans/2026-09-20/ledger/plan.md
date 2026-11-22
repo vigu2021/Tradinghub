@@ -513,11 +513,12 @@ were each built and dropped along the way; the mockups under this folder show wh
    ("Binance BTC") until the user types their own; it stays required and unique, since an account
    is shown without its group in the transactions table and the transfer pickers. The edit form
    fills nothing in: an existing name is never rewritten. The API is unchanged.
-5. **The accounts list groups active accounts under group headings,** alphabetical, matched
-   case-insensitively so "binance" and "Binance" share one. The Archived group at the bottom stays
+5. **The accounts list groups active accounts under group headings,** alphabetical, by exact name, so
+   "binance" and "Binance" are two groups; the combo box's snapping to an existing spelling is
+   what keeps that from happening by accident. The Archived group at the bottom stays
    one flat group. Each heading opens and closes its group, like Archived does. A group of more than
-   five accounts starts closed, and a closed heading shows its account count and first few units
-   ("BTC, ETH, USDT +7"), the units hidden on phones. No "open all" control until it is missed. See
+   five accounts starts closed; a closed heading shows only its name for now, with a count and unit
+   preview ("BTC, ETH, USDT +7") left until it is missed. No "open all" control either. See
    `institution-groups-mock.html`, drawn before the field was renamed.
 6. **The account page caption reads "Binance · Crypto · BTC".**
 

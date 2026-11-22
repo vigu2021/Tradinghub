@@ -36,7 +36,7 @@ export async function seedAccount(
   account: NewAccount,
 ): Promise<{ id: number }> {
   const response = await request.post(`${API_URL}/accounts`, {
-    data: { group_name: "E2E", ...account },
+    data: { group_name: uniqueName("Group"), ...account },
   });
   expect(response.status(), await response.text()).toBe(201);
   return response.json();

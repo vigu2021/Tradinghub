@@ -4,15 +4,20 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 
+import { DisclosureButton } from "@/components/ui/DisclosureButton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { messageFor } from "@/lib/api/errors";
 
 import { accountQueries } from "../../api/accounts";
 import { ACCOUNT_TYPE_LABELS, type Account } from "../../types/accounts";
 
+/** Groups bigger than this start closed, so one exchange's coins do not push everything else down. */
+const OPEN_UP_TO = 5;
+
 export function AccountList() {
   const { data: accounts, isPending, error } = useQuery(accountQueries.list());
   const [showArchived, setShowArchived] = useState(false);
+  const [toggled, setToggled] = useState<Record<string, boolean>>({});
 
   if (isPending) {
     return <p className="text-sm text-ink-faint">Loading...</p>;
@@ -46,6 +51,9 @@ export function AccountList() {
   const archivedAccounts = accounts.filter(
     (account) => account.archived_at !== null,
   );
+  const accountGroups = groupAccounts(activeAccounts);
+  const isOpen = (group: AccountGroup) =>
+    toggled[group.name] ?? startsOpen(group);
 
   return (
     <table className="w-full border-collapse text-sm">
@@ -59,41 +67,66 @@ export function AccountList() {
           </th>
         </tr>
       </thead>
-      <tbody>
-        {activeAccounts.map((account) => (
-          <AccountRow key={account.id} account={account} />
-        ))}
-      </tbody>
+      {accountGroups.map((group) => {
+        const open = isOpen(group);
+        return (
+          <tbody key={group.name}>
+            <SectionToggle
+              label={group.name}
+              open={open}
+              onToggle={() =>
+                setToggled((current) => ({ ...current, [group.name]: !open }))
+              }
+            />
+            {open &&
+              group.accounts.map((account) => (
+                <AccountRow key={account.id} account={account} />
+              ))}
+          </tbody>
+        );
+      })}
 
       {archivedAccounts.length > 0 && (
         <tbody>
-          <tr>
-            <td colSpan={4} className="px-4 pt-7">
-              <button
-                type="button"
-                aria-expanded={showArchived}
-                onClick={() => setShowArchived((shown) => !shown)}
-                className="inline-flex min-h-11 items-center gap-3 text-xs font-medium tracking-[0.12em] text-ink-faint uppercase hover:text-ink active:text-ink"
-              >
-                <span
-                  aria-hidden
-                  className={`size-1.75 border-r-[1.5px] border-b-[1.5px] border-current transition-transform ${showArchived ? "-translate-y-0.5 rotate-45" : "-rotate-45"}`}
-                />
-                Archived ({archivedAccounts.length})
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      )}
-
-      {showArchived && (
-        <tbody>
-          {archivedAccounts.map((account) => (
-            <AccountRow key={account.id} account={account} />
-          ))}
+          <SectionToggle
+            label={`Archived (${archivedAccounts.length})`}
+            open={showArchived}
+            onToggle={() => setShowArchived((shown) => !shown)}
+            muted
+          />
+          {showArchived &&
+            archivedAccounts.map((account) => (
+              <AccountRow key={account.id} account={account} />
+            ))}
         </tbody>
       )}
     </table>
+  );
+}
+
+type SectionToggleProps = {
+  label: string;
+  open: boolean;
+  onToggle: () => void;
+  muted?: boolean;
+};
+
+/** A heading row spanning the table that opens and closes the rows under it. */
+function SectionToggle({ label, open, onToggle, muted }: SectionToggleProps) {
+  return (
+    <tr>
+      <td colSpan={4} className="px-4 pt-6 pb-1">
+        <DisclosureButton
+          open={open}
+          onToggle={onToggle}
+          className={`text-xs tracking-[0.12em] uppercase ${
+            muted ? "font-medium text-ink-faint" : "font-semibold text-ink"
+          }`}
+        >
+          {label}
+        </DisclosureButton>
+      </td>
+    </tr>
   );
 }
 
@@ -106,7 +139,7 @@ function AccountRow({ account }: AccountRowProps) {
 
   return (
     <tr
-      className={`group relative hover:bg-rule ${active ? "odd:bg-surface" : "text-ink-faint"}`}
+      className={`group relative hover:bg-rule ${active ? "even:bg-surface" : "text-ink-faint"}`}
     >
       <td className="px-4 py-3.5">
         <Link
@@ -127,6 +160,25 @@ function AccountRow({ account }: AccountRowProps) {
       </td>
     </tr>
   );
+}
+
+type AccountGroup = {
+  name: string;
+  accounts: Account[];
+};
+
+/** One group per exact group name, in alphabetical order; accounts keep the API's order by name. */
+function groupAccounts(accounts: Account[]): AccountGroup[] {
+  const byGroup = Map.groupBy(accounts, (account) => account.group_name);
+  const groups = [...byGroup].map(([name, members]) => ({
+    name,
+    accounts: members,
+  }));
+  return groups.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function startsOpen(group: AccountGroup): boolean {
+  return group.accounts.length <= OPEN_UP_TO;
 }
 
 function ChevronIcon() {
