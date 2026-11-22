@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transactions page</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --ground:#f5f5f1; --surface:#ebece7; --ink:#202320; --ink-dim:#4d524c; --ink-faint:#676c65; --rule:#dde0d9; --rule-strong:#c9cdc5; --control:#868b84; --accent:#9a4d28; --accent-ink:#fff; --accent-dim:rgba(154,77,40,.1); --danger:#b3453d; --backdrop:#e9eae4; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--backdrop); color:var(--ink); font-family:Archivo, sans-serif; }
+  .wrap { max-width:1240px; margin:0 auto; padding:40px 16px 96px; }
+  h1.mock { font-size:28px; margin:0 0 8px; letter-spacing:-.01em; }
+  .intro { color:var(--ink-dim); font-size:14px; line-height:1.6; max-width:86ch; margin:0; }
+  .controls { display:flex; flex-wrap:wrap; gap:12px 16px; margin:24px 0 12px; align-items:center; }
+  .controls .lbl { font-size:12px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); }
+  .seg { display:inline-flex; flex-wrap:wrap; background:var(--surface); }
+  .seg button { font:600 14px Archivo; border:0; background:none; padding:10px 14px; min-height:44px; cursor:pointer; color:var(--ink-dim); }
+  .seg button[aria-pressed="true"] { background:var(--ink); color:var(--ground); }
+  .why { font-size:14px; color:var(--ink-dim); line-height:1.6; max-width:90ch; margin:0 0 18px; }
+  .why b { color:var(--ink); }
+
+  .frame { background:var(--ground); border:1px solid var(--rule-strong); margin:0 auto; }
+  .frame.phone { max-width:390px; }
+  .app { padding:28px 32px 48px; }
+  .phone .app { padding:20px 16px 40px; }
+  .nav { display:flex; align-items:center; gap:24px; font-size:14px; margin-bottom:40px; }
+  .nav b { font-size:20px; margin-right:auto; letter-spacing:-.01em; }
+  .nav a { color:var(--ink-dim); text-decoration:none; padding-bottom:6px; }
+  .nav a.on { color:var(--ink); font-weight:600; border-bottom:2px solid var(--accent); }
+  .phone .nav { flex-wrap:wrap; gap:16px; }
+  .phone .nav b { width:100%; }
+
+  .head { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; }
+  .head h1 { font-size:40px; margin:0; letter-spacing:-.02em; }
+  .head p { margin:6px 0 0; font-size:14px; color:var(--ink-dim); }
+  .phone .head h1 { font-size:32px; }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .btn { font:600 14px Archivo; border:0; min-height:44px; padding:0 16px; cursor:pointer; }
+  .btn.primary { background:var(--accent); color:var(--accent-ink); }
+  .btn.ghost { background:var(--surface); color:var(--ink); }
+  .btn.ghost:hover { background:var(--rule); }
+  .btn.danger { background:var(--danger); color:var(--accent-ink); }
+  .btn.link { background:none; color:var(--ink-dim); text-decoration:underline; text-underline-offset:4px; padding:0 4px; }
+  .btn[disabled] { opacity:.5; cursor:default; }
+
+  .filters { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin:28px 0 20px; }
+  .f label, .f .legend { display:block; font-size:13px; font-weight:500; color:var(--ink-dim); margin-bottom:6px; }
+  .f fieldset { border:0; padding:0; margin:0; }
+  .f select, .f input { font:400 16px Archivo; min-height:44px; padding:0 10px; background:var(--ground); border:1px solid var(--control); color:var(--ink); }
+  .kinds { display:inline-flex; background:var(--surface); }
+  .kinds button { font:500 14px Archivo; border:0; background:none; min-height:44px; padding:0 12px; cursor:pointer; color:var(--ink-dim); }
+  .kinds button[aria-pressed="true"] { background:var(--ink); color:var(--ground); }
+  .disclosure { all:unset; box-sizing:border-box; display:none; align-items:center; gap:12px; width:100%; min-height:44px; cursor:pointer; font-size:12px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; margin:20px 0 8px; }
+  .chev { width:7px; height:7px; border-right:1.5px solid var(--ink-faint); border-bottom:1.5px solid var(--ink-faint); transform:rotate(-45deg); transition:transform .15s; }
+  .disclosure[aria-expanded="true"] .chev { transform:translateY(-2px) rotate(45deg); }
+  .disclosure .summary { margin-left:auto; text-transform:none; letter-spacing:0; font-weight:400; font-size:13px; color:var(--ink-faint); }
+  .phone .disclosure { display:flex; }
+  .phone .filters { display:none; flex-direction:column; align-items:stretch; margin-top:4px; }
+  .phone .filters.open { display:flex; }
+  .cat-in { width:160px; }
+  .phone .filters select, .phone .filters input { width:100%; }
+  .rowbtn.more { display:none; }
+  .phone .rowbtn.more { display:inline-flex; font-size:18px; }
+  .phone .wide-only { display:none; }
+  .phone td, .phone tbody th { padding:10px 8px; }
+  .phone td.act { padding:0; }
+  tr.menu td { background:var(--surface); padding:4px 8px 8px; }
+  .menu-line { display:flex; justify-content:flex-end; gap:4px; }
+  .phone .kinds { display:flex; } .phone .kinds button { flex:1; }
+
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  thead th { text-align:left; font-size:12px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); padding:0 16px 12px; }
+  th.num, td.num { text-align:right; }
+  td, tbody th { padding:10px 16px; vertical-align:middle; text-align:left; font-weight:400; }
+  tbody tr:nth-child(odd) { background:var(--surface); }
+  td.dim { color:var(--ink-dim); white-space:nowrap; }
+  td.num { font-family:"IBM Plex Mono", monospace; white-space:nowrap; }
+  td.num span { color:var(--ink-faint); }
+  .desc::first-letter { text-transform:uppercase; }
+  .tag { font-size:11px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; background:var(--rule); color:var(--ink-dim); padding:2px 6px; margin-left:6px; white-space:nowrap; }
+  td.act { width:1%; text-align:right; white-space:nowrap; }
+  .rowbtn { all:unset; box-sizing:border-box; display:inline-flex; align-items:center; min-height:44px; min-width:44px; justify-content:center; padding:0 10px; cursor:pointer; color:var(--ink-dim); font-size:13px; font-weight:500; }
+  .rowbtn:hover { color:var(--accent); text-decoration:underline; text-underline-offset:4px; }
+  tr.pending { color:var(--ink-faint); }
+  tr.pending td.num { color:var(--ink-faint); }
+  .saving { font-size:13px; color:var(--ink-faint); padding:0 10px; }
+  tr.confirm td { background:var(--accent-dim); padding:14px 16px; }
+  .confirm-line { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:14px; }
+  .sub { display:none; font-size:12px; color:var(--ink-faint); margin-top:3px; }
+  .phone .hide-phone { display:none; }
+  .phone .sub { display:block; }
+  .phone td.act .rowbtn { padding:0 6px; }
+
+  .pager { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:16px; font-size:14px; color:var(--ink-dim); }
+  .state { background:var(--surface); padding:40px 32px; }
+  .state h2 { font-size:20px; margin:0 0 8px; letter-spacing:-.01em; }
+  .state p { margin:0 0 16px; font-size:14px; color:var(--ink-dim); max-width:60ch; }
+  .error { background:var(--accent-dim); padding:14px 16px; font-size:14px; color:var(--ink); }
+  .loading { font-size:14px; color:var(--ink-faint); padding:16px 0; }
+
+  /* forms */
+  .page-form { max-width:640px; }
+  .backlink { font-size:14px; font-weight:600; color:var(--ink-dim); text-decoration:none; display:inline-flex; align-items:center; min-height:44px; cursor:pointer; }
+  .backlink:hover { color:var(--accent); text-decoration:underline; }
+  .form h1 { font-size:32px; margin:8px 0 6px; letter-spacing:-.02em; }
+  .form .lede { font-size:14px; color:var(--ink-dim); margin:0 0 24px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .grid .full { grid-column:1 / -1; }
+  .phone .grid { grid-template-columns:1fr; }
+  .fld label, .fld .legend { display:block; font-size:13px; font-weight:500; color:var(--ink-dim); margin-bottom:6px; }
+  .fld label .opt, .fld .legend .opt { color:var(--ink-faint); font-weight:400; }
+  .fld input, .fld select { width:100%; font:400 16px Archivo; min-height:44px; padding:0 10px; background:var(--ground); border:1px solid var(--control); color:var(--ink); }
+  .fld.bad input, .fld.bad select { border-color:var(--danger); }
+  .fld .hint { font-size:12px; color:var(--ink-faint); margin-top:6px; }
+  .fld .err { font-size:12px; color:var(--danger); margin-top:6px; }
+  .fld fieldset { border:0; padding:0; margin:0; }
+  .amount, .combo { position:relative; }
+  .amount input { font-family:"IBM Plex Mono", monospace; padding-right:64px; }
+  .amount .unit { position:absolute; right:12px; top:0; bottom:0; display:flex; align-items:center; font-family:"IBM Plex Mono", monospace; color:var(--ink-faint); font-size:14px; pointer-events:none; }
+  .combo input { padding-right:44px; }
+  .combo button { all:unset; position:absolute; right:0; top:0; bottom:0; width:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink-faint); }
+  .toggle { display:flex; background:var(--surface); }
+  .toggle button { flex:1; font:600 14px Archivo; border:0; background:none; min-height:44px; cursor:pointer; color:var(--ink-dim); }
+  .toggle button[aria-pressed="true"] { background:var(--ink); color:var(--ground); }
+  .warn { grid-column:1 / -1; background:var(--accent-dim); padding:12px 14px; font-size:14px; line-height:1.5; color:var(--ink); }
+  .feebox { grid-column:1 / -1; background:var(--surface); padding:16px; }
+  .feebox .grid { gap:16px; }
+  .addfee { all:unset; cursor:pointer; display:inline-flex; align-items:center; min-height:44px; font-size:14px; font-weight:600; color:var(--accent); text-decoration:underline; text-underline-offset:4px; }
+  .footer { display:flex; gap:8px; justify-content:flex-end; margin-top:28px; }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="mock">Transactions page</h1>
+  <p class="intro">Layout A, as agreed: the forms are their own pages. Every requirement from plan.md Task 8 is drawn here. Use <b>View</b> to switch between the list and the two forms (or press the buttons inside the page), <b>State</b> to see the list's other screens, and <b>Phone</b> for 390px.</p>
+
+  <div class="controls">
+    <span class="lbl">View</span>
+    <div class="seg" id="views">
+      <button data-v="list" aria-pressed="true">List</button>
+      <button data-v="tx">New transaction</button>
+      <button data-v="xfer">New transfer</button>
+    </div>
+    <span class="lbl">State</span>
+    <div class="seg" id="states">
+      <button data-s="rows" aria-pressed="true">Rows</button>
+      <button data-s="loading">Loading</button>
+      <button data-s="empty">No transactions</button>
+      <button data-s="nomatch">No matches</button>
+      <button data-s="error">Error</button>
+    </div>
+    <div class="seg" id="sizes">
+      <button data-w="desk" aria-pressed="true">Desktop</button>
+      <button data-w="phone">Phone</button>
+    </div>
+  </div>
+  <p class="why" id="why"></p>
+
+  <div class="frame" id="frame"><div id="app"></div></div>
+</div>
+
+<script>
+const NOTES = {
+  list: "<b>List.</b> Description is the category, or the note when there is none. Kind is its own column. Amounts are the API's strings, untouched (2400, -38.5). Every row of a transfer, the fee row included, carries a TRANSFER tag and has no Edit; its Delete asks first, because it removes the whole transfer. The faded row is still saving, drawn from useMutationState after the form page went back.",
+  tx: "<b>New transaction</b> at /transactions/new. Money out or in sets the sign; the amount is always positive. The account picker lists active accounts only, grouped; the unit in the amount box follows it. Category is a ComboField fed by categories already used. Press Add without filling anything to see the errors.",
+  xfer: "<b>New transfer</b> at /transfers/new. Same units: one Amount, sent as both amounts. Pick different units (e.g. To: Binance BTC) to get the warning and a Received field. Add a fee to pick the account it is paid from; its unit follows that account. Picking the same account twice is refused."
+};
+const GROUPS = {
+  Banks: [{ id:1, name:"Monzo", unit:"GBP" }, { id:2, name:"Revolut EUR", unit:"EUR" }],
+  Binance: [{ id:3, name:"Binance BTC", unit:"BTC" }, { id:4, name:"Binance USDT", unit:"USDT" }],
+};
+const ARCHIVED = [{ id:5, name:"Old savings", unit:"GBP" }];
+const ALL = [...Object.values(GROUPS).flat(), ...ARCHIVED];
+const byId = id => ALL.find(a => a.id === Number(id));
+const ROWS = [
+  { id:"p", date:"22 Nov", acct:1, cat:"groceries", note:"Tesco", amt:"-42.18", kind:"expense", pending:true },
+  { id:9, date:"21 Nov", acct:1, cat:"salary", note:"", amt:"2400", kind:"income" },
+  { id:8, date:"20 Nov", acct:1, cat:"", note:"To Binance", amt:"-500", kind:"transfer", group:"g1" },
+  { id:7, date:"20 Nov", acct:4, cat:"", note:"To Binance", amt:"612.4", kind:"transfer", group:"g1" },
+  { id:6, date:"20 Nov", acct:1, cat:"fees", note:"To Binance", amt:"-1.5", kind:"expense", group:"g1" },
+  { id:5, date:"18 Nov", acct:2, cat:"eating out", note:"Lisbon dinner", amt:"-38.5", kind:"expense" },
+  { id:4, date:"15 Nov", acct:1, cat:"rent", note:"", amt:"-1150", kind:"expense" },
+  { id:3, date:"12 Nov", acct:3, cat:"", note:"Buy BTC", amt:"0.0051", kind:"transfer", group:"g2" },
+  { id:2, date:"12 Nov", acct:4, cat:"", note:"Buy BTC", amt:"-300", kind:"transfer", group:"g2" },
+];
+const KIND = { income:"Income", expense:"Expense", transfer:"Transfer" };
+
+let view = "list", state = "rows", phone = false;
+let filtersOpen = false, kindFilter = "all", confirming = null, menuFor = null;
+let txKind = "expense", txAcct = 1, txTried = false;
+let from = 1, to = 4, showFee = false, feeAcct = 1;
+
+const pickerOptions = (selected) => Object.entries(GROUPS).map(([g, list]) =>
+  `<optgroup label="${g}">${list.map(a => `<option value="${a.id}" ${a.id === selected ? "selected" : ""}>${a.name} · ${a.unit}</option>`).join("")}</optgroup>`).join("");
+const filterOptions = () => `<option value="">All accounts</option>${pickerOptions(-1)}<optgroup label="Archived">${ARCHIVED.map(a => `<option value="${a.id}">${a.name} · ${a.unit}</option>`).join("")}</optgroup>`;
+
+function filters() {
+  const kinds = [["all","All"],["income","Income"],["expense","Expense"],["transfer","Transfer"]];
+  return `
+    <button class="disclosure" aria-expanded="${filtersOpen}" aria-controls="filters" data-toggle-filters><span class="chev"></span>Filters<span class="summary">All accounts · ${kindFilter === "all" ? "All kinds" : KIND[kindFilter]}</span></button>
+    <div class="filters ${filtersOpen ? "open" : ""}" id="filters">
+      <div class="f"><label for="f-acct">Account</label><select id="f-acct">${filterOptions()}</select></div>
+      <div class="f"><fieldset><legend class="legend">Kind</legend><div class="kinds">${kinds.map(([k, l]) => `<button data-kf="${k}" aria-pressed="${kindFilter === k}">${l}</button>`).join("")}</div></fieldset></div>
+      <div class="f"><label for="f-cat">Category</label><input id="f-cat" class="cat-in" placeholder="Any"></div>
+      <div class="f"><label for="f-from">From</label><input id="f-from" type="date"></div>
+      <div class="f"><label for="f-to">To</label><input id="f-to" type="date"></div>
+      <button class="btn link" data-clear>Clear filters</button>
+    </div>`;
+}
+
+function row(r) {
+  const a = byId(r.acct);
+  const desc = r.cat || r.note;
+  const label = `${desc}, ${r.date}`;
+  const inGroup = Boolean(r.group);
+  let actions;
+  const buttons = inGroup
+    ? `<button class="rowbtn" data-del-group="${r.group}" aria-label="Delete transfer: ${label}">Delete</button>`
+    : `<button class="rowbtn" aria-label="Edit ${label}">Edit</button><button class="rowbtn" aria-label="Delete ${label}">Delete</button>`;
+  if (r.pending) actions = `<span class="saving">Saving…</span>`;
+  else actions = `<span class="wide-only">${buttons}</span><button class="rowbtn more" data-menu="${r.id}" aria-expanded="${menuFor === r.id}" aria-label="Actions for ${label}">⋯</button>`;
+  const main = `<tr class="${r.pending ? "pending" : ""}">
+      <td class="dim hide-phone">${r.date}</td>
+      <th scope="row"><span class="desc">${desc}</span>${inGroup ? '<span class="tag">Transfer</span>' : ""}<div class="sub">${r.date} · ${a.name} · ${KIND[r.kind]}</div></th>
+      <td class="dim hide-phone">${KIND[r.kind]}</td>
+      <td class="dim hide-phone">${a.name}</td>
+      <td class="num">${r.amt} <span>${a.unit}</span></td>
+      <td class="act">${actions}</td>
+    </tr>`;
+  const menu = phone && menuFor === r.id ? `<tr class="menu"><td colspan="6"><div class="menu-line">${buttons}</div></td></tr>` : "";
+  return main + menu;
+}
+function confirmRow(group) {
+  const n = ROWS.filter(r => r.group === group).length;
+  return `<tr class="confirm"><td colspan="6"><div class="confirm-line">
+    <span><b>Delete this transfer?</b> All ${n} of its rows go${n > 2 ? ", the fee included" : ""}, on both accounts.</span>
+    <span class="actions"><button class="btn ghost" data-cancel-del>Cancel</button><button class="btn danger" data-cancel-del>Delete transfer</button></span>
+  </div></td></tr>`;
+}
+function table() {
+  let body = "", shownConfirm = false;
+  for (const r of ROWS) {
+    body += row(r);
+    const isLastOfGroup = r.group && r.group === confirming && ROWS.filter(x => x.group === r.group).at(-1) === r;
+    if (isLastOfGroup && !shownConfirm) { body += confirmRow(r.group); shownConfirm = true; }
+  }
+  return `<table><thead><tr><th class="hide-phone">Date</th><th>Description</th><th class="hide-phone">Kind</th><th class="hide-phone">Account</th><th class="num">Amount</th><th><span class="sr">Actions</span></th></tr></thead><tbody>${body}</tbody></table>
+  <div class="pager"><span>1–50 of 312</span><span class="actions"><button class="btn ghost" disabled>Previous</button><button class="btn ghost">Next</button></span></div>`;
+}
+
+function listView() {
+  let content;
+  if (state === "loading") content = `<p class="loading">Loading…</p>`;
+  else if (state === "error") content = `<div class="error" role="alert">Couldn't load your transactions. Check your connection and try again.</div>`;
+  else if (state === "empty") content = `<div class="state"><h2>No transactions yet</h2><p>Record money coming in or going out of an account, or a transfer between two of them.</p><button class="btn primary" data-go="tx">Add your first transaction</button></div>`;
+  else if (state === "nomatch") content = `<div class="state"><h2>Nothing matches</h2><p>No transactions fit these filters.</p><button class="btn ghost" data-clear>Clear filters</button></div>`;
+  else content = table();
+  const showFilters = state !== "empty";
+  return `<div class="head"><div><h1>Transactions</h1><p>Everything you recorded, newest first.</p></div>
+      <div class="actions"><button class="btn ghost" data-go="xfer">Add transfer</button><button class="btn primary" data-go="tx">Add transaction</button></div></div>
+    ${showFilters ? filters() : '<div style="height:28px"></div>'}${content}`;
+}
+
+function amountField(id, label, unit, opts = {}) {
+  return `<div class="fld ${opts.bad ? "bad" : ""} ${opts.full ? "full" : ""}"><label for="${id}">${label}</label><div class="amount"><input id="${id}" inputmode="decimal" placeholder="0.00" aria-describedby="${id}-unit${opts.bad ? ` ${id}-err` : ""}"><span class="unit" id="${id}-unit">${unit}</span></div>${opts.bad ? `<div class="err" id="${id}-err">Enter an amount above zero.</div>` : opts.hint ? `<div class="hint">${opts.hint}</div>` : ""}</div>`;
+}
+function comboField(id, label, placeholder, opt) {
+  return `<div class="fld"><label for="${id}">${label}${opt ? ' <span class="opt">optional</span>' : ""}</label><div class="combo"><input id="${id}" role="combobox" aria-expanded="false" placeholder="${placeholder}"><button aria-label="Show suggestions" tabindex="-1">▾</button></div><div class="hint">Pick one you've used, or type a new one.</div></div>`;
+}
+
+function transactionForm() {
+  const a = byId(txAcct);
+  return `<div class="page-form form"><a class="backlink" data-go="list">‹ Transactions</a>
+    <h1>New transaction</h1><p class="lede">Money in or out of one account.</p>
+    <div class="grid">
+      <div class="fld full"><fieldset><legend class="legend">Kind</legend><div class="toggle"><button data-txkind="expense" aria-pressed="${txKind === "expense"}">Money out</button><button data-txkind="income" aria-pressed="${txKind === "income"}">Money in</button></div></fieldset></div>
+      <div class="fld"><label for="t-acct">Account</label><select id="t-acct" data-txacct>${pickerOptions(txAcct)}</select></div>
+      ${amountField("t-amt", "Amount", a.unit, { bad: txTried, hint: "Always positive. Money out or in sets the sign." })}
+      ${comboField("t-cat", "Category", "Groceries, rent…", true)}
+      <div class="fld"><label for="t-date">Date</label><input id="t-date" type="date" value="2026-11-22"></div>
+      <div class="fld full"><label for="t-note">Note <span class="opt">optional</span></label><input id="t-note"></div>
+    </div>
+    <div class="footer"><button class="btn ghost" data-go="list">Cancel</button><button class="btn primary" data-try-tx>Add transaction</button></div>
+  </div>`;
+}
+
+function transferForm() {
+  const fa = byId(from), ta = byId(to), same = from === to, differ = !same && fa.unit !== ta.unit;
+  const fee = byId(feeAcct);
+  return `<div class="page-form form"><a class="backlink" data-go="list">‹ Transactions</a>
+    <h1>New transfer</h1><p class="lede">Money moving between two of your accounts.</p>
+    <div class="grid">
+      <div class="fld"><label for="x-from">From</label><select id="x-from" data-from>${pickerOptions(from)}</select></div>
+      <div class="fld ${same ? "bad" : ""}"><label for="x-to">To</label><select id="x-to" data-to ${same ? 'aria-describedby="x-to-err"' : ""}>${pickerOptions(to)}</select>${same ? '<div class="err" id="x-to-err">Choose two different accounts.</div>' : ""}</div>
+      ${differ ? `<div class="warn" role="status"><b>Different units: ${fa.unit} → ${ta.unit}.</b> Nothing is converted. If this is a purchase, enter what left and what arrived; otherwise check the accounts.</div>` : ""}
+      ${differ ? amountField("x-sent", "Sent", fa.unit) + amountField("x-recv", "Received", ta.unit) : amountField("x-amt", "Amount", fa.unit)}
+      <div class="fld"><label for="x-date">Date</label><input id="x-date" type="date" value="2026-11-22"></div>
+      <div class="fld"><label for="x-note">Note <span class="opt">optional</span></label><input id="x-note"></div>
+      ${showFee ? `<div class="feebox"><div class="grid">
+          <div class="fld"><label for="x-feeacct">Fee paid from</label><select id="x-feeacct" data-feeacct>${pickerOptions(feeAcct)}</select></div>
+          ${amountField("x-fee", "Fee", fee.unit)}
+          ${comboField("x-feecat", "Fee category", "Fees", true)}
+          <div class="fld" style="align-self:end"><button class="addfee" data-nofee>Remove fee</button></div>
+        </div></div>` : `<div class="fld full"><button class="addfee" data-fee>+ Add a fee</button></div>`}
+    </div>
+    <div class="footer"><button class="btn ghost" data-go="list">Cancel</button><button class="btn primary" ${same ? "disabled" : ""}>Add transfer</button></div>
+  </div>`;
+}
+
+function render() {
+  const nav = `<div class="nav"><b>Tradinghub</b><a>Dashboard</a><a>Accounts</a><a class="on">Transactions</a></div>`;
+  const body = view === "tx" ? transactionForm() : view === "xfer" ? transferForm() : listView();
+  document.getElementById("app").innerHTML = `<div class="app">${nav}${body}</div>`;
+  document.getElementById("why").innerHTML = NOTES[view];
+  document.querySelectorAll("#views button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === view));
+  document.getElementById("states").style.opacity = view === "list" ? 1 : .4;
+}
+function go(v) { view = v; txTried = false; showFee = false; confirming = null; render(); }
+
+const app = document.getElementById("app");
+app.addEventListener("click", e => {
+  const t = e.target.closest("button, a"); if (!t) return;
+  const d = t.dataset;
+  if (d.go) go(d.go);
+  else if ("toggleFilters" in d) { filtersOpen = !filtersOpen; render(); }
+  else if (d.kf) { kindFilter = d.kf; render(); }
+  else if ("clear" in d) { kindFilter = "all"; state = state === "nomatch" ? "rows" : state; render(); }
+  else if (d.menu) { menuFor = menuFor === Number(d.menu) ? null : Number(d.menu); render(); }
+  else if (d.delGroup) { confirming = d.delGroup; menuFor = null; render(); }
+  else if ("cancelDel" in d) { confirming = null; render(); }
+  else if (d.txkind) { txKind = d.txkind; render(); }
+  else if ("tryTx" in d) { txTried = true; render(); document.getElementById("t-amt").focus(); }
+  else if ("fee" in d) { showFee = true; feeAcct = from; render(); }
+  else if ("nofee" in d) { showFee = false; render(); }
+});
+app.addEventListener("change", e => {
+  const t = e.target;
+  if (t.matches("[data-txacct]")) { txAcct = Number(t.value); render(); }
+  if (t.matches("[data-from]")) { from = Number(t.value); render(); }
+  if (t.matches("[data-to]")) { to = Number(t.value); render(); }
+  if (t.matches("[data-feeacct]")) { feeAcct = Number(t.value); render(); }
+});
+document.getElementById("views").addEventListener("click", e => { const b = e.target.closest("button"); if (b) go(b.dataset.v); });
+document.getElementById("states").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  state = b.dataset.s; view = "list";
+  document.querySelectorAll("#states button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  render();
+});
+document.getElementById("sizes").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  phone = b.dataset.w === "phone"; menuFor = null; render();
+  document.getElementById("frame").classList.toggle("phone", phone);
+  document.querySelectorAll("#sizes button").forEach(x => x.setAttribute("aria-pressed", x === b));
+});
+render();
+</script>
+</body>
+</html>

@@ -536,33 +536,60 @@ which belongs to Task 8 (`<optgroup>` per group).
 ## Task 8: Transactions page
 
 **Files:**
-- Create: `frontend/src/app/(app)/transactions/page.tsx`,
+- Create: `frontend/src/app/(app)/transactions/page.tsx`, `frontend/src/app/(app)/transactions/new/page.tsx`,
+  `frontend/src/app/(app)/transfers/new/page.tsx`,
   `frontend/src/features/ledger/components/transactions/{TransactionForm,TransactionTable,TransactionFilters,TransferForm}.tsx`
+- Mockup: `transactions-page-mock.html`
 
 **Requirements:**
-1. A table: date, account, kind, category, amount, note. Filters for account, kind, category and a
-   date range. Page controls.
+1. **A table: date, description, kind, account, amount.** The description is the category, or the
+   note when there is no category. On a phone, date · account · kind sit under the description, and
+   each row has one 44px ⋯ button that opens its Edit and Delete in a line under it (both buttons
+   beside the amount do not fit at 390px). Page controls below.
 2. **The amount field is a positive number with a kind toggle.** The sign is the API's job. Typing
-   a minus sign to record groceries is a bad evening.
-3. Separate buttons for a transaction and a transfer, because the transfer form has two accounts
-   and an optional fee.
-4. The transfer form **warns when the two units differ**, since that is usually a mistake and
-   occasionally a purchase.
-5. A transfer row is not editable. Show that in the UI rather than letting the 409 surface as a
-   surprise.
-6. Categories offer the ones already used, from the transactions the page already has. No new
-   endpoint for it.
+   a minus sign to record groceries is a bad evening. Form amounts stay strings, never JavaScript
+   numbers.
+3. **The forms are their own pages,** `/transactions/new` and `/transfers/new`, like New account:
+   a real URL, the back button works, no focus trapping. Separate buttons for each, because the
+   transfer form has two accounts and an optional fee. Cancel and success both go back to
+   `/transactions` with its filters and page kept in the query string.
+4. **The transfer form.** From and To must differ. Same units: one Amount, sent as both
+   `amount_sent` and `amount_received` (the API refuses them unequal). Different units: a
+   **warning** (usually a mistake, occasionally a purchase) and both Sent and Received required.
+   Fee, optional: amount, the account it is paid from (defaults to From, its unit shown in the box),
+   and an optional category; `fee` and `fee_account_id` go together.
+5. **Any row with a `transfer_group_id` is part of a transfer, the fee row included** (a fee row is
+   `kind: expense`). It has no Edit; Delete removes the whole transfer with its fee and says so
+   before it does. Show that in the UI rather than letting the 409 surface as a surprise.
+6. Categories offer the ones already used, from the transactions the page already has, through
+   `ComboField`. No new endpoint for it.
    Account names likewise come from the `accountQueries.list()` query, looked up by `account_id`. Never a
-   request per row.
-7. **Creates and deletes show at once, without touching the cache.** While a create saves, a
-   pending row is drawn from the mutation's `variables`. While a delete runs, the rows it removes
+   request per row. **The form pickers list active accounts only,** grouped in an `<optgroup>` per
+   group, with account ids as values. **The account filter lists every account,** archived ones
+   under "Archived", so old rows can still be found.
+7. **Creates and deletes show at once, without touching the cache.** The mutations get a
+   `mutationKey`, and the list draws a pending "Saving…" row from `useMutationState`, so the form
+   page can go back at once and the row still appears. While a delete runs, the rows it removes
    are hidden by matching `variables`: deleting a transfer goes through `transferMutations.delete()` with the
    row's `transfer_group_id`, and hides every row in that group. On success the invalidation brings the real list; on failure the
    pending row disappears or the hidden rows return, and the error shows. Totals still come from
    the server, because working them out here would be arithmetic on money.
 8. **Paging never flashes empty.** The list uses `placeholderData: keepPreviousData`, so the
    previous page stays on screen until the next arrives, and while one page is shown the next is
-   prefetched with `queryClient.prefetchQuery`, so Next is instant.
+   prefetched with `queryClient.prefetchQuery`, so Next is instant. The "1–50 of 312" text and
+   Next come from `offset`, `limit` and `total`; changing a filter goes back to page 1.
+9. **Filters live in the URL** as the API's own names: `account_id`, `kind`, `category`,
+   `occurred_from`, `occurred_to`, `offset`. Kind is All / Income / Expense / Transfer, sending
+   `income`, `expense` or `transfer`. On a phone the filters fold behind a `DisclosureButton`.
+10. **Dates are picked as local days.** A form date becomes that day at the current local time,
+    sent with its offset. The filter's From is the start of that local day; To is the start of the
+    **next** local day, because `occurred_to` is exclusive and "to 22 Nov" means the 22nd too.
+11. **Amounts show exactly as the API sends them** (`2400`, not `2400.00`), in plain ink with the
+    unit after them.
+12. **Every state has a screen:** loading, "No transactions yet" with a way to add one, "Nothing
+    matches" with Clear filters, and an error.
+13. **Accessible:** every label tied to its control; row actions named per row ("Edit groceries,
+    22 Nov"); controls at least 44px; the unit warning a tint with no coloured border; inputs 16px.
 
 **Commit:** `Add the transactions page`
 
