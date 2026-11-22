@@ -73,6 +73,138 @@ test.describe("accounts page", () => {
   });
 });
 
+test.describe("the new account form", () => {
+  test("the group box offers your groups, and creating a new one", async ({
+    page,
+  }) => {
+    const existing = uniqueName("Savings");
+    await seedAccount(page.request, {
+      name: uniqueName("ISA"),
+      unit: "GBP",
+      type: "stock",
+      group_name: existing,
+    });
+    await page.goto("/accounts/new");
+    const group = page.getByRole("combobox", { name: "Group" });
+    const options = page.getByRole("listbox").getByRole("option");
+
+    await group.click();
+    await expect(options.filter({ hasText: existing })).toBeVisible();
+
+    await group.fill("Home safe");
+    await expect(
+      options.filter({ hasText: '+ Create "Home safe"' }),
+    ).toBeVisible();
+  });
+
+  test("a group typed in another case files under the existing one", async ({
+    page,
+  }) => {
+    const existing = uniqueName("Binance");
+    await seedAccount(page.request, {
+      name: uniqueName("Binance BTC"),
+      unit: "BTC",
+      type: "crypto",
+      group_name: existing,
+    });
+    await page.goto("/accounts/new");
+    const group = page.getByRole("combobox", { name: "Group" });
+
+    await group.fill(existing.toLowerCase());
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Escape");
+
+    await expect(group).toHaveValue(existing);
+  });
+
+  test("the name fills itself until you type your own", async ({ page }) => {
+    await page.goto("/accounts/new");
+    const group = page.getByRole("combobox", { name: "Group" });
+    const name = page.getByLabel("Name");
+
+    await group.fill("Revolut");
+    await page.keyboard.press("Tab");
+    await page.getByRole("combobox", { name: "Unit" }).fill("eur");
+    await page.keyboard.press("Tab");
+    await expect(name).toHaveValue("Revolut EUR");
+
+    await name.fill("Holiday money");
+    await group.fill("Monzo");
+    await page.keyboard.press("Tab");
+    await expect(name).toHaveValue("Holiday money");
+  });
+
+  test("submitting with nothing filled in moves to the first field", async ({
+    page,
+  }) => {
+    await page.goto("/accounts/new");
+
+    await page.locator("button[type=submit]").click();
+
+    await expect(page.getByRole("combobox", { name: "Group" })).toBeFocused();
+  });
+
+  test("the type has to be picked", async ({ page }) => {
+    await page.goto("/accounts/new");
+
+    await page
+      .getByRole("combobox", { name: "Group" })
+      .fill(uniqueName("Cash"));
+    await page.keyboard.press("Tab");
+    await page.getByRole("combobox", { name: "Unit" }).fill("GBP");
+    await page.keyboard.press("Tab");
+    await page.locator("button[type=submit]").click();
+
+    await expect(page.getByText("Say what it is.")).toBeVisible();
+    await expect(page.getByLabel("Type")).toBeFocused();
+  });
+});
+
+test.describe("groups in the accounts list", () => {
+  test("a small group starts open", async ({ page }) => {
+    const group = uniqueName("Banks");
+    const name = uniqueName("Monzo");
+    await seedAccount(page.request, {
+      name,
+      unit: "GBP",
+      type: "cash",
+      group_name: group,
+    });
+    await page.goto("/accounts");
+
+    await expect(page.getByRole("button", { name: group })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    await expect(page.getByRole("link", { name })).toBeVisible();
+  });
+
+  test("a group of more than five starts closed and opens when clicked", async ({
+    page,
+  }) => {
+    const group = uniqueName("Exchange");
+    for (const unit of ["BTC", "ETH", "USDT", "SOL", "BNB", "ADA"]) {
+      await seedAccount(page.request, {
+        name: `${group} ${unit}`,
+        unit,
+        type: "crypto",
+        group_name: group,
+      });
+    }
+    await page.goto("/accounts");
+    const heading = page.getByRole("button", { name: group });
+    const btc = page.getByRole("link", { name: `${group} BTC` });
+
+    await expect(heading).toHaveAttribute("aria-expanded", "false");
+    await expect(btc).toBeHidden();
+
+    await heading.click();
+
+    await expect(heading).toHaveAttribute("aria-expanded", "true");
+    await expect(btc).toBeVisible();
+  });
+});
+
 test.describe("an account's own page", () => {
   test("opens from its row in the list", async ({ page }) => {
     const name = uniqueName("Monzo");
