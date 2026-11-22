@@ -48,6 +48,9 @@ text-ink-faint`) above figures and table columns; sentence case everywhere else.
 - **Choosing from the user's own values is a combo box** (`ComboField`, React Aria): type to filter,
   tap to see everything, "+ Create …" when nothing matches, and a case-insensitive match reuses the
   existing value. Rows are at least 44px tall. A fixed set (an account's type) stays a `<select>`.
+- **A section that opens and closes uses `DisclosureButton`** (`components/ui/`): the turning arrow,
+  `aria-expanded`, a 44px target. The caller wraps it, a table row with its own `colSpan` or a
+  plain block, and styles the text.
 - **A pending action says so** on its button ("Adding", "Signing in") and disables it.
 - **No layout shift on interaction.** Anything that appears on focus, hover or mouse down must not
   move what the pointer is on.
