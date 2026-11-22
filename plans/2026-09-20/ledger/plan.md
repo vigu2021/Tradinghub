@@ -537,7 +537,7 @@ which belongs to Task 8 (`<optgroup>` per group).
 
 **Files:**
 - Create: `frontend/src/app/(app)/transactions/page.tsx`, `frontend/src/app/(app)/transactions/new/page.tsx`,
-  `frontend/src/app/(app)/transfers/new/page.tsx`,
+  `frontend/src/app/(app)/transactions/transfer/page.tsx`,
   `frontend/src/features/ledger/components/transactions/{TransactionForm,TransactionTable,TransactionFilters,TransferForm}.tsx`
 - Mockup: `transactions-page-mock.html`
 
@@ -549,7 +549,7 @@ which belongs to Task 8 (`<optgroup>` per group).
 2. **The amount field is a positive number with a kind toggle.** The sign is the API's job. Typing
    a minus sign to record groceries is a bad evening. Form amounts stay strings, never JavaScript
    numbers.
-3. **The forms are their own pages,** `/transactions/new` and `/transfers/new`, like New account:
+3. **The forms are their own pages,** `/transactions/new` and `/transactions/transfer` (under `/transactions/` so the nav highlights Transactions), like New account:
    a real URL, the back button works, no focus trapping. Separate buttons for each, because the
    transfer form has two accounts and an optional fee. Cancel and success both go back to
    `/transactions` with its filters and page kept in the query string.
@@ -567,12 +567,16 @@ which belongs to Task 8 (`<optgroup>` per group).
    request per row. **The form pickers list active accounts only,** grouped in an `<optgroup>` per
    group, with account ids as values. **The account filter lists every account,** archived ones
    under "Archived", so old rows can still be found.
-7. **Creates and deletes show at once, without touching the cache.** The mutations get a
-   `mutationKey`, and the list draws a pending "Saving…" row from `useMutationState`, so the form
-   page can go back at once and the row still appears. While a delete runs, the rows it removes
-   are hidden by matching `variables`: deleting a transfer goes through `transferMutations.delete()` with the
-   row's `transfer_group_id`, and hides every row in that group. On success the invalidation brings the real list; on failure the
-   pending row disappears or the hidden rows return, and the error shows. Totals still come from
+7. **Deletes show at once; creates wait on their form. Neither touches the cache.** The delete
+   mutations get a `mutationKey`, and the table hides the rows of every pending delete by matching
+   their `variables` through `useMutationState`: deleting a transfer goes through
+   `transferMutations.delete()` with the row's `transfer_group_id`, and hides every row in that
+   group. On failure the rows return and the error shows. A create stays on its form page with a
+   pending button and goes back to the list on success; the global invalidation is returned from
+   the mutation, so the list has already refetched and the new row is there. Server errors (422,
+   404, the unequal-amounts 409) stay on the form beside the fields they concern, with what was
+   typed kept. This replaces an earlier "go back at once and draw a Saving… row" design: leaving
+   the form before the server answers would lose the input on any refusal. Totals still come from
    the server, because working them out here would be arithmetic on money.
 8. **Paging never flashes empty.** The list uses `placeholderData: keepPreviousData`, so the
    previous page stays on screen until the next arrives, and while one page is shown the next is

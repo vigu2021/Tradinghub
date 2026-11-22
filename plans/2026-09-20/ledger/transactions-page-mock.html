@@ -163,9 +163,9 @@
 
 <script>
 const NOTES = {
-  list: "<b>List.</b> Description is the category, or the note when there is none. Kind is its own column. Amounts are the API's strings, untouched (2400, -38.5). Every row of a transfer, the fee row included, carries a TRANSFER tag and has no Edit; its Delete asks first, because it removes the whole transfer. The faded row is still saving, drawn from useMutationState after the form page went back.",
-  tx: "<b>New transaction</b> at /transactions/new. Money out or in sets the sign; the amount is always positive. The account picker lists active accounts only, grouped; the unit in the amount box follows it. Category is a ComboField fed by categories already used. Press Add without filling anything to see the errors.",
-  xfer: "<b>New transfer</b> at /transfers/new. Same units: one Amount, sent as both amounts. Pick different units (e.g. To: Binance BTC) to get the warning and a Received field. Add a fee to pick the account it is paid from; its unit follows that account. Picking the same account twice is refused."
+  list: "<b>List.</b> Description is the category, or the note when there is none. Kind is its own column. Amounts are the API's strings, untouched (2400, -38.5). Every row of a transfer, the fee row included, carries a TRANSFER tag and has no Edit; its Delete asks first, because it removes the whole transfer. A deleted row disappears at once and comes back only if the server refuses.",
+  tx: "<b>New transaction</b> at /transactions/new. Money out or in sets the sign; the amount is always positive. The account picker lists active accounts only, grouped; the unit in the amount box follows it. Category is a ComboField fed by categories already used. Press Add without filling anything to see the errors. While it saves, the button reads Saving… and the page stays; on success it goes back to the list, already refreshed.",
+  xfer: "<b>New transfer</b> at /transactions/transfer. Same units: one Amount, sent as both amounts. Pick different units (e.g. To: Binance BTC) to get the warning and a Received field. Add a fee to pick the account it is paid from; its unit follows that account. Picking the same account twice is refused."
 };
 const GROUPS = {
   Banks: [{ id:1, name:"Monzo", unit:"GBP" }, { id:2, name:"Revolut EUR", unit:"EUR" }],
@@ -175,7 +175,6 @@ const ARCHIVED = [{ id:5, name:"Old savings", unit:"GBP" }];
 const ALL = [...Object.values(GROUPS).flat(), ...ARCHIVED];
 const byId = id => ALL.find(a => a.id === Number(id));
 const ROWS = [
-  { id:"p", date:"22 Nov", acct:1, cat:"groceries", note:"Tesco", amt:"-42.18", kind:"expense", pending:true },
   { id:9, date:"21 Nov", acct:1, cat:"salary", note:"", amt:"2400", kind:"income" },
   { id:8, date:"20 Nov", acct:1, cat:"", note:"To Binance", amt:"-500", kind:"transfer", group:"g1" },
   { id:7, date:"20 Nov", acct:4, cat:"", note:"To Binance", amt:"612.4", kind:"transfer", group:"g1" },
