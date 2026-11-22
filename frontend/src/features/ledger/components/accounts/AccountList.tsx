@@ -17,7 +17,7 @@ const OPEN_UP_TO = 5;
 export function AccountList() {
   const { data: accounts, isPending, error } = useQuery(accountQueries.list());
   const [showArchived, setShowArchived] = useState(false);
-  const [toggled, setToggled] = useState<Record<string, boolean>>({});
+  const [toggled, setToggled] = useState(new Map<string, boolean>());
 
   if (isPending) {
     return <p className="text-sm text-ink-faint">Loading...</p>;
@@ -53,7 +53,7 @@ export function AccountList() {
   );
   const accountGroups = groupAccounts(activeAccounts);
   const isOpen = (group: AccountGroup) =>
-    toggled[group.name] ?? startsOpen(group);
+    toggled.get(group.name) ?? startsOpen(group);
 
   return (
     <table className="w-full border-collapse text-sm">
@@ -76,7 +76,7 @@ export function AccountList() {
               count={group.accounts.length}
               open={open}
               onToggle={() =>
-                setToggled((current) => ({ ...current, [group.name]: !open }))
+                setToggled((current) => new Map(current).set(group.name, !open))
               }
             />
             {open &&
@@ -124,9 +124,10 @@ function SectionToggle({
 }: SectionToggleProps) {
   return (
     <tr>
-      <td
+      <th
+        scope="rowgroup"
         colSpan={4}
-        className={`px-4 pb-1 ${
+        className={`px-4 pb-1 text-left font-normal ${
           archived
             ? "relative pt-12 before:absolute before:inset-x-0 before:top-5 before:border-t before:border-rule-strong"
             : "pt-6"
@@ -145,7 +146,7 @@ function SectionToggle({
             {count}
           </span>
         </DisclosureButton>
-      </td>
+      </th>
     </tr>
   );
 }
@@ -169,7 +170,9 @@ function AccountRow({ account }: AccountRowProps) {
           {account.name}
         </Link>
       </td>
-      <td className="hidden px-4 py-3.5 text-ink-dim sm:table-cell">
+      <td
+        className={`hidden px-4 py-3.5 sm:table-cell ${active ? "text-ink-dim" : ""}`}
+      >
         {ACCOUNT_TYPE_LABELS[account.type]}
       </td>
       <td className="px-4 py-3.5 text-right font-mono tabular-nums">
