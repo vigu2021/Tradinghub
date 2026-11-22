@@ -73,6 +73,7 @@ export function AccountList() {
           <tbody key={group.name}>
             <SectionToggle
               label={group.name}
+              count={group.accounts.length}
               open={open}
               onToggle={() =>
                 setToggled((current) => ({ ...current, [group.name]: !open }))
@@ -89,10 +90,11 @@ export function AccountList() {
       {archivedAccounts.length > 0 && (
         <tbody>
           <SectionToggle
-            label={`Archived (${archivedAccounts.length})`}
+            label="Archived"
+            count={archivedAccounts.length}
             open={showArchived}
             onToggle={() => setShowArchived((shown) => !shown)}
-            muted
+            archived
           />
           {showArchived &&
             archivedAccounts.map((account) => (
@@ -106,24 +108,42 @@ export function AccountList() {
 
 type SectionToggleProps = {
   label: string;
+  count: number;
   open: boolean;
   onToggle: () => void;
-  muted?: boolean;
+  archived?: boolean;
 };
 
 /** A heading row spanning the table that opens and closes the rows under it. */
-function SectionToggle({ label, open, onToggle, muted }: SectionToggleProps) {
+function SectionToggle({
+  label,
+  count,
+  open,
+  onToggle,
+  archived,
+}: SectionToggleProps) {
   return (
     <tr>
-      <td colSpan={4} className="px-4 pt-6 pb-1">
+      <td
+        colSpan={4}
+        className={`px-4 pb-1 ${
+          archived
+            ? "relative pt-12 before:absolute before:inset-x-0 before:top-5 before:border-t before:border-rule-strong"
+            : "pt-6"
+        }`}
+      >
         <DisclosureButton
           open={open}
           onToggle={onToggle}
           className={`text-xs tracking-[0.12em] uppercase ${
-            muted ? "font-medium text-ink-faint" : "font-semibold text-ink"
+            archived ? "font-medium text-ink-faint" : "font-semibold text-ink"
           }`}
         >
-          {label}
+          {archived && <ArchiveIcon />}
+          {label}{" "}
+          <span className="rounded-full bg-rule px-2 py-0.5 text-[0.6875rem] font-semibold tracking-normal text-ink-dim tabular-nums">
+            {count}
+          </span>
         </DisclosureButton>
       </td>
     </tr>
@@ -194,6 +214,24 @@ function ChevronIcon() {
       strokeLinejoin="round"
     >
       <path d="m9 6 6 6-6 6" />
+    </svg>
+  );
+}
+
+function ArchiveIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      className="-mr-1 size-3.5 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="4" width="18" height="5" rx="1" />
+      <path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4" />
     </svg>
   );
 }

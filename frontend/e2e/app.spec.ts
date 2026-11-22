@@ -307,7 +307,7 @@ test.describe("an account's own page", () => {
 
     await page.getByRole("link", { name: "‹ Accounts" }).click();
     await expect(page.getByRole("link", { name })).toBeHidden();
-    await page.getByRole("button", { name: /^Archived \(\d+\)$/ }).click();
+    await page.getByRole("button", { name: /^Archived \d+$/ }).click();
     await page.getByRole("link", { name }).click();
 
     await page.getByRole("button", { name: "Restore" }).click();
